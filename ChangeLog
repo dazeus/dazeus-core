@@ -1,0 +1,51 @@
+
+2010-03-22  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * Made Server emit authenticated() upon receiving 001, not upon sending the
+  handshake.
+  * Made User objects keep a Network pointer, to show what network they are on.
+  * Added Plugin::say().
+  * Added some handlers in DaVinci, PluginManager and TestPlugin to play with.
+
+2010-03-15  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * The Server class now times out its connections after 15 seconds.
+  * Added "fulldebug mode" to the Server class.
+  * Bugfix: Server class can now privmsg correctly.
+  * Added QDebug operator<<() function to User, for debug printing a User
+  object.
+  * Wrote a TestPlugin for testing the current plugin framework.
+
+2010-03-08  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * Implemented the Network class.
+  * Implemented the Config class.
+  * Implemented the Server class.
+  * Implemented a temporary Config::networks() which returns test data.
+  * Implemented parts of Server::connect() and Server::fromServerConfig().
+  * Implemented Network::autoConnectEnabled() and two times Network::connect().
+  * Implemented connecting, input parsing and handshaking in Server.
+  * Implemented User class.
+  * Made a way to run DaVinci tests (using maketest.sh).
+  * Wrote tests for the server input parsing, and for the User class.
+  * Implemented relayed signals in the Network class.
+
+2010-03-07  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * Implemented DaVinci class.
+  * Implemented main() function.
+  * Moved *Config structs to a global namespace.
+  * Wrote some docs on DaVinci initialization steps.
+  * Added PluginManager class
+  * Added some to-be-methods in Network, Server, Plugin
+
+2010-03-05  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * Added the guts of the project, some almost empty .cpp files and their
+  already filled .h files.
+  * Chose BSD license.
+  * Renamed project to DaVinci.
+
+2010-03-04  Sjors Gielen  <dazjorz@dazjorz.com>
+
+  * Created project.
