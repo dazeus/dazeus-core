@@ -17,9 +17,9 @@
 #include "tests/testserver.h"
 #endif
 
-#if IRC_VERSION < 0x000300
+#if IRC_VERSION < 0x000500
  #if IRC_VERSION != 0x000000
-  #error IRC_VERSION must be at least 0.3.0.
+  #error IRC_VERSION must be at least 0.5.0.
  #else
   #warning You are using libircclient-qt trunk. Stuff might break.
  #endif
