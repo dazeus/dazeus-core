@@ -94,8 +94,8 @@ const QList<NetworkConfig*> &Config::networks()
   // Temporary network config for Freenode
   nc = new NetworkConfig;
   nc->name = "freenode";
-  nc->displayName = "FweaNers";
-  nc->autoConnect = false;
+  nc->displayName = "FreeNode";
+  nc->autoConnect = true;
   nc->nickName = nickName_;
   sc = new ServerConfig;
   sc->host = "anthony.freenode.net";
