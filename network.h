@@ -65,7 +65,7 @@ class Network : public QObject
   signals:
     void connected();
     void disconnected();
-    void authenticated();
+    void welcomed();
     void motdReceived( const QString &motd, Irc::Buffer *buffer );
     void joined( const QString &origin, Irc::Buffer *buffer );
     void parted( const QString &origin, const QString &message, Irc::Buffer *buffer );

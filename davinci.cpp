@@ -71,17 +71,17 @@ bool DaVinci::configLoaded() const
 
 
 /**
- * @brief The application authenticated to an IRC server.
+ * @brief We received the IRC 'welcomed' message from a server.
  *
  * Give a signal through to the plugin manager.
  */
-void DaVinci::authenticated()
+void DaVinci::welcomed()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
   const Server *s = n->activeServer();
   Q_ASSERT( s != 0 );
-  pluginManager_->authenticated( *n, *s );
+  pluginManager_->welcomed( *n, *s );
 }
 
 
@@ -148,8 +148,8 @@ bool DaVinci::loadConfig()
       resetConfig();
       return false;
     }
-    connect( net,  SIGNAL( authenticated() ),
-             this, SLOT(   authenticated() ) );
+    connect( net,  SIGNAL(      welcomed() ),
+             this, SLOT(        welcomed() ) );
     connect( net,  SIGNAL(     connected() ),
              this, SLOT(       connected() ) );
     connect( net,            SIGNAL( joined( const QString&, Irc::Buffer* ) ),

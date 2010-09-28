@@ -130,7 +130,7 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
   RELAY_SIGN( connected() );
   RELAY_SIGN( disconnected() );
-  RELAY_SIGN( authenticated() );
+  RELAY_SIGN( welcomed() );
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( joined( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( parted( const QString&, const QString&, Irc::Buffer* ) );

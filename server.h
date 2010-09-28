@@ -49,9 +49,7 @@ class Server : public Irc::Session
 
   signals:
     void connectionTimeout();
-    void authenticated();
 
-    //void receiverChanged( const QString &receiver, Irc::Buffer *buffer );
     void motdReceived( const QString &motd, Irc::Buffer *buffer );
     void joined( const QString &origin, Irc::Buffer *buffer );
     void parted( const QString &origin, const QString &message, Irc::Buffer *buffer );

@@ -54,7 +54,7 @@ class Plugin : public QObject
 
   public slots:
     virtual void init() = 0;
-    virtual void authenticated( Network &net, const Server &serv ) = 0;
+    virtual void welcomed( Network &net, const Server &serv ) = 0;
     virtual void connected( Network &net, const Server &serv ) = 0;
     virtual void joinedChannel( const QString &who, Irc::Buffer *channel ) = 0;
     virtual void leftChannel( const QString &who, const QString &leaveMessage,

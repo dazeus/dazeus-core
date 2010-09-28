@@ -29,16 +29,15 @@ PluginManager::~PluginManager()
 
 
 /**
- * @brief authenticated() handler.
+ * @brief welcomed() handler.
  *
- * This method is called when DaVinci is authenticated to an IRC server, ie
- * when handshake is completed.
+ * This method is called when DaVinci finishes a handshake with the IRC server.
  */
-void PluginManager::authenticated( Network &n, const Server &s )
+void PluginManager::welcomed( Network &n, const Server &s )
 {
   foreach( Plugin *p, plugins_ )
   {
-    p->authenticated( n, s );
+    p->welcomed( n, s );
   }
 }
 

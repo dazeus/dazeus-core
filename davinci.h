@@ -34,7 +34,7 @@ class DaVinci : public QObject
 
   private slots:
     void     resetConfig();
-    void     authenticated();
+    void     welcomed();
     void     connected();
 
   private:
