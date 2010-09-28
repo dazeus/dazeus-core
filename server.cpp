@@ -128,19 +128,43 @@ void Server::say( QString destination, QString message )
 
 void Server::slotBufferAdded( Irc::Buffer *buffer )
 {
-  qDebug() << "Buffer added: " << buffer
-           << buffer->receiver()
-           << buffer->topic()
-           << buffer->names()
-           << "is server buffer?" << ( buffer == defaultBuffer() || defaultBuffer() == 0 );
-  if( buffer == defaultBuffer() || defaultBuffer() == 0 )
-  {
-    // A server buffer has been created!
-    emit authenticated();
-  }
+#define SERVER_SIGNAL_RELAY_1STR( slotname, signname ) \
+  connect( buffer, SIGNAL( signname (const QString&) ), \
+           this,   SLOT(   slotname (const QString&) ) );
+#define SERVER_SIGNAL_RELAY_2STR( slotname, signname ) \
+  connect( buffer, SIGNAL( signname (const QString&, const QString&) ), \
+           this,   SLOT(   slotname (const QString&, const QString&) ) );
+#define SERVER_SIGNAL_RELAY_3STR( slotname, signname ) \
+  connect( buffer, SIGNAL( signname (const QString&, const QString&, const QString&) ), \
+           this,   SLOT(   slotname (const QString&, const QString&, const QString&) ) );
 
-//#define SERVER_SIGN_RELAY_1STR( slotname, signname )
-  //connect( buffer, SIGNAL( signname (
+  SERVER_SIGNAL_RELAY_1STR( slotMotdReceived, motdReceived );
+  SERVER_SIGNAL_RELAY_1STR( slotJoined, joined );
+  SERVER_SIGNAL_RELAY_2STR( slotParted, parted );
+  SERVER_SIGNAL_RELAY_2STR( slotQuit, quit );
+  SERVER_SIGNAL_RELAY_2STR( slotNickChanged, nickChanged );
+  SERVER_SIGNAL_RELAY_3STR( slotModeChanged, modeChanged );
+  SERVER_SIGNAL_RELAY_2STR( slotTopicChanged, topicChanged );
+  SERVER_SIGNAL_RELAY_3STR( slotInvited, invited );
+  SERVER_SIGNAL_RELAY_3STR( slotKicked, kicked );
+  SERVER_SIGNAL_RELAY_2STR( slotMessageReceived, messageReceived );
+  SERVER_SIGNAL_RELAY_2STR( slotNoticeReceived, noticeReceived );
+  SERVER_SIGNAL_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
+  SERVER_SIGNAL_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
+  SERVER_SIGNAL_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
+
+#undef SERVER_SIGNAL_RELAY_1STR
+#undef SERVER_SIGNAL_RELAY_2STR
+#undef SERVER_SIGNAL_RELAY_3STR
+
+  connect( buffer, SIGNAL(     unknownMessageReceived( const QString&,
+                                                       const QStringList& )),
+           this,   SLOT(   slotUnknownMessageReceived( const QString&,
+                                                       const QStringList& )));
+  connect( buffer, SIGNAL(     numericMessageReceived( const QString&,
+                                                 uint, const QStringList& )),
+           this,   SLOT(   slotNumericMessageReceived( const QString&,
+                                                 uint, const QStringList& )));
 }
 
 void Server::slotBufferRemoved( Irc::Buffer *buffer )
