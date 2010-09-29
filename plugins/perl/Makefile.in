@@ -1,10 +1,10 @@
 
-PERL=/sw/bin/perl5.8.8
+PERL=/usr/bin/perl
 PERLSRCDIR=`$(PERL) -MConfig -e 'print $$Config{archlib}'`/CORE
 CXX=g++
 CC=gcc
-CFLAGS=-arch i386
-LDFLAGS=-arch i386
+CFLAGS=
+LDFLAGS=
 
 all: DaZeus2.o embedperl.o xsinit.o test
 

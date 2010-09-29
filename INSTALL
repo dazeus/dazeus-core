@@ -2,11 +2,7 @@
 This application requires libircclient 0.5.0. At this moment, 0.5.0 is only
 in the Hg repository, but it will be released soon.
 
-To compile DaVinci, first compile the Perl modules from plugins/perl:
-  cd plugins/perl
-  make
-Then, run qmake and make in the main directory:
-  cd ../..
+To compile DaVinci, run qmake and make in the main directory:
   qmake
   make
 
