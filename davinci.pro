@@ -12,6 +12,7 @@ CONFIG   += console libircclient-qt
 CONFIG   -= app_bundle
 
 TEMPLATE = app
+OBJECTS_DIR = build
 
 SOURCES += main.cpp
 SOURCES += davinci.cpp network.cpp config.cpp user.cpp server.cpp
