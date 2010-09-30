@@ -26,6 +26,9 @@ SOURCES += plugins/perlplugin.cpp
 HEADERS += plugins/perlplugin.h
 # perl implementation
 QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
+QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
+      plugins/perl/embedperl.o plugins/perl/xsinit.c plugins/perl/xsinit.o \
+      plugins/perl/embedperl.a
 LIBS += plugins/perl/embedperl.a
 unix && !macx {
   LIBS += -Wl,--export-dynamic -lcrypt
