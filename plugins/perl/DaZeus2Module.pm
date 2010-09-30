@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Data::Dumper;
 
+my $uniqueid;
+
 sub new {
     my $class = shift;
     my %param = @_;
@@ -17,6 +19,10 @@ sub new {
     $self->init();
 
     return $self;
+}
+
+sub uniqueid {
+    (undef,$uniqueid) = @_;
 }
 
 sub bot {
@@ -67,13 +73,13 @@ sub store_keys {
 sub say {
   my $self = shift;
   my $args = $_[0];
-  DaZeus2::privmsg($args->{channel}, $args->{body});
+  DaZeus2::privmsg($uniqueid, $args->{channel}, $args->{body});
 }
 
 sub emote {
   my $self = shift;
   my %args = @_;
-  DaZeus2::emote($args{channel}, $args{body});
+  DaZeus2::emote($uniqueid, $args{channel}, $args{body});
 }
 
 sub sendWhois {

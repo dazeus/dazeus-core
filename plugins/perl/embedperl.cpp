@@ -24,9 +24,11 @@ void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
   {
     if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->emoteCallback )
     {
-      ePerl[i]->emoteCallback( receiver, message, ePerl[i]->data );
+      ePerl[i]->emoteCallback( uniqueid, receiver, message, ePerl[i]->data );
+      return;
     }
   }
+  fprintf(stderr,"[CallbackError] No handler for Emote callback (uniqueid=%s)\n", uniqueid);
 }
 
 void privmsgEmbed(const char *uniqueid, const char *receiver, const char *message)
@@ -36,9 +38,11 @@ void privmsgEmbed(const char *uniqueid, const char *receiver, const char *messag
   {
     if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->privmsgCallback )
     {
-      ePerl[i]->privmsgCallback( receiver, message, ePerl[i]->data );
+      ePerl[i]->privmsgCallback( uniqueid, receiver, message, ePerl[i]->data );
+      return;
     }
   }
+  fprintf(stderr,"[CallbackError] No handler for Privmsg callback (uniqueid=%s)\n", uniqueid);
 }
 /***** END CALLBACKS ****/
 }
@@ -86,8 +90,8 @@ const char *EmbedPerl::uniqueid() const
   return uniqueid_;
 }
 
-void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, void*),
-                              void (*privmsgCallback)(const char*, const char*, void*),
+void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
+                              void (*privmsgCallback)(const char*, const char*, const char*, void*),
                               void *data )
 {
   this->emoteCallback = emoteCallback;
@@ -103,6 +107,7 @@ void EmbedPerl::init()
   ENTER;
   SAVETMPS;
   PUSHMARK(SP);
+  XPUSHs( newSVpv(uniqueid_, strlen(uniqueid_)));
   PUTBACK;
   call_pv("init", G_SCALAR);
   SPAGAIN;

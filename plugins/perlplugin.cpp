@@ -11,15 +11,15 @@
 #include <ircclient-qt/IrcBuffer>
 
 extern "C" {
-  void perlplugin_emote_callback( const char *recv, const char *body, void *data )
+  void perlplugin_emote_callback( const char *net, const char *recv, const char *body, void *data )
   {
     PerlPlugin *pp = (PerlPlugin*) data;
-    pp->emoteCallback( recv, body );
+    pp->emoteCallback( net, recv, body );
   }
-  void perlplugin_privmsg_callback( const char *recv, const char *body, void *data )
+  void perlplugin_privmsg_callback( const char *net, const char *recv, const char *body, void *data )
   {
     PerlPlugin *pp = (PerlPlugin*) data;
-    pp->privmsgCallback( recv, body );
+    pp->privmsgCallback( net, recv, body );
   }
 }
 
@@ -74,12 +74,16 @@ QHash<QString, Plugin::VariableScope> PerlPlugin::variables()
   return variables;
 }
 
-void PerlPlugin::emoteCallback( const char *receiver, const char *body )
+void PerlPlugin::emoteCallback( const char *network, const char *receiver, const char *body )
 {
-  //emote( receiver, body );
+  Network *net = Network::getNetwork( network );
+  Q_ASSERT( net != 0 );
+  net->action( receiver, body );
 }
 
-void PerlPlugin::privmsgCallback( const char *receiver, const char *body )
+void PerlPlugin::privmsgCallback( const char *network, const char *receiver, const char *body )
 {
-  //privmsg( receiver, body );
+  Network *net = Network::getNetwork( network );
+  Q_ASSERT( net != 0 );
+  net->say( receiver, body );
 }

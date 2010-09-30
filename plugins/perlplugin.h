@@ -27,8 +27,8 @@ class PerlPlugin : public Plugin
                               Irc::Buffer *b );
 
     // Do *not* call from the outside!
-    void       emoteCallback  ( const char *receiver, const char *body );
-    void       privmsgCallback( const char *receiver, const char *body );
+    void       emoteCallback  ( const char *network, const char *receiver, const char *body );
+    void       privmsgCallback( const char *network, const char *receiver, const char *body );
 
   protected slots:
     virtual QHash<QString, VariableScope> variables();

@@ -26,19 +26,19 @@ class EmbedPerl
     bool loadModule(const char*);
     void message(const char*, const char*, const char*);
 
-    void setCallbacks( void (*emoteCallback)  (const char*, const char*, void*),
-                       void (*privmsgCallback)(const char*, const char*, void*),
+    void setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
+                       void (*privmsgCallback)(const char*, const char*, const char*, void*),
                        void *data );
 
-    void (*emoteCallback)(const char*, const char*, void*);
-    void (*privmsgCallback)(const char*, const char*, void*);
+    void (*emoteCallback)(const char*, const char*, const char*, void*);
+    void (*privmsgCallback)(const char*, const char*, const char*, void*);
     void *data;
 
     const char *uniqueid() const;
 
   private:
     PerlInterpreter *perl;
-    const char *uniqueid_;
+    char *uniqueid_;
     void init();
 };
 

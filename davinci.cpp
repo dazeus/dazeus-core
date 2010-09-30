@@ -99,6 +99,16 @@ void DaVinci::connected()
 
 
 /**
+ * @brief 
+ */
+void DaVinci::slotJoinedChannel( const QString &s, Irc::Buffer *b )
+{
+  Network *n = qobject_cast<Network*>(sender());
+  Q_ASSERT( n != 0 );
+  pluginManager_->joinedChannel( *n, s, b );
+}
+
+/**
  * @brief Initialises plugins from the configuration file.
  */
 bool DaVinci::initPlugins()
@@ -150,8 +160,8 @@ bool DaVinci::loadConfig()
              this, SLOT(        welcomed() ) );
     connect( net,  SIGNAL(     connected() ),
              this, SLOT(       connected() ) );
-    connect( net,            SIGNAL( joined( const QString&, Irc::Buffer* ) ),
-             pluginManager_, SLOT(   joinedChannel( const QString&, Irc::Buffer* ) ) );
+    connect( net,  SIGNAL(          joined( const QString&, Irc::Buffer* ) ),
+             this, SLOT( slotJoinedChannel( const QString&, Irc::Buffer* ) ) );
     networks_.append( net );
   }
 

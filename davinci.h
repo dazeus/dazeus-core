@@ -36,6 +36,7 @@ class DaVinci : public QObject
     void     resetConfig();
     void     welcomed();
     void     connected();
+    void     slotJoinedChannel( const QString&, Irc::Buffer* );
 
   private:
     Config          *config_;

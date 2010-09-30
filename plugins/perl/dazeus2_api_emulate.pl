@@ -21,8 +21,10 @@ use warnings;
 
 my @modules;
 my $perms;
+my $uniqueid;
 
 sub init {
+  ($uniqueid) = @_;
   $perms = {
     Sjors => {"dazeus.commands.fortune" => 1,
               "dazeus.commands.order"   => 1,
@@ -89,6 +91,7 @@ sub loadModule {
   $module = "DaZeus2Module::$module";
 
   push @modules, $module->new();
+  $module->uniqueid( $uniqueid );
   return 1;
 }
 
