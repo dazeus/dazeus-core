@@ -28,9 +28,9 @@ void TestPlugin::connected( Network &net, const Server &serv )
   }
 }
 
-void TestPlugin::welcomed( Network &net, const Server &serv )
+void TestPlugin::welcomed( Network &net )
 {
-  qDebug() << "Authenticated to network " << net << ", server " << serv;
+  qDebug() << "Authenticated to network " << net;
   net.joinChannel( "#dazjorz" );
 }
 

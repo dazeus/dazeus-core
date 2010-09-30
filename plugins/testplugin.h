@@ -19,7 +19,7 @@ class TestPlugin : public Plugin
 
   public slots:
     virtual void init();
-    virtual void welcomed( Network &net, const Server &serv );
+    virtual void welcomed( Network &net );
     virtual void connected( Network &net, const Server &serv );
     virtual void joinedChannel( Network &net, const QString &who, Irc::Buffer *b );
     virtual void leftChannel( Network &net, const QString &who, const QString &leaveMessage,

@@ -38,7 +38,7 @@ void PluginManager::welcomed( Network &n, const Server &s )
 {
   foreach( Plugin *p, plugins_ )
   {
-    p->welcomed( n, s );
+    p->welcomed( n );
   }
 }
 

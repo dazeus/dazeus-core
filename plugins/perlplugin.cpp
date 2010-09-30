@@ -53,7 +53,7 @@ void PerlPlugin::connected( Network &net, const Server &serv )
   Q_ASSERT( &serv == net.activeServer() );
 }
 
-void PerlPlugin::welcomed( Network &net, const Server &serv )
+void PerlPlugin::welcomed( Network &net )
 {
 }
 
