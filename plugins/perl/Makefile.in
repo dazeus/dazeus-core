@@ -14,7 +14,8 @@ all: embedperl.a
 embedperl.a: DaZeus2.o embedperl.o xsinit.o main.o
 	cp "$(PERLSRCDIR)"/libperl.a embedperl.a
 	chmod 0644 embedperl.a
-	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o
+	ar x "$(PERLSRCDIR)"/../auto/DynaLoader/DynaLoader.a
+	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o DynaLoader.o
 	$(RANLIB) -c embedperl.a
 
 main.o: main.cpp

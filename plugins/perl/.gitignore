@@ -2,3 +2,4 @@ DaZeus2.c
 xsinit.c
 Makefile
 embedperl.a
+DynaLoader.o

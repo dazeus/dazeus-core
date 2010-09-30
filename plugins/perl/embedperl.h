@@ -6,8 +6,13 @@
 #ifndef EMBEDPERL_H
 #define EMBEDPERL_H
 
-#include <EXTERN.h>
-#include <perl.h>
+#ifdef INSIDE_PERLEMBED
+// Need to be included here for some reason.
+# include <EXTERN.h>
+# include <perl.h>
+#else
+class PerlInterpreter;
+#endif
 
 class EmbedPerl
 {
