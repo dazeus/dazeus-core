@@ -10,7 +10,7 @@ CXX=g++
 CC=gcc
 AR=ar
 RANLIB=ranlib
-CFLAGS=
+CFLAGS=-DINSIDE_PERLEMBED
 LDFLAGS=
 
 DYNA_LINK_HINTS=${$(PERL) -MExtUtils::Embed -e '$_=ldopts(true);print if s/^.*\s(\S*DynaLoader.a).*$/$1/';}
