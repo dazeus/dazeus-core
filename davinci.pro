@@ -20,6 +20,9 @@ HEADERS += davinci.h network.h config.h user.h server.h
 SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
 
+# perl plugin
+SOURCES += plugins/perlplugin.cpp
+HEADERS += plugins/perlplugin.h
 # perl implementation
 QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
 LIBS += plugins/perl/embedperl.a
