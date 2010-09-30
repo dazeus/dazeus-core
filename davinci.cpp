@@ -79,9 +79,7 @@ void DaVinci::welcomed()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
-  const Server *s = n->activeServer();
-  Q_ASSERT( s != 0 );
-  pluginManager_->welcomed( *n, *s );
+  pluginManager_->welcomed( *n );
 }
 
 

@@ -34,7 +34,7 @@ PluginManager::~PluginManager()
  *
  * This method is called when DaVinci finishes a handshake with the IRC server.
  */
-void PluginManager::welcomed( Network &n, const Server &s )
+void PluginManager::welcomed( Network &n )
 {
   foreach( Plugin *p, plugins_ )
   {

@@ -30,7 +30,7 @@ class PluginManager : public QObject
   public slots:
     void    setConfig( Config* );
     bool    initialize();
-    void    welcomed( Network &n, const Server &s );
+    void    welcomed( Network &n );
     void    connected( Network &n, const Server &s );
     void    joinedChannel( Network &n, const QString&, Irc::Buffer* );
     void    leftChannel( Network &n, const QString&, const QString &message, Irc::Buffer* );
