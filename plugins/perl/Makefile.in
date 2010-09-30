@@ -48,5 +48,5 @@ xsinit.o: xsinit.c
 	$(CC) $(CFLAGS) -c xsinit.c `$(PERL) -MExtUtils::Embed -e ccopts`
 
 clean:
-	rm -f test DaZeus2.c DaZeus2.o embedperl.o xsinit.c xsinit.o
+	rm -f DaZeus2.c DaZeus2.o embedperl.o xsinit.c xsinit.o
 
