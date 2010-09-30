@@ -3,14 +3,22 @@ PERL=/usr/bin/perl
 PERLSRCDIR=`$(PERL) -MConfig -e 'print $$Config{archlib}'`/CORE
 CXX=g++
 CC=gcc
+AR=ar
+RANLIB=ranlib
 CFLAGS=
 LDFLAGS=
 
-all: DaZeus2.o embedperl.o xsinit.o test
+all: embedperl.a
 
-test: DaZeus2.o embedperl.o xsinit.o main.cpp
-	$(CXX) $(LDFLAGS) $(CFLAGS) -o test main.cpp DaZeus2.o embedperl.o xsinit.o -I "$(PERLSRCDIR)" \
-    -L"$(PERLSRCDIR)" -lperl `$(PERL) -MExtUtils::Embed -e ldopts`
+# because you can't add .a's into .a's, embedperl first copies libperl.a
+embedperl.a: DaZeus2.o embedperl.o xsinit.o main.o
+	cp "$(PERLSRCDIR)"/libperl.a embedperl.a
+	chmod 0644 embedperl.a
+	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o
+	$(RANLIB) -c embedperl.a
+
+main.o: main.cpp
+	$(CXX) $(CFLAGS) -c -o main.o main.cpp -I "$(PERLSRCDIR)"
 
 DaZeus2.c: DaZeus2.xs
 	xsubpp DaZeus2.xs >DaZeus2.c

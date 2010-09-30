@@ -21,7 +21,5 @@ SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
 
 # perl implementation
-# call make in plugins/perl first!
 QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
-LIBS += plugins/perl/embedperl.o plugins/perl/xsinit.o plugins/perl/DaZeus2.o
-LIBS += -lperl
+LIBS += plugins/perl/embedperl.a
