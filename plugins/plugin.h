@@ -66,9 +66,6 @@ class Plugin : public QObject
     void     set( const QString &name, const QVariant &value );
     QVariant get( const QString &name ) const;
 
-    void emote( const QString &receiver, const QString &body );
-    void privmsg( const QString &receiver, const QString &body );
-
   private:
     User                          *activeUser_;
     QHash<QString, VariableScope>  variables_;

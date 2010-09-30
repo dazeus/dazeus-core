@@ -21,13 +21,3 @@ QVariant Plugin::get( const QString &name ) const
 {
   return QVariant();
 }
-
-void Plugin::emote( const QString &receiver, const QString &body )
-{
-  qDebug() << "Plugin emote: " << receiver << body;
-}
-
-void Plugin::privmsg( const QString &receiver, const QString &body )
-{
-  qDebug() << "Plugin privmsg: " << receiver << body;
-}
