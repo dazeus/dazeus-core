@@ -1,6 +1,11 @@
-
 PERL=/usr/bin/perl
-PERLSRCDIR=`$(PERL) -MConfig -e 'print $$Config{archlib}'`/CORE
+
+PERLINCDIR=`$(PERL) -MConfig -e 'print $$Config{archlib}'`/CORE
+# On some systems:
+#PERLLIBDIR=$(PERLINCDIR)
+# On most systems:
+PERLLIBDIR=/usr/lib
+
 CXX=g++
 CC=gcc
 AR=ar
@@ -8,27 +13,33 @@ RANLIB=ranlib
 CFLAGS=
 LDFLAGS=
 
+DYNA_LINK_HINTS=${$(PERL) -MExtUtils::Embed -e '$_=ldopts(true);print if s/^.*\s(\S*DynaLoader.a).*$/$1/';}
+
 all: embedperl.a
 
 # because you can't add .a's into .a's, embedperl first copies libperl.a
-embedperl.a: DaZeus2.o embedperl.o xsinit.o main.o
-	cp "$(PERLSRCDIR)"/libperl.a embedperl.a
+embedperl.a: DaZeus2.o embedperl.o xsinit.o main.o DynaLoader.o
+	cp "$(PERLLIBDIR)"/libperl.a embedperl.a
 	chmod 0644 embedperl.a
-	ar x "$(PERLSRCDIR)"/../auto/DynaLoader/DynaLoader.a
-	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o DynaLoader.o
-	$(RANLIB) -c embedperl.a
+	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o
+	-[ -n "$(DYNA_LINK_HINTS)" ] && $(AR) cur DynaLoader.o
+	$(RANLIB) embedperl.a
+
+DynaLoader.o:
+	-[ -n "$(DYNA_LINK_HINTS)" ] && ar x $(DYNA_LINK_HINTS)
+	touch DynaLoader.o # create if nonexistant
 
 main.o: main.cpp
-	$(CXX) $(CFLAGS) -c -o main.o main.cpp -I "$(PERLSRCDIR)"
+	$(CXX) $(CFLAGS) -c -o main.o main.cpp -I "$(PERLINCDIR)"
 
 DaZeus2.c: DaZeus2.xs
 	xsubpp DaZeus2.xs >DaZeus2.c
 
 DaZeus2.o: DaZeus2.c
-	$(CC) $(CFLAGS) -c -o DaZeus2.o -I $(PERLSRCDIR) DaZeus2.c
+	$(CC) $(CFLAGS) -c -o DaZeus2.o -I $(PERLINCDIR) DaZeus2.c
 
 embedperl.o: embedperl.cpp
-	$(CXX) $(CFLAGS) -c -o embedperl.o embedperl.cpp -I $(PERLSRCDIR) -Dbool=char -DHAS_BOOL
+	$(CXX) $(CFLAGS) -c -o embedperl.o embedperl.cpp -I $(PERLINCDIR) -Dbool=char -DHAS_BOOL
 
 xsinit.c:
 	$(PERL) -MExtUtils::Embed -e xsinit -- -o xsinit.c -std DaZeus2

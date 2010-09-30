@@ -6,6 +6,7 @@
 #include <config.h>
 #include "pluginmanager.h"
 #include "testplugin.h"
+#include "perlplugin.h"
 
 /**
  * @brief Constructor.
@@ -77,6 +78,10 @@ bool PluginManager::initialize()
   Plugin *plugin = new TestPlugin();
   plugin->init();
   plugins_.append( plugin );
+
+  Plugin *plugin2 = new PerlPlugin();
+  plugin2->init();
+  plugins_.append( plugin2 );
 
   initialized_ = true;
   return true;

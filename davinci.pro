@@ -26,3 +26,6 @@ HEADERS += plugins/perlplugin.h
 # perl implementation
 QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
 LIBS += plugins/perl/embedperl.a
+unix {
+  LIBS += -Wl,--export-dynamic -lcrypt
+}
