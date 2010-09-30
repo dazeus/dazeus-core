@@ -1,7 +1,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-#include "const-c.h"
+#include "perl_callbacks.h"
 
 #define PL_unitcheckav 0
 
@@ -10,16 +10,11 @@ MODULE = DaZeus2		PACKAGE = DaZeus2
 PROTOTYPES: ENABLE
 
 void
-callBack()
+emote(const char *network, const char *receiver, const char *message)
   CODE:
-    callbackEmbed("Hello, world!\n");
+    emoteEmbed(network, receiver, message);
 
 void
-emote(const char *receiver, const char *message)
+privmsg(const char *network, const char *receiver, const char *message)
   CODE:
-    emoteEmbed(receiver, message);
-
-void
-privmsg(const char *receiver, const char *message)
-  CODE:
-    privmsgEmbed(receiver, message);
+    privmsgEmbed(network, receiver, message);

@@ -3,41 +3,72 @@
  * See LICENSE for license.
  */
 
+#include "perl_callbacks.h"
 #include "embedperl.h"
+#include <assert.h>
+
+#define MAX_EMBED_PERL 10
+
+// Totally thread-unsafe...
+static EmbedPerl *ePerl[MAX_EMBED_PERL];
+static int numEmbedPerl = 0;
 
 extern "C" {
 void xs_init(pTHX);
 
 /***** CALBACKS *****/
-void callbackEmbed( const char *s )
+void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
-  printf("***Callback*** Embed! String=%s\n", s);
+  printf("***Callback*** Send emote to %s (on %s): %s\n", receiver, uniqueid, message);
+  for( int i = 0; i < numEmbedPerl; ++i )
+  {
+    if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->emoteCallback )
+    {
+      ePerl[i]->emoteCallback( receiver, message, ePerl[i]->data );
+    }
+  }
 }
 
-void emoteEmbed(const char *receiver, const char *message)
+void privmsgEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
-  printf("***Callback*** Send emote to %s: %s\n", receiver, message);
-}
-
-void privmsgEmbed(const char *receiver, const char *message)
-{
-  printf("***Callback*** Send privmsg to %s: %s\n", receiver, message);
+  printf("***Callback*** Send privmsg to %s (on %s): %s\n", receiver, uniqueid, message);
+  for( int i = 0; i < numEmbedPerl; ++i )
+  {
+    if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->privmsgCallback )
+    {
+      ePerl[i]->privmsgCallback( receiver, message, ePerl[i]->data );
+    }
+  }
 }
 /***** END CALLBACKS ****/
 }
 
-EmbedPerl::EmbedPerl()
+EmbedPerl::EmbedPerl(const char *uniqueid)
+: emoteCallback(0)
+, privmsgCallback(0)
 {
-  fprintf(stderr, "EmbedPerl constructor\n");
+  if( MAX_EMBED_PERL == numEmbedPerl )
+  {
+    fprintf(stderr, "Too many EmbedPerls. Raise MAX_EMBED_PERL\n");
+    abort();
+  }
+
+  for( int i = 0; i < numEmbedPerl; ++i )
+  {
+    if( strcmp(ePerl[i]->uniqueid(), uniqueid) != 0 )
+    {
+      fprintf(stderr,"EmbedPerl created for a duplicate uniqueid.\n");
+      abort();
+    }
+  }
+  uniqueid_ = uniqueid;
+  ePerl[numEmbedPerl++] = this;
+
   perl = perl_alloc();
   perl_construct(perl);
 
-  fprintf(stderr, "EmbedPerl constructor\n");
-
   char *argv[] = {"", "dazeus2_api_emulate.pl"};
   perl_parse(perl, xs_init, 1, argv, NULL);
-
-  fprintf(stderr, "EmbedPerl constructor\n");
 
   init();
 }
@@ -47,6 +78,20 @@ EmbedPerl::~EmbedPerl()
   fprintf(stderr, "EmbedPerl destructor\n");
   perl_destruct(perl);
   perl_free(perl);
+}
+
+const char *EmbedPerl::uniqueid() const
+{
+  return uniqueid_;
+}
+
+void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, void*),
+                              void (*privmsgCallback)(const char*, const char*, void*),
+                              void *data )
+{
+  this->emoteCallback = emoteCallback;
+  this->privmsgCallback = privmsgCallback;
+  this->data = data;
 }
 
 void EmbedPerl::init()

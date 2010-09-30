@@ -5,6 +5,7 @@
 
 #include "perlplugin.h"
 #include "perl/embedperl.h"
+#include "../config.h"
 
 #include <QtCore/QDebug>
 #include <ircclient-qt/IrcBuffer>

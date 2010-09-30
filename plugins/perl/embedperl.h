@@ -6,6 +6,8 @@
 #ifndef EMBEDPERL_H
 #define EMBEDPERL_H
 
+#include "perl_callbacks.h"
+
 #ifdef INSIDE_PERLEMBED
 // Need to be included here for some reason.
 # include <EXTERN.h>
@@ -17,15 +19,26 @@ class PerlInterpreter;
 class EmbedPerl
 {
   public:
-    EmbedPerl();
+    EmbedPerl(const char *uniqueid);
     ~EmbedPerl();
 
     void callEcho(const char*);
     bool loadModule(const char*);
     void message(const char*, const char*, const char*);
 
+    void setCallbacks( void (*emoteCallback)  (const char*, const char*, void*),
+                       void (*privmsgCallback)(const char*, const char*, void*),
+                       void *data );
+
+    void (*emoteCallback)(const char*, const char*, void*);
+    void (*privmsgCallback)(const char*, const char*, void*);
+    void *data;
+
+    const char *uniqueid() const;
+
   private:
     PerlInterpreter *perl;
+    const char *uniqueid_;
     void init();
 };
 
