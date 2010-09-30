@@ -105,11 +105,11 @@ bool PluginManager::isInitialized() const
  *
  * This method is called when someone (including ourselves) joins a channel.
  */
-void PluginManager::joinedChannel( const QString &w, Irc::Buffer *b )
+void PluginManager::joinedChannel( Network &n, const QString &w, Irc::Buffer *b )
 {
   foreach( Plugin *p, plugins_ )
   {
-    p->joinedChannel( w, b );
+    p->joinedChannel( n, w, b );
   }
 }
 
@@ -119,11 +119,11 @@ void PluginManager::joinedChannel( const QString &w, Irc::Buffer *b )
  *
  * This method is called when someone (including ourselves) leaves a channel.
  */
-void PluginManager::leftChannel( const QString &w, const QString &message, Irc::Buffer *b )
+void PluginManager::leftChannel( Network &n, const QString &w, const QString &message, Irc::Buffer *b )
 {
   foreach( Plugin *p, plugins_ )
   {
-    p->leftChannel( w, message, b );
+    p->leftChannel( n, w, message, b );
   }
 }
 

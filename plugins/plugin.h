@@ -56,8 +56,8 @@ class Plugin : public QObject
     virtual void init() = 0;
     virtual void welcomed( Network &net, const Server &serv ) = 0;
     virtual void connected( Network &net, const Server &serv ) = 0;
-    virtual void joinedChannel( const QString &who, Irc::Buffer *channel ) = 0;
-    virtual void leftChannel( const QString &who, const QString &leaveMessage,
+    virtual void joinedChannel( Network &net, const QString &who, Irc::Buffer *channel ) = 0;
+    virtual void leftChannel( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel ) = 0;
 
   protected slots:
@@ -65,6 +65,9 @@ class Plugin : public QObject
 
     void     set( const QString &name, const QVariant &value );
     QVariant get( const QString &name ) const;
+
+    void emote( const QString &receiver, const QString &body );
+    void privmsg( const QString &receiver, const QString &body );
 
   private:
     User                          *activeUser_;

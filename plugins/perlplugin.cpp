@@ -10,17 +10,42 @@
 #include <QtCore/QDebug>
 #include <ircclient-qt/IrcBuffer>
 
+extern "C" {
+  void perlplugin_emote_callback( const char *recv, const char *body, void *data )
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->emoteCallback( recv, body );
+  }
+  void perlplugin_privmsg_callback( const char *recv, const char *body, void *data )
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->privmsgCallback( recv, body );
+  }
+}
+
 PerlPlugin::PerlPlugin()
 : Plugin()
-, ePerl( new EmbedPerl() )
-{}
+{
+}
 
 PerlPlugin::~PerlPlugin() {}
 
 void PerlPlugin::init()
 {
   qDebug() << "PerlPlugin initialising.";
-  ePerl->loadModule( "DazMessages" );
+}
+
+EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
+{
+  if( ePerl.contains( net.config()->name ) )
+    return ePerl.value( net.config()->name );
+
+  EmbedPerl *newPerl = new EmbedPerl( net.config()->name.toLatin1() );
+  newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback, this );
+  newPerl->loadModule( "DazMessages" );
+
+  ePerl.insert( net.config()->name, newPerl );
+  return newPerl;
 }
 
 void PerlPlugin::connected( Network &net, const Server &serv )
@@ -32,17 +57,29 @@ void PerlPlugin::welcomed( Network &net, const Server &serv )
 {
 }
 
-void PerlPlugin::joinedChannel( const QString &who, Irc::Buffer *channel )
+void PerlPlugin::joinedChannel( Network &net, const QString &who, Irc::Buffer *channel )
 {
-  ePerl->message( "Sjors", "#ru", QString("}hi " + who).toLatin1() );
+  getNetworkEmbed(net)->message( "Sjors", "#ru", QString("}hi " + who).toLatin1() );
 }
 
-void PerlPlugin::leftChannel( const QString &who, const QString &leaveMessage,
+void PerlPlugin::leftChannel( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel )
-{}
+{
+  //getNetworkEmbed(net)
+}
 
 QHash<QString, Plugin::VariableScope> PerlPlugin::variables()
 {
   QHash<QString, Plugin::VariableScope> variables;
   return variables;
+}
+
+void PerlPlugin::emoteCallback( const char *receiver, const char *body )
+{
+  //emote( receiver, body );
+}
+
+void PerlPlugin::privmsgCallback( const char *receiver, const char *body )
+{
+  //privmsg( receiver, body );
 }

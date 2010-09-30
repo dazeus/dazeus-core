@@ -34,9 +34,9 @@ void TestPlugin::welcomed( Network &net, const Server &serv )
   net.joinChannel( "#dazjorz" );
 }
 
-void TestPlugin::joinedChannel( const QString &who, Irc::Buffer *channel )
+void TestPlugin::joinedChannel( Network &net, const QString &who, Irc::Buffer *channel )
 {
-  User u( who, Network::fromBuffer( channel ) );
+  User u( who, &net );
   qDebug() << "User " << u << " joined channel " << channel;
   if( u.isMe() )
   {
@@ -44,10 +44,10 @@ void TestPlugin::joinedChannel( const QString &who, Irc::Buffer *channel )
   }
 }
 
-void TestPlugin::leftChannel( const QString &who, const QString &leaveMessage,
+void TestPlugin::leftChannel( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel )
 {
-  qDebug() << "User " << who << " left channel " << channel
+  qDebug() << "User " << who << " left channel " << channel << "on" << net
            << " (leave message " << leaveMessage << ")";
 }
 
