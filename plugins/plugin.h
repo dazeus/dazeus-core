@@ -56,6 +56,7 @@ class Plugin : public QObject
     virtual void init() = 0;
     virtual void welcomed( Network &net ) = 0;
     virtual void connected( Network &net, const Server &serv ) = 0;
+    virtual void disconnected( Network &net );
     virtual void joinedChannel( Network &net, const QString &who, Irc::Buffer *channel ) = 0;
     virtual void leftChannel( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel ) = 0;

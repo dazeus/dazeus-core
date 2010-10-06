@@ -21,3 +21,7 @@ QVariant Plugin::get( const QString &name ) const
 {
   return QVariant();
 }
+
+
+/*******STUB HANDLERS********/
+void Plugin::disconnected( Network &net ) {}
