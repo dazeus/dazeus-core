@@ -34,7 +34,7 @@ void TestPlugin::welcomed( Network &net )
   net.joinChannel( "#dazjorz" );
 }
 
-void TestPlugin::joinedChannel( Network &net, const QString &who, Irc::Buffer *channel )
+void TestPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel )
 {
   User u( who, &net );
   qDebug() << "User " << u << " joined channel " << channel;
@@ -44,7 +44,7 @@ void TestPlugin::joinedChannel( Network &net, const QString &who, Irc::Buffer *c
   }
 }
 
-void TestPlugin::leftChannel( Network &net, const QString &who, const QString &leaveMessage,
+void TestPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel )
 {
   qDebug() << "User " << who << " left channel " << channel << "on" << net

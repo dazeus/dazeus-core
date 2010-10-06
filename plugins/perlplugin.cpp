@@ -57,12 +57,12 @@ void PerlPlugin::welcomed( Network &net )
 {
 }
 
-void PerlPlugin::joinedChannel( Network &net, const QString &who, Irc::Buffer *channel )
+void PerlPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel )
 {
   getNetworkEmbed(net)->message( "Sjors", "#ru", QString("}hi " + who).toLatin1() );
 }
 
-void PerlPlugin::leftChannel( Network &net, const QString &who, const QString &leaveMessage,
+void PerlPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *channel )
 {
   //getNetworkEmbed(net)

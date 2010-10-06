@@ -134,32 +134,75 @@ void PluginManager::disconnected( Network &n )
   }
 }
 
-/**
- * @brief Joined channel handler.
- *
- * This method is called when someone (including ourselves) joins a channel.
- */
-void PluginManager::joined( const QString &w, Irc::Buffer *b )
+#define PLUGIN_EVENT_RELAY_1STR( name ) \
+void PluginManager::name ( const QString &str, Irc::Buffer *b ) { \
+  Network *n = Network::fromBuffer( b ); \
+  Q_ASSERT( n != 0 ); \
+  foreach( Plugin *p, plugins_ ) \
+  { \
+    p->name( *n, str, b ); \
+  } \
+}
+
+#define PLUGIN_EVENT_RELAY_2STR( name ) \
+void PluginManager::name ( const QString &str, const QString &str2, Irc::Buffer *b ) { \
+  Network *n = Network::fromBuffer( b ); \
+  Q_ASSERT( n != 0 ); \
+  foreach( Plugin *p, plugins_ ) \
+  { \
+    p->name( *n, str, str2, b ); \
+  } \
+}
+
+#define PLUGIN_EVENT_RELAY_3STR( name ) \
+void PluginManager::name ( const QString &str, const QString &str2, \
+                           const QString &str3, Irc::Buffer *b ) { \
+  Network *n = Network::fromBuffer( b ); \
+  Q_ASSERT( n != 0 ); \
+  foreach( Plugin *p, plugins_ ) \
+  { \
+    p->name( *n, str, str2, str3, b ); \
+  } \
+}
+
+PLUGIN_EVENT_RELAY_1STR( motdReceived );
+PLUGIN_EVENT_RELAY_1STR( joined );
+PLUGIN_EVENT_RELAY_2STR( parted );
+PLUGIN_EVENT_RELAY_2STR( quit );
+PLUGIN_EVENT_RELAY_2STR( nickChanged );
+PLUGIN_EVENT_RELAY_3STR( modeChanged );
+PLUGIN_EVENT_RELAY_2STR( topicChanged );
+PLUGIN_EVENT_RELAY_3STR( invited );
+PLUGIN_EVENT_RELAY_3STR( kicked );
+PLUGIN_EVENT_RELAY_2STR( messageReceived );
+PLUGIN_EVENT_RELAY_2STR( noticeReceived );
+PLUGIN_EVENT_RELAY_2STR( ctcpRequestReceived );
+PLUGIN_EVENT_RELAY_2STR( ctcpReplyReceived );
+PLUGIN_EVENT_RELAY_2STR( ctcpActionReceived );
+
+#undef PLUGIN_EVENT_RELAY_1STR
+#undef PLUGIN_EVENT_RELAY_2STR
+#undef PLUGIN_EVENT_RELAY_3STR
+
+void PluginManager::numericMessageReceived( const QString &origin, uint code,
+                           const QStringList &params, Irc::Buffer *buffer )
 {
-  Network *n = Network::fromBuffer( b );
+  Network *n = Network::fromBuffer( buffer );
+  Q_ASSERT( n != 0 );
   foreach( Plugin *p, plugins_ )
   {
-    p->joinedChannel( *n, w, b );
+    p->numericMessageReceived( *n, origin, code, params, buffer );
   }
 }
 
-
-/**
- * @brief Left channel handler.
- *
- * This method is called when someone (including ourselves) leaves a channel.
- */
-void PluginManager::parted( const QString &w, const QString &message, Irc::Buffer *b )
+void PluginManager::unknownMessageReceived( const QString &origin,
+                          const QStringList &params, Irc::Buffer *buffer )
 {
-  Network *n = Network::fromBuffer( b );
+  Network *n = Network::fromBuffer( buffer );
+  Q_ASSERT( n != 0 );
   foreach( Plugin *p, plugins_ )
   {
-    p->leftChannel( *n, w, message, b );
+    p->unknownMessageReceived( *n, origin, params, buffer );
   }
 }
 
