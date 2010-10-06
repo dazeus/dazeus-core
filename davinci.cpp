@@ -83,6 +83,7 @@ void DaVinci::welcomed()
 }
 
 
+
 /**
  * @brief The application connected.
  *
@@ -98,12 +99,20 @@ void DaVinci::connected()
 }
 
 
-void DaVinci::joined( const QString &s, Irc::Buffer *b )
+
+/**
+ * @brief The application disconnected.
+ *
+ * Give a signal through to the plugin manager.
+ */
+void DaVinci::disconnected()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
-  pluginManager_->joinedChannel( *n, s, b );
+  pluginManager_->disconnected( *n );
 }
+
+
 
 /**
  * @brief Initialises plugins from the configuration file.
@@ -154,13 +163,17 @@ bool DaVinci::loadConfig()
       return false;
     }
 
-#define RELAY_NET_SIGN(sign) \
-    connect( net,  SIGNAL( sign ), \
-             this, SLOT(   sign ) )
+    connect( net,  SIGNAL(    connected() ),
+             this, SLOT(      connected() ) );
+    connect( net,  SIGNAL( disconnected() ),
+             this, SLOT(   disconnected() ) );
+    connect( net,  SIGNAL(     welcomed() ),
+             this, SLOT(       welcomed() ) );
 
-    RELAY_NET_SIGN( connected() );
-    RELAY_NET_SIGN( disconnected() );
-    RELAY_NET_SIGN( welcomed() );
+#define RELAY_NET_SIGN(sign) \
+    connect( net,            SIGNAL( sign ), \
+             pluginManager_, SLOT(   sign ) )
+
     RELAY_NET_SIGN( motdReceived( const QString &motd, Irc::Buffer *buffer ));
     RELAY_NET_SIGN( joined( const QString &origin, Irc::Buffer *buffer ) );
     RELAY_NET_SIGN( parted( const QString &origin, const QString &message,
