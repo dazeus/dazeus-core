@@ -30,34 +30,6 @@ PluginManager::~PluginManager()
 
 
 /**
- * @brief welcomed() handler.
- *
- * This method is called when DaVinci finishes a handshake with the IRC server.
- */
-void PluginManager::welcomed( Network &n )
-{
-  foreach( Plugin *p, plugins_ )
-  {
-    p->welcomed( n );
-  }
-}
-
-
-/**
- * @brief connected() handler.
- *
- * This method is called when DaVinci connects to an IRC server, before authorization.
- */
-void PluginManager::connected( Network &n, const Server &s )
-{
-  foreach( Plugin *p, plugins_ )
-  {
-    p->connected( n, s );
-  }
-}
-
-
-/**
  * @brief Initialises plugins.
  *
  * This method takes all configuration from the configuration file, tries to
@@ -101,6 +73,68 @@ bool PluginManager::isInitialized() const
 
 
 /**
+ * @brief Unloads all modules and resets this object.
+ */
+void PluginManager::reset()
+{
+  // TODO
+}
+
+/**
+ * @brief Set the configuration of this object.
+ * MUST be called before initialize().
+ */
+void PluginManager::setConfig( Config *c )
+{
+  config_ = c;
+  connect( c,    SIGNAL( configReloaded() ),
+           this, SLOT(       initialize() ) );
+}
+
+
+
+/******* ADDITIONAL HANDLERS **********/
+
+/**
+ * @brief welcomed() handler.
+ *
+ * This method is called when DaVinci finishes a handshake with the IRC server.
+ */
+void PluginManager::welcomed( Network &n )
+{
+  foreach( Plugin *p, plugins_ )
+  {
+    p->welcomed( n );
+  }
+}
+
+/**
+ * @brief connected() handler.
+ *
+ * This method is called when DaVinci connects to an IRC server, before authorization.
+ */
+void PluginManager::connected( Network &n, const Server &s )
+{
+  foreach( Plugin *p, plugins_ )
+  {
+    p->connected( n, s );
+  }
+}
+
+/**
+ * @brief disconnected() handler.
+ *
+ * This method is called when the connection is broken between DaVinci and an IRC server.
+ */
+void PluginManager::disconnected( Network &n )
+{
+  foreach( Plugin *p, plugins_ )
+  {
+    p->disconnected( n );
+  }
+}
+
+/**
  * @brief Joined channel handler.
  *
  * This method is called when someone (including ourselves) joins a channel.
@@ -129,21 +163,3 @@ void PluginManager::parted( const QString &w, const QString &message, Irc::Buffe
   }
 }
 
-/**
- * @brief Unloads all modules and resets this object.
- */
-void PluginManager::reset()
-{
-  // TODO
-}
-
-/**
- * @brief Set the configuration of this object.
- * MUST be called before initialize().
- */
-void PluginManager::setConfig( Config *c )
-{
-  config_ = c;
-  connect( c,    SIGNAL( configReloaded() ),
-           this, SLOT(       initialize() ) );
-}
