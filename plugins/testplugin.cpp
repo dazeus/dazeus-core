@@ -38,14 +38,14 @@ void TestPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel 
 {
   User u( who, &net );
   qDebug() << "User " << u << " joined channel " << channel;
-  if( u.isMe() )
+  /* if( u.isMe() )
   {
     channel->message( "Hi all!" );
   }
   else
   {
     channel->message( "Hi " + u.nick() + "!" );
-  }
+  } */
 }
 
 void TestPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
