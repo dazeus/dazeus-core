@@ -174,36 +174,36 @@ bool DaVinci::loadConfig()
     connect( net,            SIGNAL( sign ), \
              pluginManager_, SLOT(   sign ) )
 
-    RELAY_NET_SIGN( motdReceived( const QString &motd, Irc::Buffer *buffer ));
-    RELAY_NET_SIGN( joined( const QString &origin, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( parted( const QString &origin, const QString &message,
-                          Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( quit(   const QString &origin, const QString &message,
-                          Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( nickChanged( const QString &origin, const QString &nick,
-                          Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( modeChanged( const QString &origin, const QString &mode,
-                          const QString &args, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( topicChanged( const QString &origin, const QString &topic,
-                          Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( invited( const QString &origin, const QString &receiver,
-                          const QString &channel, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( kicked( const QString &origin, const QString &nick,
-                          const QString &message, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( messageReceived( const QString &origin,
-                          const QString &message, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( noticeReceived( const QString &origin,
-                          const QString &notice, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( ctcpRequestReceived( const QString &origin,
-                          const QString &request, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( ctcpReplyReceived( const QString &origin,
-                          const QString &reply, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( ctcpActionReceived( const QString &origin,
-                          const QString &action, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( numericMessageReceived( const QString &origin, uint code,
-                          const QStringList &params, Irc::Buffer *buffer ) );
-    RELAY_NET_SIGN( unknownMessageReceived( const QString &origin,
-                          const QStringList &params, Irc::Buffer *buffer ) );
+    RELAY_NET_SIGN( motdReceived( const QString&, Irc::Buffer* ));
+    RELAY_NET_SIGN( joined( const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( parted( const QString&, const QString&,
+                          Irc::Buffer* ) );
+    RELAY_NET_SIGN( quit(   const QString&, const QString&,
+                          Irc::Buffer* ) );
+    RELAY_NET_SIGN( nickChanged( const QString&, const QString&,
+                          Irc::Buffer* ) );
+    RELAY_NET_SIGN( modeChanged( const QString&, const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( topicChanged( const QString&, const QString&,
+                          Irc::Buffer* ) );
+    RELAY_NET_SIGN( invited( const QString&, const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( kicked( const QString&, const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( messageReceived( const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( noticeReceived( const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( ctcpRequestReceived( const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( ctcpReplyReceived( const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( ctcpActionReceived( const QString&,
+                          const QString&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( numericMessageReceived( const QString&, uint,
+                          const QStringList&, Irc::Buffer* ) );
+    RELAY_NET_SIGN( unknownMessageReceived( const QString&,
+                          const QStringList&, Irc::Buffer* ) );
 
 #undef RELAY_NET_SIGN
 

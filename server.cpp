@@ -33,6 +33,8 @@ Server::Server()
            this, SLOT(    slotBufferAdded(Irc::Buffer*)));
   connect( this, SIGNAL(    bufferRemoved(Irc::Buffer*)),
            this, SLOT(  slotBufferRemoved(Irc::Buffer*)));
+
+  setOptions( options() & ~Irc::Session::EchoMessages );
 }
 
 

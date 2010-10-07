@@ -7,6 +7,8 @@
 #include "pluginmanager.h"
 #include "testplugin.h"
 #include "perlplugin.h"
+#include <IrcBuffer>
+#include <IrcSession>
 
 /**
  * @brief Constructor.

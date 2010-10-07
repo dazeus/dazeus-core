@@ -25,6 +25,8 @@ class PerlPlugin : public Plugin
     virtual void joined( Network &net, const QString &who, Irc::Buffer *b );
     virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *b );
+    virtual void messageReceived( Network &net, const QString &origin, const QString &message,
+                                  Irc::Buffer *buffer );
 
     // Do *not* call from the outside!
     void       emoteCallback  ( const char *network, const char *receiver, const char *body );

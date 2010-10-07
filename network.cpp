@@ -200,13 +200,9 @@ Network *Network::fromBuffer( Irc::Buffer *b )
   // Irc::Session that has created this buffer.
   foreach( Network *n, networks_.values() )
   {
-    foreach( ServerConfig *s, n->servers() )
+    if( n->activeServer() == qobject_cast<Server*>( b->session() ) )
     {
-      if( Server::fromServerConfig( s )
-       == qobject_cast<Server*>( b->session() ) )
-      {
-        return n;
-      }
+      return n;
     }
   }
   return 0;
