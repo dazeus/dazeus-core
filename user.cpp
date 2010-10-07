@@ -57,8 +57,7 @@ const QString &User::ident() const
 
 bool User::isMe() const
 {
-  // TODO
-  return true;
+  return network()->user()->nick() == nick();
 }
 
 

@@ -42,6 +42,10 @@ void TestPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel 
   {
     channel->message( "Hi all!" );
   }
+  else
+  {
+    channel->message( "Hi " + u.nick() + "!" );
+  }
 }
 
 void TestPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
