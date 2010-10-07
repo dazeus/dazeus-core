@@ -51,7 +51,15 @@ sub message {
   {
     for my $pri (0..3)
     {
-      if( my $message = $mod->said($mess, $pri) )
+      my $message;
+      eval { $message = $mod->said($mess,$pri) };
+      if( $@ )
+      {
+        warn("Error executing $mod ->said(): $@\n" );
+        $mod->say({channel => $receiver, body => "Error executing $mod ->said(): $@\n" });
+        next NEXTMOD;
+      }
+      elsif( $message )
       {
         if( $message ne "1" )
         {
@@ -82,10 +90,10 @@ sub loadModule {
     return 0;
   }
 
-  eval "do \"$module.pm\";";
+  eval "do \"DaZeus2Module.pm\"; do \"$module.pm\";";
   if( $@ )
   {
-    warn($@);
+    warn("Error loading modules: $@");
     return 0;
   }
   $module = "DaZeus2Module::$module";

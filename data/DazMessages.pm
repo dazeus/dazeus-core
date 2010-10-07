@@ -18,6 +18,7 @@ package DaZeus2Module::DazMessages;
 use strict;
 use warnings;
 no warnings 'redefine';
+use DaZeus2Module;
 use base qw(DaZeus2Module);
 use MIME::Base64;
 

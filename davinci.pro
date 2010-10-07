@@ -7,7 +7,7 @@
 QT       += network sql
 QT       -= gui
 
-TARGET    = davinci
+TARGET    = data/davinci
 CONFIG   += console libircclient-qt
 CONFIG   -= app_bundle
 

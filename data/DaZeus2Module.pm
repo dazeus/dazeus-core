@@ -73,7 +73,13 @@ sub store_keys {
 sub say {
   my $self = shift;
   my $args = $_[0];
-  DaZeus2::privmsg($uniqueid, $args->{channel}, $args->{body});
+  eval {
+    DaZeus2::privmsg($uniqueid, $args->{channel}, $args->{body});
+  };
+  if( $@ )
+  {
+    warn "Error executing privmsg(): $@\n";
+  }
 }
 
 sub emote {
