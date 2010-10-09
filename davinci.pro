@@ -15,8 +15,8 @@ TEMPLATE = app
 OBJECTS_DIR = build
 
 SOURCES += main.cpp
-SOURCES += davinci.cpp network.cpp config.cpp user.cpp server.cpp
-HEADERS += davinci.h network.h config.h user.h server.h
+SOURCES += davinci.cpp network.cpp config.cpp user.cpp server.cpp database.cpp
+HEADERS += davinci.h network.h config.h user.h server.h database.h
 # plugins
 SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
