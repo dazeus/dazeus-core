@@ -15,8 +15,19 @@ Config::Config()
 : QObject()
 , nickName_( "DaVinci" )
 , error_( "" )
+, settings_( 0 )
 {
+  settings_ = new QSettings("./dazeus.conf", QSettings::IniFormat);
 }
+
+/**
+ * @brief Destructor
+ */
+Config::~Config()
+{
+  delete settings_;
+}
+
 
 /**
  * @brief Returns the last error triggered by this class.

@@ -9,6 +9,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QList>
+#include <QtCore/QSettings>
 
 /**
  * These structs are only for configuration as it is in the configuration
@@ -40,6 +41,7 @@ class Config : public QObject
 
   public:
         Config();
+       ~Config();
   bool  loadFromFile( QString fileName );
 
   const QList<NetworkConfig*> &networks();
@@ -55,6 +57,7 @@ class Config : public QObject
   QList<NetworkConfig*> networks_;
   QString               nickName_;
   QString               error_;
+  QSettings            *settings_;
 };
 
 #endif
