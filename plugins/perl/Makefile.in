@@ -18,19 +18,16 @@ DYNA_LINK_HINTS=${$(PERL) -MExtUtils::Embed -e '$_=ldopts(true);print if s/^.*\s
 all: embedperl.a
 
 # because you can't add .a's into .a's, embedperl first copies libperl.a
-embedperl.a: DaZeus2.o embedperl.o xsinit.o main.o DynaLoader.o
+embedperl.a: DaZeus2.o embedperl.o xsinit.o DynaLoader.o
 	cp "$(PERLLIBDIR)"/libperl.a embedperl.a
 	chmod 0644 embedperl.a
-	$(AR) cur embedperl.a main.o DaZeus2.o embedperl.o xsinit.o
+	$(AR) cur embedperl.a DaZeus2.o embedperl.o xsinit.o
 	-[ -n "$(DYNA_LINK_HINTS)" ] && $(AR) cur DynaLoader.o
 	$(RANLIB) embedperl.a
 
 DynaLoader.o:
 	-[ -n "$(DYNA_LINK_HINTS)" ] && ar x $(DYNA_LINK_HINTS)
 	touch DynaLoader.o # create if nonexistant
-
-main.o: main.cpp
-	$(CXX) $(CFLAGS) -c -o main.o main.cpp -I "$(PERLINCDIR)"
 
 DaZeus2.c: DaZeus2.xs
 	xsubpp DaZeus2.xs >DaZeus2.c
