@@ -98,7 +98,7 @@ const QList<NetworkConfig*> &Config::networks()
   qDebug() << "Child keys: " << settings_->childKeys();
   qDebug() << "Child groups:  " << settings_->childGroups();
 
-  QString defaultNickname = settings_->value("generic/nickname").toString();
+  QString defaultNickname = settings_->value("nickname").toString();
   QHash<QString,NetworkConfig*> networks;
   QMultiHash<QString,ServerConfig*> servers;
   foreach( const QString &category, settings_->childGroups() )
@@ -121,7 +121,7 @@ const QList<NetworkConfig*> &Config::networks()
       nc->autoConnect   = settings_->value(category + "/autoconnect",
                                           false).toBool();
       nc->nickName      = settings_->value(category + "/nickname",
-                                          nickName_).toString();
+                                          defaultNickname).toString();
       networks.insert(networkName, nc);
     }
     else if( category.toLower().startsWith("server") )
