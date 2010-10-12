@@ -17,7 +17,6 @@
  */
 Config::Config()
 : QObject()
-, nickName_( "DaVinci" )
 , error_( "" )
 , settings_( 0 )
 {
@@ -99,6 +98,9 @@ const QList<NetworkConfig*> &Config::networks()
   qDebug() << "Child groups:  " << settings_->childGroups();
 
   QString defaultNickname = settings_->value("nickname").toString();
+  QString defaultUsername = settings_->value("username").toString();
+  QString defaultFullname = settings_->value("fullname").toString();
+
   QHash<QString,NetworkConfig*> networks;
   QMultiHash<QString,ServerConfig*> servers;
   foreach( const QString &category, settings_->childGroups() )
@@ -117,11 +119,18 @@ const QList<NetworkConfig*> &Config::networks()
       NetworkConfig *nc = new NetworkConfig;
       nc->name          = networkName;
       nc->displayName   = settings_->value(category + "/displayname",
-                                          networkName).toString();
+                                           networkName).toString();
       nc->autoConnect   = settings_->value(category + "/autoconnect",
-                                          false).toBool();
+                                           false).toBool();
       nc->nickName      = settings_->value(category + "/nickname",
-                                          defaultNickname).toString();
+                                           defaultNickname).toString();
+      nc->userName      = settings_->value(category + "/username",
+                                           defaultUsername).toString();
+      nc->fullName      = settings_->value(category + "/fullname",
+                                           defaultFullname).toString();
+      nc->password      = settings_->value(category + "/password",
+                                           "").toString();
+
       networks.insert(networkName, nc);
     }
     else if( category.toLower().startsWith("server") )

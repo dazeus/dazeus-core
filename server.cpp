@@ -57,7 +57,10 @@ void Server::connectToServer()
 {
   qDebug() << "Connecting to server" << this;
   Q_ASSERT( !config_->network->nickName.isEmpty() );
-  Irc::Session::setNick( config_->network->nickName );
+  Irc::Session::setNick(         config_->network->nickName );
+  Irc::Session::setIdent(        config_->network->userName );
+  Irc::Session::setRealName(     config_->network->fullName );
+  Irc::Session::setPassword(     config_->network->password );
   Irc::Session::connectToServer( config_->host, config_->port );
 }
 

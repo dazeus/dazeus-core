@@ -23,6 +23,9 @@ struct NetworkConfig {
   QString name;
   QString displayName;
   QString nickName;
+  QString userName;
+  QString fullName;
+  QString password;
   QList<ServerConfig*> servers;
   bool autoConnect;
 };
@@ -55,7 +58,6 @@ class Config : public QObject
   private:
   QList<NetworkConfig*> oldNetworks_;
   QList<NetworkConfig*> networks_;
-  QString               nickName_;
   QString               error_;
   QSettings            *settings_;
 };
