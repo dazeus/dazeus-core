@@ -33,9 +33,9 @@ QDebug operator<<(QDebug dbg, const Network *n)
 Network::Network( const QString &name )
 : QObject()
 , activeServer_(0)
+, database_(0)
 , config_(0)
 , me_(0)
-, database_(0)
 {
   Q_ASSERT( !networks_.contains( name ) );
   networks_.insert( name, this );
