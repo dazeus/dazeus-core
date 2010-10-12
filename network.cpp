@@ -39,7 +39,7 @@ Network::Network( const QString &name )
 {
   Q_ASSERT( !networks_.contains( name ) );
   networks_.insert( name, this );
-  database_ = new Database();
+  database_ = new Database( name );
 }
 
 

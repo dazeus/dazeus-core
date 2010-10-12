@@ -13,10 +13,16 @@ class Database : public QObject
   Q_OBJECT
 
   public:
-                    Database();
+                    Database( const QString &network );
                    ~Database();
 
+    const QString  &network() const;
   public slots:
+
+
+  private:
+    QString network_;
+
 };
 
 #endif
