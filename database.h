@@ -8,6 +8,7 @@
 
 #include <QtCore/QObject>
 #include <QtSql/QSqlDatabase>
+#include <QtSql/QSqlError>
 
 class QVariant;
 struct DatabaseConfig;
@@ -46,12 +47,14 @@ class Database : public QObject
          ~Database();
 
     static Database *fromConfig(const DatabaseConfig *dbc);
+    static QString   typeToQtPlugin(const QString &type);
 
     const QString  &network() const;
     bool            open();
 
     bool            createTable();
     bool            tableExists() const;
+    QSqlError       lastError() const;
 
     QVariant    property( const QString &variable,
                           const QString &userScope = QString(),

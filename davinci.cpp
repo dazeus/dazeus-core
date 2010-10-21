@@ -172,6 +172,12 @@ bool DaVinci::loadConfig()
   const DatabaseConfig *dbc = config_->databaseConfig();
   database_ = Database::fromConfig(dbc);
 
+  if( !database_->open() )
+  {
+    qWarning() << "Could not connect to database: " << database_->lastError();
+    return false;
+  }
+
   foreach( NetworkConfig *netconf, networks )
   {
     Network *net = Network::fromNetworkConfig( netconf );

@@ -18,7 +18,7 @@ Database::Database( const QString &network, const QString &dbType,
                     const QString &password, const QString &hostname,
                     int port, const QString &options )
 : network_(network.toLower())
-, db_(QSqlDatabase::addDatabase(dbType))
+, db_(QSqlDatabase::addDatabase(typeToQtPlugin(dbType)))
 {
   db_.setDatabaseName( databaseName );
   db_.setUserName( username );
@@ -44,6 +44,14 @@ Database *Database::fromConfig(const DatabaseConfig *dbc)
   return new Database( "", dbc->type, dbc->database, dbc->username,
                            dbc->password, dbc->hostname, dbc->port,
                            dbc->options );
+}
+
+/**
+ * @brief Returns the last error in the QSqlDatabase object.
+ */
+QSqlError Database::lastError() const
+{
+  return db_.lastError();
 }
 
 /**
@@ -154,4 +162,15 @@ bool Database::createTable()
 bool Database::tableExists() const
 {
 #warning todo
+}
+
+QString Database::typeToQtPlugin(const QString &type)
+{
+  if( type.toLower() == "sqlite" )
+    return "QSQLITE";
+  if( type.toLower() == "mysql" )
+    return "QMYSQL";
+
+  qWarning() << "typeToQtPlugin: Unknown type: " << type;
+  return "";
 }

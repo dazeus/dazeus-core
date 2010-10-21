@@ -4,10 +4,12 @@
  */
 
 #include "config.h"
+#include "database.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QDebug>
 #include <QtCore/QStringList>
+#include <QtSql/QSqlDatabase>
 
 /**
  * @brief Constructor
@@ -106,26 +108,32 @@ const QList<NetworkConfig*> &Config::networks()
     return networks_;
 
   // Database settings
-  bool valid = false;
+  bool valid = true;
   settings_->beginGroup("database");
   DatabaseConfig *dbc = new DatabaseConfig;
   dbc->type     = settings_->value("type").toString();
   dbc->hostname = settings_->value("hostname").toString();
   QString dbRawPort = settings_->value("port").toString();
-  dbc->port     = dbRawPort.toUInt(&valid);
+  dbc->port     = dbRawPort.isEmpty() ? 0 : dbRawPort.toUInt(&valid);
   dbc->username = settings_->value("username").toString();
   dbc->password = settings_->value("password").toString();
   dbc->database = settings_->value("database").toString();
   dbc->options  = settings_->value("options").toString();
-  delete databaseConfig_;
-  databaseConfig_ = dbc;
-  settings_->endGroup();
 
   if(!valid) {
     qWarning() << "Database port is not a valid number: " << dbRawPort;
     qWarning() << "Assuming default port.";
-    dbRawPort.clear();
+    dbc->port = 0;
   }
+
+  if( !QSqlDatabase::isDriverAvailable( Database::typeToQtPlugin(dbc->type) )) {
+    qWarning() << "No Qt plugin loaded for database type " << dbc->type;
+    qWarning() << "You will likely get database errors later.";
+  }
+
+  delete databaseConfig_;
+  databaseConfig_ = dbc;
+  settings_->endGroup();
 
   QString defaultNickname = settings_->value("nickname").toString();
   QString defaultUsername = settings_->value("username").toString();
@@ -184,7 +192,8 @@ const QList<NetworkConfig*> &Config::networks()
 
       qDebug() << "Server for network: " << networkName;
     }
-    else if( category.toLower() != "generic" )
+    else if( category.toLower() != "generic"
+          && category.toLower() != "database" )
     {
       qWarning() << "Warning: Configuration category name not recognized: "
                  << category;
