@@ -38,6 +38,16 @@ struct ServerConfig {
   bool ssl;
 };
 
+struct DatabaseConfig {
+  QString type;
+  QString hostname;
+  quint16 port;
+  QString username;
+  QString password;
+  QString database;
+  QString options;
+};
+
 class Config : public QObject
 {
   Q_OBJECT
@@ -49,6 +59,7 @@ class Config : public QObject
 
   const QList<NetworkConfig*> &networks();
   const QString               &lastError();
+  const DatabaseConfig        *databaseConfig() const;
 
   signals:
   void  beforeConfigReload();
@@ -60,6 +71,7 @@ class Config : public QObject
   QList<NetworkConfig*> networks_;
   QString               error_;
   QSettings            *settings_;
+  DatabaseConfig       *databaseConfig_;
 };
 
 #endif

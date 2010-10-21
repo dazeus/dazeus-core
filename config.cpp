@@ -19,6 +19,7 @@ Config::Config()
 : QObject()
 , error_( "" )
 , settings_( 0 )
+, databaseConfig_( 0 )
 {
 }
 
@@ -30,6 +31,17 @@ Config::~Config()
   delete settings_;
 }
 
+
+/**
+ * @brief Return database configuration.
+ *
+ * Currently, you *must* call networks() before calling databaseConfig().
+ * This is considered a bug.
+ */
+const DatabaseConfig *Config::databaseConfig() const
+{
+  return databaseConfig_;
+}
 
 /**
  * @brief Returns the last error triggered by this class.
@@ -93,9 +105,27 @@ const QList<NetworkConfig*> &Config::networks()
   if( networks_.count() > 0 )
     return networks_;
 
-  qDebug() << "Keys in settings: " << settings_->allKeys();
-  qDebug() << "Child keys: " << settings_->childKeys();
-  qDebug() << "Child groups:  " << settings_->childGroups();
+  // Database settings
+  bool valid = false;
+  settings_->beginGroup("database");
+  DatabaseConfig *dbc = new DatabaseConfig;
+  dbc->type     = settings_->value("type").toString();
+  dbc->hostname = settings_->value("hostname").toString();
+  QString dbRawPort = settings_->value("port").toString();
+  dbc->port     = dbRawPort.toUInt(&valid);
+  dbc->username = settings_->value("username").toString();
+  dbc->password = settings_->value("password").toString();
+  dbc->database = settings_->value("database").toString();
+  dbc->options  = settings_->value("options").toString();
+  delete databaseConfig_;
+  databaseConfig_ = dbc;
+  settings_->endGroup();
+
+  if(!valid) {
+    qWarning() << "Database port is not a valid number: " << dbRawPort;
+    qWarning() << "Assuming default port.";
+    dbRawPort.clear();
+  }
 
   QString defaultNickname = settings_->value("nickname").toString();
   QString defaultUsername = settings_->value("username").toString();
