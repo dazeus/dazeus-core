@@ -26,7 +26,6 @@ DaVinci::DaVinci( QString configFileName )
 {
   if( !configFileName_.isEmpty() )
     loadConfig();
-  connectDatabase();
 }
 
 
@@ -78,9 +77,24 @@ bool DaVinci::configLoaded() const
  *
  * Does nothing if already connected.
  */
-void DaVinci::connectDatabase()
+bool DaVinci::connectDatabase()
 {
-#warning todo
+  const DatabaseConfig *dbc = config_->databaseConfig();
+  database_ = Database::fromConfig(dbc);
+
+  if( !database_->open() )
+  {
+    qWarning() << "Could not connect to database: " << database_->lastError();
+    return false;
+  }
+}
+
+/**
+ * @brief Return the database.
+ */
+Database *DaVinci::database() const
+{
+  return database_;
 }
 
 /**
@@ -169,14 +183,8 @@ bool DaVinci::loadConfig()
 
   const QList<NetworkConfig*> &networks = config_->networks();
 
-  const DatabaseConfig *dbc = config_->databaseConfig();
-  database_ = Database::fromConfig(dbc);
-
-  if( !database_->open() )
-  {
-    qWarning() << "Could not connect to database: " << database_->lastError();
+  if( !connectDatabase())
     return false;
-  }
 
   foreach( NetworkConfig *netconf, networks )
   {

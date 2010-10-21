@@ -28,11 +28,13 @@ class DaVinci : public QObject
     QString  configFileName() const;
     bool     configLoaded() const;
 
+    Database *database() const;
+
   public slots:
     bool     loadConfig();
     bool     initPlugins();
     void     autoConnect();
-    void     connectDatabase();
+    bool     connectDatabase();
 
   private slots:
     void     resetConfig();
