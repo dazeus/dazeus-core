@@ -11,6 +11,8 @@
 #include <QtCore/QStringList>
 #include <QtSql/QSqlDatabase>
 
+// #define DEBUG
+
 /**
  * @brief Constructor
  *
@@ -146,7 +148,9 @@ const QList<NetworkConfig*> &Config::networks()
     if( category.toLower().startsWith("network") )
     {
       QString networkName = category.mid(8).toLower();
+#ifdef DEBUG
       qDebug() << "Network: " << networkName;
+#endif
       if( servers.contains(networkName) )
       {
         qWarning() << "Warning: Two network blocks for " << networkName
@@ -190,7 +194,9 @@ const QList<NetworkConfig*> &Config::networks()
       sc->network      = networks[networkName];
       networks[networkName]->servers.append( sc );
 
+#ifdef DEBUG
       qDebug() << "Server for network: " << networkName;
+#endif
     }
     else if( category.toLower() != "generic"
           && category.toLower() != "database" )
