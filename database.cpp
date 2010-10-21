@@ -4,6 +4,7 @@
  */
 
 #include "database.h"
+#include "config.h"
 #include <QtCore/QVariant>
 #include <QtCore/QDebug>
 #include <QtSql/QSqlQuery>
@@ -33,6 +34,16 @@ Database::Database( const QString &network, const QString &dbType,
  */
 Database::~Database()
 {
+}
+
+/**
+ * @brief Create a Database from database configuration.
+ */
+Database *Database::fromConfig(const DatabaseConfig *dbc)
+{
+  return new Database( "", dbc->type, dbc->database, dbc->username,
+                           dbc->password, dbc->hostname, dbc->port,
+                           dbc->options );
 }
 
 /**

@@ -10,6 +10,7 @@
 #include <QtSql/QSqlDatabase>
 
 class QVariant;
+struct DatabaseConfig;
 
 enum DatabaseScope
 {
@@ -43,6 +44,8 @@ class Database : public QObject
                     const QString &password, const QString &hostname,
                     int port, const QString &options );
          ~Database();
+
+    static Database *fromConfig(const DatabaseConfig *dbc);
 
     const QString  &network() const;
     bool            open();
