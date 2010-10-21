@@ -4,7 +4,6 @@
  */
 
 #include "network.h"
-#include "database.h"
 #include "server.h"
 #include "config.h"
 #include "user.h"
@@ -33,13 +32,11 @@ QDebug operator<<(QDebug dbg, const Network *n)
 Network::Network( const QString &name )
 : QObject()
 , activeServer_(0)
-, database_(0)
 , config_(0)
 , me_(0)
 {
   Q_ASSERT( !networks_.contains( name ) );
   networks_.insert( name, this );
-  database_ = new Database( name, "", "", "", "", "", 0, "" );
 }
 
 
@@ -51,7 +48,6 @@ Network::~Network()
   disconnectFromNetwork();
   Q_ASSERT( networks_.contains( config_->name ) && getNetwork( config_->name ) == this );
   networks_.remove( config_->name );
-  delete database_;
 }
 
 

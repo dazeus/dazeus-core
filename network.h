@@ -14,7 +14,6 @@
 #include "user.h"
 
 class Server;
-class Database;
 class Network;
 
 struct ServerConfig;
@@ -96,7 +95,6 @@ class Network : public QObject
  
                           Network( const QString &name );
     Server               *activeServer_;
-    Database             *database_;
     const NetworkConfig  *config_;
     static QHash<QString,Network*> networks_;
     User                 *me_;
