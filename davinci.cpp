@@ -6,6 +6,7 @@
 #include <QtCore/QTimer>
 
 #include "davinci.h"
+#include "database.h"
 #include "network.h"
 #include "config.h"
 #include "plugins/pluginmanager.h"
@@ -21,9 +22,11 @@ DaVinci::DaVinci( QString configFileName )
 , config_( 0 )
 , configFileName_( configFileName )
 , pluginManager_( new PluginManager() )
+, database_( 0 )
 {
   if( !configFileName_.isEmpty() )
     loadConfig();
+  connectDatabase();
 }
 
 
@@ -69,6 +72,16 @@ bool DaVinci::configLoaded() const
   return config_ != 0;
 }
 
+
+/**
+ * @brief Start connecting to the database.
+ *
+ * Does nothing if already connected.
+ */
+void DaVinci::connectDatabase()
+{
+#warning todo
+}
 
 /**
  * @brief We received the IRC 'welcomed' message from a server.
@@ -155,6 +168,10 @@ bool DaVinci::loadConfig()
     return false;
 
   const QList<NetworkConfig*> &networks = config_->networks();
+
+  const DatabaseConfig *dbc = config_->databaseConfig();
+  database_ = Database::fromConfig(dbc);
+
   foreach( NetworkConfig *netconf, networks )
   {
     Network *net = Network::fromNetworkConfig( netconf );

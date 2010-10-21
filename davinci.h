@@ -15,6 +15,7 @@
 class Config;
 class PluginManager;
 class Network;
+class Database;
 
 class DaVinci : public QObject
 {
@@ -31,6 +32,7 @@ class DaVinci : public QObject
     bool     loadConfig();
     bool     initPlugins();
     void     autoConnect();
+    void     connectDatabase();
 
   private slots:
     void     resetConfig();
@@ -42,6 +44,7 @@ class DaVinci : public QObject
     Config          *config_;
     QString          configFileName_;
     PluginManager   *pluginManager_;
+    Database        *database_;
     QList<Network*>  networks_;
 };
 
