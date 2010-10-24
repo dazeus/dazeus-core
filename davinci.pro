@@ -20,6 +20,8 @@ HEADERS += davinci.h network.h config.h user.h server.h database.h
 # plugins
 SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
+SOURCES += plugins/statistics.cpp
+HEADERS += plugins/statistics.h
 
 # perl plugin
 SOURCES += plugins/perlplugin.cpp

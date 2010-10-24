@@ -7,6 +7,7 @@
 #include "pluginmanager.h"
 #include "testplugin.h"
 #include "perlplugin.h"
+#include "statistics.h"
 #include <IrcBuffer>
 #include <IrcSession>
 
@@ -56,6 +57,10 @@ bool PluginManager::initialize()
   Plugin *plugin2 = new PerlPlugin();
   plugin2->init();
   plugins_.append( plugin2 );
+
+  Plugin *plugin3 = new Statistics();
+  plugin3->init();
+  plugins_.append( plugin3 );
 
   initialized_ = true;
   return true;
