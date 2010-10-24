@@ -26,6 +26,13 @@ QVariant Plugin::get( const QString &name, VariableScope *scope ) const
 
 
 /*******STUB HANDLERS********/
+void Plugin::init() {}
+void Plugin::welcomed( Network &net ) {}
+void Plugin::connected( Network &net, const Server &serv ) {}
+void Plugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {}
+void Plugin::parted( Network &net, const QString &who, const QString &leaveMessage,
+                         Irc::Buffer *channel ) {}
+QHash<QString, Plugin::VariableScope> Plugin::variables() {}
 void Plugin::disconnected( Network& ) {}
 void Plugin::motdReceived( Network&, const QString&, Irc::Buffer* ) {}
 void Plugin::quit(   Network&, const QString&, const QString&,

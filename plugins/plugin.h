@@ -53,13 +53,13 @@ class Plugin : public QObject
   };
 
   public slots:
-    virtual void init() = 0;
-    virtual void welcomed( Network &net ) = 0;
-    virtual void connected( Network &net, const Server &serv ) = 0;
+    virtual void init();
+    virtual void welcomed( Network &net );
+    virtual void connected( Network &net, const Server &serv );
     virtual void disconnected( Network &net );
-    virtual void joined( Network &net, const QString &who, Irc::Buffer *channel ) = 0;
+    virtual void joined( Network &net, const QString &who, Irc::Buffer *channel );
     virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
-                         Irc::Buffer *channel ) = 0;
+                         Irc::Buffer *channel );
 
     virtual void motdReceived( Network &net, const QString &motd, Irc::Buffer *buffer );
     virtual void quit(   Network &net, const QString &origin, const QString &message,
@@ -92,7 +92,7 @@ class Plugin : public QObject
                                        Irc::Buffer *buffer );
 
   protected slots:
-    virtual QHash<QString, VariableScope> variables() = 0;
+    virtual QHash<QString, VariableScope> variables();
 
     void     set( VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, VariableScope *s = NULL ) const;
