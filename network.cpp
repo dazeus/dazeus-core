@@ -19,9 +19,14 @@ QDebug operator<<(QDebug dbg, const Network &n)
 
 QDebug operator<<(QDebug dbg, const Network *n)
 {
-  const NetworkConfig *nc = n->config();
-  dbg.nospace() << "Network[" << nc->displayName << ","
-                              << n->activeServer() << "]";
+  dbg.nospace() << "Network[";
+  if( n == 0 ) {
+    dbg.nospace() << "0";
+  } else {
+    const NetworkConfig *nc = n->config();
+    dbg.nospace() << nc->displayName << "," << n->activeServer();
+  }
+  dbg.nospace() << "]";
 
   return dbg.maybeSpace();
 }

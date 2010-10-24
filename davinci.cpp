@@ -87,6 +87,8 @@ bool DaVinci::connectDatabase()
     qWarning() << "Could not connect to database: " << database_->lastError();
     return false;
   }
+
+  return true;
 }
 
 /**

@@ -18,8 +18,14 @@ QDebug operator<<(QDebug dbg, const Server &s)
 
 QDebug operator<<(QDebug dbg, const Server *s)
 {
-  const ServerConfig *sc = s->config();
-  dbg.nospace() << "Server[" << sc->host << ":" << sc->port << "]";
+  dbg.nospace() << "Server[";
+  if( s == 0 ) {
+    dbg.nospace() << "0";
+  } else {
+    const ServerConfig *sc = s->config();
+    dbg.nospace() << sc->host << ":" << sc->port;
+  }
+  dbg.nospace() << "]";
 
   return dbg.maybeSpace();
 }
