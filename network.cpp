@@ -97,6 +97,8 @@ void Network::connectToNetwork( bool reconnect )
   if( !reconnect && activeServer_ )
     return;
 
+  qDebug() << "Connecting to network: " << this;
+
   // Check if there *is* a server to use
   if( servers().count() == 0 )
   {
