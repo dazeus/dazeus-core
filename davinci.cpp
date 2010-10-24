@@ -39,6 +39,7 @@ DaVinci::~DaVinci()
     n->disconnectFromNetwork( Network::ShutdownReason );
     n->deleteLater();
   }
+  networks_.clear();
 
   resetConfig();
   delete pluginManager_;
