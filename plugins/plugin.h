@@ -49,7 +49,7 @@ class Plugin : public QObject
     /// The variable binds to the channel and network specifically.
     ChannelScope = NetworkScope | 0x4,
     /// The variable doesn't bind and is the same everywhere.
-    EverywhereScope = 0x8,
+    GlobalScope = 0x8,
   };
 
   public slots:
@@ -94,8 +94,8 @@ class Plugin : public QObject
   protected slots:
     virtual QHash<QString, VariableScope> variables() = 0;
 
-    void     set( const QString &name, const QVariant &value );
-    QVariant get( const QString &name ) const;
+    void     set( VariableScope s, const QString &name, const QVariant &value );
+    QVariant get( const QString &name, VariableScope *s = NULL ) const;
 
   private:
     User                          *activeUser_;

@@ -13,12 +13,14 @@ Plugin::~Plugin()
 {}
 
 
-void Plugin::set( const QString &name, const QVariant &value )
+void Plugin::set( VariableScope scope, const QString &name, const QVariant &value )
 {
 }
 
-QVariant Plugin::get( const QString &name ) const
+QVariant Plugin::get( const QString &name, VariableScope *scope ) const
 {
+  if( scope != NULL )
+    *scope = GlobalScope;
   return QVariant();
 }
 
