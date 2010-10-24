@@ -11,6 +11,8 @@
 #include "config.h"
 #include "plugins/pluginmanager.h"
 
+// #define DEBUG
+
 /**
  * @brief Constructor.
  *
@@ -54,12 +56,24 @@ DaVinci::~DaVinci()
  */
 void DaVinci::autoConnect()
 {
+#ifdef DEBUG
+  qDebug() << "DaVinci::autoConnect() called: looking for networks to connect to";
+#endif
   foreach( Network *n, networks_ )
   {
     if( n->autoConnectEnabled() )
     {
+#ifdef DEBUG
+      qDebug() << "Connecting to " << n << " (autoconnect is enabled)";
+#endif
       n->connectToNetwork();
     }
+#ifdef DEBUG
+    else
+    {
+      qDebug() << "Not connecting to " << n << ", autoconnect is disabled.";
+    }
+#endif
   }
 }
 
