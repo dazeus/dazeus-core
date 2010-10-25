@@ -68,6 +68,18 @@ const Context *PluginManager::context() const
 }
 
 /**
+ * @brief Gets a property.
+ * Name must be fully qualified. The nearest scope will be returned in s if
+ * non-null.
+ */
+QVariant PluginManager::get( const QString &name, Plugin::VariableScope *s  ) const
+{
+  if( s != NULL )
+    *s = Plugin::GlobalScope;
+  return QVariant();
+}
+
+/**
  * @brief Initialises plugins.
  *
  * This method takes all configuration from the configuration file, tries to
@@ -118,6 +130,14 @@ bool PluginManager::isInitialized() const
  * @brief Unloads all modules and resets this object.
  */
 void PluginManager::reset()
+{
+  // TODO
+}
+
+/**
+ * @brief Sets a property in the database on given scope.
+ */
+void PluginManager::set( Plugin::VariableScope s, const QString &name, const QVariant &value )
 {
   // TODO
 }

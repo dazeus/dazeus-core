@@ -7,9 +7,9 @@
 #define PLUGINMANAGER_H
 
 #include <QtCore/QObject>
+#include "plugin.h"
 
 class Config;
-class Plugin;
 class User;
 class Network;
 class Server;
@@ -37,6 +37,8 @@ class PluginManager : public QObject
     bool    isInitialized() const;
     Database *database() const;
     const Context *context() const;
+    void     set( Plugin::VariableScope s, const QString &name, const QVariant &value );
+    QVariant get( const QString &name, Plugin::VariableScope *s = NULL ) const;
 
   public slots:
     void    setConfig( Config* );
