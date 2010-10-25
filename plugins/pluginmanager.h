@@ -13,6 +13,7 @@ class Plugin;
 class User;
 class Network;
 class Server;
+class Database;
 
 namespace Irc {
   class Buffer;
@@ -31,9 +32,10 @@ class PluginManager : public QObject
   Q_OBJECT
 
   public:
-            PluginManager();
+            PluginManager( Database *db );
            ~PluginManager();
     bool    isInitialized() const;
+    Database *database() const;
     const Context *context() const;
 
   public slots:
@@ -83,6 +85,7 @@ class PluginManager : public QObject
 
   private:
     Config         *config_;
+    Database       *database_;
     Context        *context_;
     QList<Plugin*>  plugins_;
     bool            initialized_;

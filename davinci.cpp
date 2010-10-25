@@ -23,7 +23,7 @@ DaVinci::DaVinci( QString configFileName )
 : QObject()
 , config_( 0 )
 , configFileName_( configFileName )
-, pluginManager_( new PluginManager() )
+, pluginManager_( 0 )
 , database_( 0 )
 {
   if( !configFileName_.isEmpty() )
@@ -202,6 +202,8 @@ bool DaVinci::loadConfig()
 
   if( !connectDatabase())
     return false;
+  
+  pluginManager_ = new PluginManager( database_ );
 
   foreach( NetworkConfig *netconf, networks )
   {

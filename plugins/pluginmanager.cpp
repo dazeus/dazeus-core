@@ -31,9 +31,10 @@ QDebug operator<<(QDebug dbg, const Context *c)
  *
  * Does nothing.
  */
-PluginManager::PluginManager()
+PluginManager::PluginManager( Database *db )
 : QObject()
 , config_( 0 )
+, database_( db )
 , context_( 0 )
 , initialized_( false )
 {
@@ -180,6 +181,16 @@ void PluginManager::connected( Network &n, const Server &s )
     p->connected( n, s );
   }
   clearContext();
+}
+
+/**
+ * @brief Database getter.
+ *
+ * Returns the database for this PluginManager and set of plugins.
+ */
+Database *PluginManager::database() const
+{
+  return database_;
 }
 
 /**
