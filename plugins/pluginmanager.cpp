@@ -8,6 +8,7 @@
 #include "testplugin.h"
 #include "perlplugin.h"
 #include "statistics.h"
+#include "database.h"
 #include <IrcBuffer>
 #include <IrcSession>
 
@@ -74,9 +75,11 @@ const Context *PluginManager::context() const
  */
 QVariant PluginManager::get( const QString &name, Plugin::VariableScope *s  ) const
 {
+  Q_ASSERT( context_ != 0 );
+#warning TODO
   if( s != NULL )
     *s = Plugin::GlobalScope;
-  return QVariant();
+  return database_->property( name, context_->network, context_->receiver, context_->sender );
 }
 
 /**
@@ -96,6 +99,7 @@ QVariant PluginManager::get( const QString &name, Plugin::VariableScope *s  ) co
 bool PluginManager::initialize()
 {
   Q_ASSERT( config_ != 0 );
+  setContext("");
 
   Plugin *plugin = new TestPlugin( this );
   plugin->init();
@@ -108,6 +112,8 @@ bool PluginManager::initialize()
   Plugin *plugin3 = new Statistics( this );
   plugin3->init();
   plugins_.append( plugin3 );
+
+  clearContext();
 
   initialized_ = true;
   return true;
@@ -139,7 +145,10 @@ void PluginManager::reset()
  */
 void PluginManager::set( Plugin::VariableScope s, const QString &name, const QVariant &value )
 {
-  // TODO
+  database_->setProperty( name, value,
+    s & Plugin::NetworkScope ? context_->network  : QString(),
+    s & Plugin::ChannelScope ? context_->receiver : QString(),
+    s & Plugin::UserScope    ? context_->sender   : QString() );
 }
 
 /**
