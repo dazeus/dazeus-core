@@ -13,14 +13,6 @@
 class QVariant;
 struct DatabaseConfig;
 
-enum DatabaseScope
-{
-  UnknownScope = 0x0,
-  NetworkScope = 0x1,
-  ChannelScope = 0x2,
-  UserScope    = 0x3
-};
-
 /**
  * @class Database
  * @brief A database frontend.
@@ -57,12 +49,14 @@ class Database : public QObject
     QSqlError       lastError() const;
 
     QVariant    property( const QString &variable,
-                          const QString &userScope = QString(),
-                          const QString &channelScope = QString() ) const;
+                          const QString &networkScope  = QString(),
+                          const QString &receiverScope = QString(),
+                          const QString &senderScope   = QString() ) const;
     void        setProperty( const QString &variable,
                              const QVariant &value,
-                             const QString &userScope = QString(),
-                             const QString &channelScope = QString());
+                             const QString &networkScope  = QString(),
+                             const QString &receiverScope = QString(),
+                             const QString &senderScope   = QString());
 
   public slots:
 

@@ -80,22 +80,23 @@ bool Database::open()
  * <code>net.jondoe.myfirstplugin.foo</code>
  */
 QVariant Database::property( const QString &variable,
- const QString &userScope, const QString &channelScope ) const
+ const QString &networkScope, const QString &receiverScope,
+ const QString &senderScope ) const
 {
   // retrieve from database
   QSqlQuery data(db_);
   data.prepare("SELECT value FROM properties WHERE variable=:var"
-               " AND networkScope=:net AND channelScope=:chn"
-               " AND userScope=:usr");
+               " AND networkScope=:net AND receiverScope=:rcv"
+               " AND senderScope=:snd");
 
   data.bindValue(":var",variable);
-  data.bindValue(":net",network_);
-  data.bindValue(":chn",channelScope);
-  data.bindValue(":usr",userScope);
+  data.bindValue(":net",networkScope);
+  data.bindValue(":rcv",receiverScope);
+  data.bindValue(":snd",senderScope);
 
   // first, ask for most specific...
-  if( ! network_.isEmpty() && !channelScope.isEmpty()
-   && !userScope.isEmpty() )
+  if( !networkScope.isEmpty() && !receiverScope.isEmpty()
+   && !senderScope.isEmpty() )
   {
     data.exec();
     if( data.next() )
@@ -104,9 +105,9 @@ QVariant Database::property( const QString &variable,
   }
 
   // then, ask for channel specific
-  if( !network_.isEmpty() && !channelScope.isEmpty() )
+  if( !networkScope.isEmpty() && !receiverScope.isEmpty() )
   {
-    data.bindValue(":usr",QVariant());
+    data.bindValue(":snd",QVariant());
     data.exec();
     if( data.next() )
       return data.value(0);
@@ -114,9 +115,9 @@ QVariant Database::property( const QString &variable,
   }
 
   // ask for network specific
-  if( !network_.isEmpty() )
+  if( !networkScope.isEmpty() )
   {
-    data.bindValue(":chn",QVariant());
+    data.bindValue(":rcv",QVariant());
     data.exec();
     if( data.next() )
       return data.value(0);
@@ -135,19 +136,25 @@ QVariant Database::property( const QString &variable,
 }
 
 void Database::setProperty( const QString &variable,
- const QVariant &value,
- const QString &userScope, const QString &channelScope )
+ const QVariant &value, const QString &networkScope,
+ const QString &receiverScope, const QString &senderScope )
 {
   // set in database
   QSqlQuery data(db_);
   data.prepare("INSERT INTO properties (variable,value,network,channel,user)"
-               " VALUES (:var, :val, :net, :chn, :usr)");
+/*               " VALUES (:var, :val, :net, :rcv, :snd)");
 
-  data.bindValue(":var",variable);
-  data.bindValue(":val",value);
-  data.bindValue(":net",network_.isEmpty() ? QVariant() : channelScope);
-  data.bindValue(":chn",channelScope.isEmpty() ? QVariant() : channelScope);
-  data.bindValue(":usr",userScope.isEmpty() ? QVariant() : userScope);
+  data.bindValue(":var", variable);
+  data.bindValue(":val", value);
+  data.bindValue(":net", networkScope.isEmpty()  ? QVariant() : networkScope);
+  data.bindValue(":rcv", receiverScope.isEmpty() ? QVariant() : receiverScope);
+  data.bindValue(":snd", senderScope.isEmpty()   ? QVariant() : senderScope);*/
+                " VALUES (?, ?, ?, ?, ?)");
+  data.addBindValue(variable);
+  data.addBindValue(value);
+  data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
+  data.addBindValue(receiverScope.isEmpty() ? QVariant() : receiverScope);
+  data.addBindValue(senderScope.isEmpty()   ? QVariant() : senderScope);
   if( !data.exec() )
   {
     qWarning() << "Set property failed: " << data.lastError();
@@ -156,12 +163,15 @@ void Database::setProperty( const QString &variable,
 
 bool Database::createTable()
 {
-  // variable | network | channel | user | value
-#warning todo
+  if( tableExists() )
+    return true; // database already exists
+
+  return false; // TODO: create it
+  // variable | network | receiver | sender | value
 }
 bool Database::tableExists() const
 {
-#warning todo
+  return database_->record("properties").count() > 0;
 }
 
 QString Database::typeToQtPlugin(const QString &type)
