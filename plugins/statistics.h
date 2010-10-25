@@ -14,7 +14,7 @@ class Statistics : public Plugin
   Q_OBJECT
 
   public:
-            Statistics();
+            Statistics(PluginManager*);
   virtual  ~Statistics();
 
   public slots:

@@ -14,7 +14,7 @@ class TestPlugin : public Plugin
   Q_OBJECT
 
   public:
-            TestPlugin();
+            TestPlugin(PluginManager *man);
   virtual  ~TestPlugin();
 
   public slots:

@@ -8,8 +8,8 @@
 
 #include "testplugin.h"
 
-TestPlugin::TestPlugin()
-: Plugin()
+TestPlugin::TestPlugin( PluginManager *man )
+: Plugin( man )
 {}
 
 TestPlugin::~TestPlugin() {}

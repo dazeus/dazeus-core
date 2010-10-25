@@ -23,8 +23,8 @@ extern "C" {
   }
 }
 
-PerlPlugin::PerlPlugin()
-: Plugin()
+PerlPlugin::PerlPlugin( PluginManager *man )
+: Plugin(man)
 {
 }
 

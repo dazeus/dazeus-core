@@ -15,7 +15,7 @@ class PerlPlugin : public Plugin
   Q_OBJECT
 
   public:
-            PerlPlugin();
+            PerlPlugin( PluginManager* );
   virtual  ~PerlPlugin();
 
   public slots:

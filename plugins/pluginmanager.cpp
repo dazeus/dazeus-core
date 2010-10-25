@@ -97,15 +97,15 @@ bool PluginManager::initialize()
 {
   Q_ASSERT( config_ != 0 );
 
-  Plugin *plugin = new TestPlugin();
+  Plugin *plugin = new TestPlugin( this );
   plugin->init();
   plugins_.append( plugin );
 
-  Plugin *plugin2 = new PerlPlugin();
+  Plugin *plugin2 = new PerlPlugin( this );
   plugin2->init();
   plugins_.append( plugin2 );
 
-  Plugin *plugin3 = new Statistics();
+  Plugin *plugin3 = new Statistics( this );
   plugin3->init();
   plugins_.append( plugin3 );
 

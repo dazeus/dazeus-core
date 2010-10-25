@@ -5,8 +5,8 @@
 
 #include "statistics.h"
 
-Statistics::Statistics()
-: Plugin()
+Statistics::Statistics(PluginManager *man)
+: Plugin(man)
 {}
 
 Statistics::~Statistics() {}

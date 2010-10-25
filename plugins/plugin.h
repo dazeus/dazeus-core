@@ -15,12 +15,14 @@
 #include "network.h"
 #include "server.h"
 
+class PluginManager;
+
 class Plugin : public QObject
 {
   Q_OBJECT
 
   public:
-            Plugin();
+            Plugin(PluginManager *man);
   virtual  ~Plugin();
 
   /**
@@ -99,6 +101,7 @@ class Plugin : public QObject
 
   private:
     User                          *activeUser_;
+    PluginManager                 *manager_;
     QHash<QString, VariableScope>  variables_;
 };
 

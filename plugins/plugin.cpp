@@ -4,9 +4,11 @@
  */
 
 #include "plugin.h"
+#include "pluginmanager.h"
 
-Plugin::Plugin()
+Plugin::Plugin(PluginManager *man)
 : QObject()
+, manager_(man)
 {}
 
 Plugin::~Plugin()
@@ -15,13 +17,16 @@ Plugin::~Plugin()
 
 void Plugin::set( VariableScope scope, const QString &name, const QVariant &value )
 {
+  if( !name.contains('.') )
+  {
+    qWarning() << "Warning: Variable contains no dot, is it qualified?" << name;
+  }
+  manager_->set( scope, name, value );
 }
 
 QVariant Plugin::get( const QString &name, VariableScope *scope ) const
 {
-  if( scope != NULL )
-    *scope = GlobalScope;
-  return QVariant();
+  return manager_->get(name, scope);
 }
 
 
