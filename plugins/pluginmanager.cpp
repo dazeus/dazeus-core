@@ -11,6 +11,21 @@
 #include <IrcBuffer>
 #include <IrcSession>
 
+QDebug operator<<(QDebug dbg, const Context *c)
+{
+  dbg.nospace() << "Context[";
+  if( c == 0 ) {
+    dbg.nospace() << "0";
+  } else {
+    dbg.nospace() <<  "n=" << c->network
+                  << ",r=" << c->receiver
+                  << ",s=" << c->sender;
+  }
+  dbg.nospace() << "]";
+
+  return dbg.maybeSpace();
+}
+
 /**
  * @brief Constructor.
  *
@@ -19,6 +34,7 @@
 PluginManager::PluginManager()
 : QObject()
 , config_( 0 )
+, context_( 0 )
 , initialized_( false )
 {
 }
@@ -31,6 +47,24 @@ PluginManager::~PluginManager()
 {
 }
 
+/**
+ * @brief Clear the previously set context.
+ * @see setContext(), context()
+ */
+void PluginManager::clearContext()
+{
+  Q_ASSERT( context_ != 0 );
+  delete context_;
+  context_ = 0;
+}
+
+/**
+ * @brief Return the current call context.
+ */
+const Context *PluginManager::context() const
+{
+  return context_;
+}
 
 /**
  * @brief Initialises plugins.
@@ -98,6 +132,22 @@ void PluginManager::setConfig( Config *c )
            this, SLOT(       initialize() ) );
 }
 
+/**
+ * @brief Set the context of this call.
+ *
+ * All PluginManager handlers call this method for later reference. For
+ * example, the Database needs to look back at the current call, to save
+ * variables in the correct scope.
+ */
+void PluginManager::setContext(QString network, QString receiver, QString sender)
+{
+  Q_ASSERT( context_ == 0 );
+  context_ = new Context;
+  context_->network  = network;
+  context_->receiver = receiver;
+  context_->sender   = sender;
+}
+
 
 
 /******* ADDITIONAL HANDLERS **********/
@@ -109,10 +159,12 @@ void PluginManager::setConfig( Config *c )
  */
 void PluginManager::welcomed( Network &n )
 {
+  setContext( n.config()->name );
   foreach( Plugin *p, plugins_ )
   {
     p->welcomed( n );
   }
+  clearContext();
 }
 
 /**
@@ -122,10 +174,12 @@ void PluginManager::welcomed( Network &n )
  */
 void PluginManager::connected( Network &n, const Server &s )
 {
+  setContext( n.config()->name );
   foreach( Plugin *p, plugins_ )
   {
     p->connected( n, s );
   }
+  clearContext();
 }
 
 /**
@@ -135,44 +189,62 @@ void PluginManager::connected( Network &n, const Server &s )
  */
 void PluginManager::disconnected( Network &n )
 {
+  setContext( n.config()->name );
   foreach( Plugin *p, plugins_ )
   {
     p->disconnected( n );
   }
+  clearContext();
 }
 
-#define PLUGIN_EVENT_RELAY_1STR( name ) \
-void PluginManager::name ( const QString &str, Irc::Buffer *b ) { \
+void PluginManager::motdReceived ( const QString &motd, Irc::Buffer *b ) {
+  Network *n = Network::fromBuffer( b );
+  Q_ASSERT( n != 0 );
+  setContext( n->config()->name );
+  foreach( Plugin *p, plugins_ )
+  {
+    p->motdReceived( *n, motd, b );
+  }
+  clearContext();
+}
+
+#define PLUGIN_EVENT_RELAY_1STR( EVENTNAME ) \
+void PluginManager::EVENTNAME ( const QString &str, Irc::Buffer *b ) { \
   Network *n = Network::fromBuffer( b ); \
   Q_ASSERT( n != 0 ); \
+  setContext( n->config()->name, b->receiver(), str ); \
   foreach( Plugin *p, plugins_ ) \
   { \
-    p->name( *n, str, b ); \
+    p->EVENTNAME( *n, str, b ); \
   } \
+  clearContext(); \
 }
 
-#define PLUGIN_EVENT_RELAY_2STR( name ) \
-void PluginManager::name ( const QString &str, const QString &str2, Irc::Buffer *b ) { \
+#define PLUGIN_EVENT_RELAY_2STR( EVENTNAME ) \
+void PluginManager::EVENTNAME ( const QString &str, const QString &str2, Irc::Buffer *b ) { \
   Network *n = Network::fromBuffer( b ); \
   Q_ASSERT( n != 0 ); \
+  setContext( n->config()->name, b->receiver(), str ); \
   foreach( Plugin *p, plugins_ ) \
   { \
-    p->name( *n, str, str2, b ); \
+    p->EVENTNAME( *n, str, str2, b ); \
   } \
+  clearContext(); \
 }
 
-#define PLUGIN_EVENT_RELAY_3STR( name ) \
-void PluginManager::name ( const QString &str, const QString &str2, \
+#define PLUGIN_EVENT_RELAY_3STR( EVENTNAME ) \
+void PluginManager::EVENTNAME ( const QString &str, const QString &str2, \
                            const QString &str3, Irc::Buffer *b ) { \
   Network *n = Network::fromBuffer( b ); \
   Q_ASSERT( n != 0 ); \
+  setContext( n->config()->name, b->receiver(), str ); \
   foreach( Plugin *p, plugins_ ) \
   { \
-    p->name( *n, str, str2, str3, b ); \
+    p->EVENTNAME( *n, str, str2, str3, b ); \
   } \
+  clearContext(); \
 }
 
-PLUGIN_EVENT_RELAY_1STR( motdReceived );
 PLUGIN_EVENT_RELAY_1STR( joined );
 PLUGIN_EVENT_RELAY_2STR( parted );
 PLUGIN_EVENT_RELAY_2STR( quit );
@@ -196,10 +268,12 @@ void PluginManager::numericMessageReceived( const QString &origin, uint code,
 {
   Network *n = Network::fromBuffer( buffer );
   Q_ASSERT( n != 0 );
+  setContext( n->config()->name );
   foreach( Plugin *p, plugins_ )
   {
     p->numericMessageReceived( *n, origin, code, params, buffer );
   }
+  clearContext();
 }
 
 void PluginManager::unknownMessageReceived( const QString &origin,
@@ -207,9 +281,11 @@ void PluginManager::unknownMessageReceived( const QString &origin,
 {
   Network *n = Network::fromBuffer( buffer );
   Q_ASSERT( n != 0 );
+  setContext( n->config()->name );
   foreach( Plugin *p, plugins_ )
   {
     p->unknownMessageReceived( *n, origin, params, buffer );
   }
+  clearContext();
 }
 

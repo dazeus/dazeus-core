@@ -18,6 +18,14 @@ namespace Irc {
   class Buffer;
 };
 
+struct Context {
+  QString network;
+  QString receiver;
+  QString sender;
+};
+
+QDebug operator<<(QDebug, const Context *);
+
 class PluginManager : public QObject
 {
   Q_OBJECT
@@ -26,6 +34,7 @@ class PluginManager : public QObject
             PluginManager();
            ~PluginManager();
     bool    isInitialized() const;
+    const Context *context() const;
 
   public slots:
     void    setConfig( Config* );
@@ -69,9 +78,12 @@ class PluginManager : public QObject
 
   private slots:
     void    reset();
+    void    setContext(QString network, QString receiver = "", QString sender = "");
+    void    clearContext();
 
   private:
     Config         *config_;
+    Context        *context_;
     QList<Plugin*>  plugins_;
     bool            initialized_;
 };
