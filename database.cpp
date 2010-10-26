@@ -9,6 +9,7 @@
 #include <QtCore/QDebug>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
+#include <QtSql/QSqlRecord>
 
 /**
  * @brief Constructor.
@@ -171,7 +172,7 @@ bool Database::createTable()
 }
 bool Database::tableExists() const
 {
-  return database_->record("properties").count() > 0;
+  return db_.record("properties").count() > 0;
 }
 
 QString Database::typeToQtPlugin(const QString &type)
