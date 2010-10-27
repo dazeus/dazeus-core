@@ -142,7 +142,7 @@ void Database::setProperty( const QString &variable,
 {
   // set in database
   QSqlQuery data(db_);
-  data.prepare("INSERT INTO properties (variable,value,network,channel,user)"
+  data.prepare("INSERT INTO properties (variable,value,network,receiver,sender)"
 /*               " VALUES (:var, :val, :net, :rcv, :snd)");
 
   data.bindValue(":var", variable);
@@ -167,8 +167,14 @@ bool Database::createTable()
   if( tableExists() )
     return true; // database already exists
 
-  return false; // TODO: create it
-  // variable | network | receiver | sender | value
+  QSqlQuery data(db_);
+  return data.exec("CREATE TABLE properties ("
+                   "  variable TEXT,"
+                   "  network TEXT,"
+                   "  receiver TEXT,"
+                   "  sender TEXT,"
+                   "  value TEXT"
+                   ");");
 }
 bool Database::tableExists() const
 {

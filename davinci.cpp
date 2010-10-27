@@ -103,6 +103,13 @@ bool DaVinci::connectDatabase()
     return false;
   }
 
+  // create it if it doesn't exist yet
+  if( !database_->createTable() )
+  {
+    qWarning() << "Could not create table: " << database_->lastError();
+    return false;
+  }
+
   return true;
 }
 
@@ -200,7 +207,7 @@ bool DaVinci::loadConfig()
 
   const QList<NetworkConfig*> &networks = config_->networks();
 
-  if( !connectDatabase())
+  if(!connectDatabase())
     return false;
   
   pluginManager_ = new PluginManager( database_ );
