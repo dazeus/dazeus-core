@@ -169,10 +169,11 @@ bool Database::createTable()
 
   QSqlQuery data(db_);
   return data.exec("CREATE TABLE properties ("
-                   "  variable TEXT,"
-                   "  network TEXT,"
-                   "  receiver TEXT,"
-                   "  sender TEXT,"
+                   "  id       INT(10) PRIMARY KEY AUTO_INCREMENT,"
+                   "  variable VARCHAR(150),"
+                   "  network VARCHAR(50)," // enforced limit in config.cpp
+                   "  receiver VARCHAR(50)," // usually, max = 9 or 30
+                   "  sender VARCHAR(50)," //  usually, max = 9 or 30
                    "  value TEXT"
                    ");");
 }
