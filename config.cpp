@@ -148,6 +148,11 @@ const QList<NetworkConfig*> &Config::networks()
     if( category.toLower().startsWith("network") )
     {
       QString networkName = category.mid(8).toLower();
+      if( networkName.length() > 50 )
+      {
+        qWarning() << "Max network name length is 50. " << networkName;
+        networkName = networkName.left(50);
+      }
 #ifdef DEBUG
       qDebug() << "Network: " << networkName;
 #endif
