@@ -88,54 +88,53 @@ QVariant Database::property( const QString &variable,
 {
   // retrieve from database
   QSqlQuery data(db_);
-  data.prepare("SELECT value FROM properties WHERE variable=:var"
-               " AND networkScope=:net AND receiverScope=:rcv"
-               " AND senderScope=:snd");
-
-  data.bindValue(":var",variable);
-  data.bindValue(":net",networkScope);
-  data.bindValue(":rcv",receiverScope);
-  data.bindValue(":snd",senderScope);
-
-  // first, ask for most specific...
-  if( !networkScope.isEmpty() && !receiverScope.isEmpty()
-   && !senderScope.isEmpty() )
+  data.prepare("SELECT value,network,receiver,sender"
+     " FROM properties WHERE variable=?");
+  data.addBindValue(variable);
+  if( !data.exec() )
   {
-    data.exec();
-    if( data.next() )
-      return data.value(0);
-    data.finish();
+    qWarning() << "Property retrieve query failed: " << data.lastError();
+    return QVariant();
   }
 
-  // then, ask for channel specific
-  if( !networkScope.isEmpty() && !receiverScope.isEmpty() )
+  // index the results
+  QVariant global, network, receiver, sender;
+  while( data.next() )
   {
-    data.bindValue(":snd",QVariant());
-    data.exec();
-    if( data.next() )
-      return data.value(0);
-    data.finish();
+    if( data.value(3).isNull() )
+    {
+      if( data.value(2).isNull() )
+      {
+        if( data.value(1).isNull() )
+          global = data.value(0);
+        else if( data.value(1).toString() == networkScope )
+          network = data.value(0);
+      }
+      else if( data.value(1).toString() == networkScope
+            && data.value(2).toString() == receiverScope )
+        receiver = data.value(0);
+    }
+    else if( data.value(1).toString() == networkScope
+          && data.value(2).toString() == receiverScope
+          && data.value(3).toString() == senderScope )
+      sender = data.value(0);
   }
 
-  // ask for network specific
-  if( !networkScope.isEmpty() )
-  {
-    data.bindValue(":rcv",QVariant());
-    data.exec();
-    if( data.next() )
-      return data.value(0);
-    data.finish();
-  }
+#ifdef DEBUG
+  qDebug() << "For variable " << variable;
+  qDebug() << "Global: " << global;
+  qDebug() << "Network: " << network;
+  qDebug() << "Receiver: " << receiver;
+  qDebug() << "Sender: " << sender;
+#endif
 
-  // global property, then
-  data.bindValue(":net",QVariant());
-  data.exec();
-  if( data.next() )
-    return data.value(0);
-  data.finish();
-
-  // nothing found, still? return null
-  return QVariant();
+  if( !sender.isNull() )
+    return sender;
+  if( !receiver.isNull() )
+    return receiver;
+  if( !network.isNull() )
+    return network;
+  return global;
 }
 
 void Database::setProperty( const QString &variable,
