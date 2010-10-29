@@ -11,6 +11,8 @@
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlRecord>
 
+// #define DEBUG
+
 /**
  * @brief Constructor.
  */
@@ -140,22 +142,68 @@ void Database::setProperty( const QString &variable,
  const QVariant &value, const QString &networkScope,
  const QString &receiverScope, const QString &senderScope )
 {
-  // set in database
-  QSqlQuery data(db_);
-  data.prepare("INSERT INTO properties (variable,value,network,receiver,sender)"
-/*               " VALUES (:var, :val, :net, :rcv, :snd)");
+#ifdef DEBUG
+  qDebug() << "Setting property " << variable << "to" << value;
+#endif
 
-  data.bindValue(":var", variable);
-  data.bindValue(":val", value);
-  data.bindValue(":net", networkScope.isEmpty()  ? QVariant() : networkScope);
-  data.bindValue(":rcv", receiverScope.isEmpty() ? QVariant() : receiverScope);
-  data.bindValue(":snd", senderScope.isEmpty()   ? QVariant() : senderScope);*/
-                " VALUES (?, ?, ?, ?, ?)");
-  data.addBindValue(variable);
-  data.addBindValue(value);
-  data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
-  data.addBindValue(receiverScope.isEmpty() ? QVariant() : receiverScope);
-  data.addBindValue(senderScope.isEmpty()   ? QVariant() : senderScope);
+  // set in database
+  QSqlQuery finder(db_);
+  finder.prepare("SELECT id FROM properties WHERE variable=? AND network"
+                 + QString(networkScope.isEmpty()  ? " IS NULL" : "=?")
+                 + " AND receiver"
+                 + QString(receiverScope.isEmpty() ? " IS NULL" : "=?")
+                 + " AND sender"
+                 + QString(senderScope.isEmpty()   ? " IS NULL" : "=?"));
+  // This ugly hack seems necessary as MySQL does not allow =NULL, requires IS NULL.
+  finder.addBindValue(variable);
+  if( !networkScope.isEmpty() )
+    finder.addBindValue(networkScope);
+  if( !receiverScope.isEmpty() )
+    finder.addBindValue(receiverScope);
+  if( !senderScope.isEmpty() )
+    finder.addBindValue(senderScope);
+
+  if( !finder.exec() )
+  {
+    qWarning() << "Select property before setting failed: " << finder.lastError();
+    return;
+  }
+  if( finder.size() < 0 )
+  {
+    qWarning() << "Select property before setting gave no results: " << finder.lastError();
+    return;
+  }
+
+  QSqlQuery data(db_);
+
+  if( finder.size() == 0 )
+  {
+#ifdef DEBUG
+    qDebug() << "Seeing property " << variable << "for the first time, inserting.";
+    qDebug() << finder.executedQuery();
+    QList<QVariant> list = finder.boundValues().values();
+    for (int i = 0; i < list.size(); ++i)
+      qDebug() << i << ": " << list.at(i).toString().toAscii().data() << endl;
+#endif
+    // insert
+    data.prepare("INSERT INTO properties (variable,value,network,receiver,sender)"
+                 " VALUES (?, ?, ?, ?, ?)");
+    data.addBindValue(variable);
+    data.addBindValue(value);
+    data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
+    data.addBindValue(receiverScope.isEmpty() ? QVariant() : receiverScope);
+    data.addBindValue(senderScope.isEmpty()   ? QVariant() : senderScope);
+  }
+  else
+  {
+    // update
+    finder.next();
+    int returnedId = finder.value(0).toInt();
+    data.prepare("UPDATE properties SET value=? WHERE id=?");
+    data.addBindValue(value);
+    data.addBindValue(returnedId);
+  }
+
   if( !data.exec() )
   {
     qWarning() << "Set property failed: " << data.lastError();
