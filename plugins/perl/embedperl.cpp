@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #define MAX_EMBED_PERL 10
+// #define DEBUG
 
 // Totally thread-unsafe...
 static EmbedPerl *ePerl[MAX_EMBED_PERL];
@@ -24,7 +25,9 @@ void xs_init(pTHX);
 
 void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
+#ifdef DEBUG
   printf("***Callback*** Send emote to %s (on %s): %s\n", receiver, uniqueid, message);
+#endif
   FOR_EVERY_EMBED(uniqueid,emoteCallback) {
     ePerl[i]->emoteCallback( uniqueid, receiver, message, ePerl[i]->data );
     return;
@@ -34,7 +37,9 @@ void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 
 void privmsgEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
+#ifdef DEBUG
   printf("***Callback*** Send privmsg to %s (on %s): %s\n", receiver, uniqueid, message);
+#endif
   FOR_EVERY_EMBED(uniqueid,privmsgCallback) {
     ePerl[i]->privmsgCallback( uniqueid, receiver, message, ePerl[i]->data );
     return;
@@ -101,7 +106,9 @@ EmbedPerl::EmbedPerl(const char *uniqueid)
 
 EmbedPerl::~EmbedPerl()
 {
+#ifdef DEBUG
   fprintf(stderr, "EmbedPerl destructor\n");
+#endif
   perl_destruct(perl);
   perl_free(perl);
 }
@@ -128,7 +135,9 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
 
 void EmbedPerl::init()
 {
+#ifdef DEBUG
   fprintf(stderr, "EmbedPerl::init()\n");
+#endif
   PerlInterpreter *my_perl = perl;
   dSP;
   ENTER;
@@ -145,7 +154,9 @@ void EmbedPerl::init()
 
 void EmbedPerl::message(const char *from, const char *to, const char *msg)
 {
+#ifdef DEBUG
   fprintf(stderr, "EmbedPerl::message(%s,%s,%s)\n", from, to, msg);
+#endif
   PerlInterpreter *my_perl = perl;
   dSP;
   ENTER;
@@ -162,12 +173,16 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
   PUTBACK;
   FREETMPS;
   LEAVE;
+#ifdef DEBUG
   fprintf(stderr, "... message(...)=%d\n", result);
+#endif
 }
 
 bool EmbedPerl::loadModule(const char *module)
 {
+#ifdef DEBUG
   fprintf(stderr, "EmbedPerl::loadModule(%s)", module);
+#endif
   PerlInterpreter *my_perl = perl;
   dSP;
   ENTER;
@@ -181,6 +196,8 @@ bool EmbedPerl::loadModule(const char *module)
   PUTBACK;
   FREETMPS;
   LEAVE;
+#ifdef DEBUG
   fprintf(stderr, "=%d\n", result);
+#endif
   return result != 0;
 }
