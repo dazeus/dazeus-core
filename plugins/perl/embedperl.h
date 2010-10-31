@@ -22,7 +22,6 @@ class EmbedPerl
     EmbedPerl(const char *uniqueid);
     ~EmbedPerl();
 
-    void callEcho(const char*);
     bool loadModule(const char*);
     void message(const char*, const char*, const char*);
 

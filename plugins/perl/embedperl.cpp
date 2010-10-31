@@ -165,27 +165,6 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
   fprintf(stderr, "... message(...)=%d\n", result);
 }
 
-void EmbedPerl::callEcho(const char *str)
-{
-  fprintf(stderr, "EmbedPerl::callEcho(%s)\n", str);
-  PerlInterpreter *my_perl = perl;
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
-  XPUSHs( newSVpv(str, strlen(str)) );
-  PUTBACK;
-  call_pv("echo2", G_SCALAR);
-  SPAGAIN;
-  SV *resultsv = POPs;
-  STRLEN s_len;
-  const char *text = SvPV(resultsv, s_len);
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
-  printf("Het resultaat is: %s\n", text);
-}
-
 bool EmbedPerl::loadModule(const char *module)
 {
   fprintf(stderr, "EmbedPerl::loadModule(%s)", module);
