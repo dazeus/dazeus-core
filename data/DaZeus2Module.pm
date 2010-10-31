@@ -16,7 +16,13 @@ sub new {
     my $self = \%param;
     bless $self, $class;
 
-    $self->init();
+    eval {
+      $self->init();
+    };
+    if( $@ )
+    {
+      warn "Init failed: $@\n";
+    }
 
     return $self;
 }
@@ -85,7 +91,13 @@ sub say {
 sub emote {
   my $self = shift;
   my %args = @_;
-  DaZeus2::emote($uniqueid, $args{channel}, $args{body});
+  eval {
+    DaZeus2::emote($uniqueid, $args{channel}, $args{body});
+  };
+  if( $@ )
+  {
+    warn "Error executing emote(): $@\n";
+  }
 }
 
 sub sendWhois {
