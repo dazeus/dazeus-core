@@ -35,6 +35,8 @@ sub init {
   };
   bless $perms->{Sjors}, "Perms";
   bless $perms->{any}, "Perms";
+
+  do "DaZeus2Module.pm";
 }
 
 sub message {
@@ -78,7 +80,7 @@ sub loadModule {
 
   foreach(@modules)
   {
-    if( $_ == $module)
+    if( $_ eq $module)
     {
       return 1;
     }
@@ -90,7 +92,7 @@ sub loadModule {
     return 0;
   }
 
-  eval "do \"DaZeus2Module.pm\"; do \"$module.pm\";";
+  eval "do \"$module.pm\";";
   if( $@ )
   {
     warn("Error loading modules: $@");
