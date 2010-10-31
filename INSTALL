@@ -8,3 +8,11 @@ To compile DaVinci, run qmake and make in the main directory:
 
 This creates a 'davinci' binary that you can run or manually copy to whatever
 bin directory you want.
+
+For the Perl plugin (which is always enabled[0]) you need some Perl modules
+to be installed: Data::Dumper, Storable and MIME::Base64. They are likely
+already installed and otherwise it's probably easiest to install them
+via your package manager. Otherwise, consult `man cpan`.
+
+[0] It can be disabled, but there is no supported option to do so. If you
+would like to disable it, let me know, I'll try to help you.

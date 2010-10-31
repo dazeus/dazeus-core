@@ -31,7 +31,9 @@ sub init {
               "dazeus.commands.dosay"   => 1,
               "dazeus.commands.dosay.setchannel" => 1},
     any   => {"dazeus.commands.fortune" => 1,
-              "dazeus.commands.order"   => 1},
+              "dazeus.commands.order"   => 1,
+              "dazeus.commands.learn"   => 1,
+              "dazeus.commands.forget"  => 1},
   };
   bless $perms->{Sjors}, "Perms";
   bless $perms->{any}, "Perms";
