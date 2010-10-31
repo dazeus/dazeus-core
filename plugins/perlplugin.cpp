@@ -10,6 +10,8 @@
 #include <QtCore/QDebug>
 #include <ircclient-qt/IrcBuffer>
 
+// #define DEBUG
+
 extern "C" {
   void perlplugin_emote_callback( const char *net, const char *recv, const char *body, void *data )
   {
@@ -20,6 +22,21 @@ extern "C" {
   {
     PerlPlugin *pp = (PerlPlugin*) data;
     pp->privmsgCallback( net, recv, body );
+  }
+  const char* perlplugin_getProperty_callback( const char *net, const char *variable, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    return pp->getPropertyCallback(net, variable);
+  }
+  void perlplugin_setProperty_callback( const char *net, const char *variable, const char *value, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->setPropertyCallback(net, variable, value);
+  }
+  void perlplugin_unsetProperty_callback( const char *net, const char *variable, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->unsetPropertyCallback(net, variable);
   }
 }
 
@@ -32,7 +49,9 @@ PerlPlugin::~PerlPlugin() {}
 
 void PerlPlugin::init()
 {
+#ifdef DEBUG
   qDebug() << "PerlPlugin initialising.";
+#endif
 }
 
 EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
@@ -41,8 +60,11 @@ EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
     return ePerl.value( net.config()->name );
 
   EmbedPerl *newPerl = new EmbedPerl( net.config()->name.toLatin1() );
-  newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback, this );
+  newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
+                         perlplugin_getProperty_callback, perlplugin_setProperty_callback,
+                         perlplugin_unsetProperty_callback, this );
   newPerl->loadModule( "DazMessages" );
+  newPerl->loadModule( "DazFactoids" );
 
   ePerl.insert( net.config()->name, newPerl );
   return newPerl;
@@ -92,4 +114,37 @@ void PerlPlugin::privmsgCallback( const char *network, const char *receiver, con
   Network *net = Network::getNetwork( network );
   Q_ASSERT( net != 0 );
   net->say( receiver, body );
+}
+
+const char *PerlPlugin::getPropertyCallback(const char *network, const char *variable)
+{
+  Q_UNUSED(network);
+
+  QVariant value = get(variable);
+#ifdef DEBUG
+  qDebug() << "Get property: " << variable << "=" << value;
+#endif
+  if( value.isNull() )
+    return 0;
+  return value.toString().toUtf8().constData();
+}
+
+void PerlPlugin::setPropertyCallback(const char *network, const char *variable, const char *value)
+{
+  Q_UNUSED(network);
+
+  set(Plugin::GlobalScope, variable, value);
+#ifdef DEBUG
+  qDebug() << "Set property: " << variable << "to:" << value;
+#endif
+}
+
+void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable)
+{
+  Q_UNUSED(network);
+
+  set(Plugin::GlobalScope, variable, QVariant());
+#ifdef DEBUG
+  qDebug() << "Unset property: " << variable;
+#endif
 }

@@ -16,17 +16,18 @@ static int numEmbedPerl = 0;
 extern "C" {
 void xs_init(pTHX);
 
-/***** CALBACKS *****/
+/***** CALLBACKS *****/
+
+#define FOR_EVERY_EMBED(UNIQUEID,CALLBACK) \
+  for( int i = 0; i < numEmbedPerl; ++i ) \
+     if( strcmp(ePerl[i]->uniqueid(),UNIQUEID)==0 && ePerl[i]->CALLBACK )
+
 void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
   printf("***Callback*** Send emote to %s (on %s): %s\n", receiver, uniqueid, message);
-  for( int i = 0; i < numEmbedPerl; ++i )
-  {
-    if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->emoteCallback )
-    {
-      ePerl[i]->emoteCallback( uniqueid, receiver, message, ePerl[i]->data );
-      return;
-    }
+  FOR_EVERY_EMBED(uniqueid,emoteCallback) {
+    ePerl[i]->emoteCallback( uniqueid, receiver, message, ePerl[i]->data );
+    return;
   }
   fprintf(stderr,"[CallbackError] No handler for Emote callback (uniqueid=%s)\n", uniqueid);
 }
@@ -34,16 +35,36 @@ void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 void privmsgEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
   printf("***Callback*** Send privmsg to %s (on %s): %s\n", receiver, uniqueid, message);
-  for( int i = 0; i < numEmbedPerl; ++i )
-  {
-    if( strcmp(ePerl[i]->uniqueid(),uniqueid)==0 && ePerl[i]->privmsgCallback )
-    {
-      ePerl[i]->privmsgCallback( uniqueid, receiver, message, ePerl[i]->data );
-      return;
-    }
+  FOR_EVERY_EMBED(uniqueid,privmsgCallback) {
+    ePerl[i]->privmsgCallback( uniqueid, receiver, message, ePerl[i]->data );
+    return;
   }
   fprintf(stderr,"[CallbackError] No handler for Privmsg callback (uniqueid=%s)\n", uniqueid);
 }
+
+const char *getPropertyEmbed(const char *uniqueid, const char *variable)
+{
+  FOR_EVERY_EMBED(uniqueid,getPropertyCallback) {
+    return ePerl[i]->getPropertyCallback( uniqueid, variable, ePerl[i]->data );
+  }
+}
+
+void setPropertyEmbed(const char *uniqueid, const char *variable, const char *value)
+{
+  FOR_EVERY_EMBED(uniqueid,setPropertyCallback) {
+    ePerl[i]->setPropertyCallback( uniqueid, variable, value, ePerl[i]->data );
+    return;
+  }
+}
+
+void unsetPropertyEmbed(const char *uniqueid, const char *variable)
+{
+  FOR_EVERY_EMBED(uniqueid,unsetPropertyCallback) {
+    ePerl[i]->unsetPropertyCallback( uniqueid, variable, ePerl[i]->data );
+    return;
+  }
+}
+
 /***** END CALLBACKS ****/
 }
 
@@ -92,10 +113,16 @@ const char *EmbedPerl::uniqueid() const
 
 void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
                               void (*privmsgCallback)(const char*, const char*, const char*, void*),
+                              const char* (*getPropertyCallback)(const char*, const char*, void*),
+                              void (*setPropertyCallback)(const char*, const char*, const char*, void*),
+                              void (*unsetPropertyCallback)(const char*, const char*, void*),
                               void *data )
 {
   this->emoteCallback = emoteCallback;
   this->privmsgCallback = privmsgCallback;
+  this->getPropertyCallback = getPropertyCallback;
+  this->setPropertyCallback = setPropertyCallback;
+  this->unsetPropertyCallback = unsetPropertyCallback;
   this->data = data;
 }
 

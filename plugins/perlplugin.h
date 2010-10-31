@@ -31,6 +31,9 @@ class PerlPlugin : public Plugin
     // Do *not* call from the outside!
     void       emoteCallback  ( const char *network, const char *receiver, const char *body );
     void       privmsgCallback( const char *network, const char *receiver, const char *body );
+    const char*getPropertyCallback(const char *network, const char *variable);
+    void       setPropertyCallback(const char *network, const char *variable, const char *value);
+    void       unsetPropertyCallback(const char *network, const char *variable);
 
   protected slots:
     virtual QHash<QString, VariableScope> variables();

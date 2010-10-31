@@ -12,6 +12,9 @@ extern "C" {
 
 void emoteEmbed(const char *network, const char *receiver, const char *message);
 void privmsgEmbed(const char *network, const char *receiver, const char *message);
+const char* getProperty(const char *uniqueid, const char *variable);
+void setProperty(const char *uniqueid, const char *variable, const char *value);
+void unsetProperty(const char *uniqueid, const char *variable);
 
 #ifdef __cplusplus
 }

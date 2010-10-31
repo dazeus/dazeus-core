@@ -2,6 +2,8 @@ package DaZeus2Module;
 use strict;
 use warnings;
 use Data::Dumper;
+use Storable qw(thaw freeze);
+use MIME::Base64 qw(encode_base64 decode_base64);
 
 my $uniqueid;
 
@@ -53,21 +55,42 @@ sub var {
 
 sub set {
     my $self = shift;
-    # module: $self->{Name}
-    # Var/val: @_
-    die( "In " . $self->{Name} . ", set: " . Dumper(\@_) );
+    my $qualifier = "perl." . $self->{Name} . "." . $_[0];
+    my $value     = encode_base64(freeze($_[1]));
+    eval {
+      DaZeus2::setProperty($uniqueid, $qualifier, $value);
+    };
+    if( $@ )
+    {
+      warn "Error executing setProperty: $@\n";
+    }
 }
 
 sub get {
     my $self = shift;
-    #$self->store->get($self->{Name}, @_);
-    die( "In " . $self->{Name} . ", get: " . Dumper(\@_) );
+    my $qualifier = "perl." . $self->{Name} . "." . $_[0];
+    my $value;
+    eval {
+        $value = DaZeus2::getProperty($uniqueid, $qualifier);
+    };
+    if( $@ )
+    {
+      warn "Error executing getProperty: $@\n";
+    }
+    $value = thaw(decode_base64($value)) if( defined($value) );
+    return $value;
 }
 
 sub unset {
     my $self = shift;
-    #$self->store->unset($self->{Name}, @_);
-    die( "In " . $self->{Name} . ", unset: " . Dumper(\@_ ) );
+    my $qualifier = "perl." . $self->{Name} . "." . $_[0];
+    eval {
+      DaZeus2::unsetProperty($uniqueid, $qualifier);
+    };
+    if( $@ )
+    {
+      warn "Error executing unsetProperty: $@\n";
+    }
 }
 
 sub store_keys {

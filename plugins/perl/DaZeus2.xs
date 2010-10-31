@@ -18,3 +18,20 @@ void
 privmsg(const char *network, const char *receiver, const char *message)
   CODE:
     privmsgEmbed(network, receiver, message);
+
+const char*
+getProperty(const char *uniqueid, const char *variable)
+  CODE:
+    RETVAL = getPropertyEmbed(uniqueid, variable);
+  OUTPUT:
+    RETVAL
+
+void
+setProperty(const char *uniqueid, const char *variable, const char *value)
+  CODE:
+    setPropertyEmbed(uniqueid, variable, value);
+
+void
+unsetProperty(const char *uniqueid, const char *variable)
+  CODE:
+    unsetPropertyEmbed(uniqueid, variable);
