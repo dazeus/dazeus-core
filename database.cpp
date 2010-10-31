@@ -177,6 +177,12 @@ void Database::setProperty( const QString &variable,
 
   if( finder.size() == 0 )
   {
+    // insert
+    if( !value.isValid() )
+    {
+      // Don't insert null values.
+      return;
+    }
 #ifdef DEBUG
     qDebug() << "Seeing property " << variable << "for the first time, inserting.";
     qDebug() << finder.executedQuery();
@@ -184,7 +190,6 @@ void Database::setProperty( const QString &variable,
     for (int i = 0; i < list.size(); ++i)
       qDebug() << i << ": " << list.at(i).toString().toAscii().data() << endl;
 #endif
-    // insert
     data.prepare("INSERT INTO properties (variable,value,network,receiver,sender)"
                  " VALUES (?, ?, ?, ?, ?)");
     data.addBindValue(variable);
@@ -198,8 +203,18 @@ void Database::setProperty( const QString &variable,
     // update
     finder.next();
     int returnedId = finder.value(0).toInt();
-    data.prepare("UPDATE properties SET value=? WHERE id=?");
-    data.addBindValue(value);
+
+    if( !value.isValid() )
+    {
+      // Don't insert null values - delete the old one
+      data.prepare("DELETE FROM properties WHERE id=?");
+    }
+    else
+    {
+      // update the old one
+      data.prepare("UPDATE properties SET value=? WHERE id=?");
+      data.addBindValue(value);
+    }
     data.addBindValue(returnedId);
   }
 
