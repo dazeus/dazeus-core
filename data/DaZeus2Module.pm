@@ -102,8 +102,9 @@ sub store_keys {
 sub say {
   my $self = shift;
   my $args = $_[0];
+  my $channel = $args->{channel} eq "msg" ? $args->{who} : $args->{channel};
   eval {
-    DaZeus2::privmsg($uniqueid, $args->{channel}, $args->{body});
+    DaZeus2::privmsg($uniqueid, $channel, $args->{body});
   };
   if( $@ )
   {
