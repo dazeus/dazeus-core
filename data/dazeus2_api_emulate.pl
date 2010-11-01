@@ -53,24 +53,53 @@ sub __module {
   }
 }
 
+sub getModule {
+  foreach(@modules)
+  {
+    if( $_->{Name} eq $_[0])
+    {
+      return $_;
+    }
+  }
+}
+
+sub reloadModule {
+  my $oldmod = getModule($_[0]);
+  unloadModule($_[0]) if($oldmod);
+  loadModule($_[0]);
+  my $newmod = getModule($_[0]);
+  $newmod->reload($oldmod);
+  return $newmod;
+}
+
+sub unloadModule {
+  my $to_remove = $_[0];
+  my $module = getModule($to_remove);
+  return 1 if(!$module);
+  @modules = grep { $_->{Name} != $to_remove } @modules;
+  delete $module;
+}
+
 sub loadModule {
   my ($module) = @_;
 
-  foreach(@modules)
-  {
-    if( $_ eq $module)
-    {
-      return 1;
-    }
-  }
+  return 1 if getModule($module);
 
-  if( ! -e "./modules/$module.pm" )
+  my $file = "./modules/$module.pm";
+
+  if( ! -e $file )
   {
-    warn "Could not find modules/$module.pm\n";
+    warn "Could not find $file\n";
     return 0;
   }
 
-  eval "do \"./modules/$module.pm\";";
+  # force a reload of the file
+  eval {
+    no warnings 'redefine';
+    delete $INC{$file};
+    require $file;
+  };
+
   if( $@ )
   {
     warn("Error loading modules: $@");

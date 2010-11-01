@@ -1,3 +1,36 @@
+
+package Bot;
+
+# Helper package for $self->bot calls
+# (because sometimes, they overlap!)
+
+sub reload {
+  return reloadModule($_[1]);
+}
+
+sub load {
+  return loadModule($_[1]);
+}
+
+sub unload {
+  return loadModule($_[1]);
+}
+
+sub module {
+  my $s = shift;
+  $s->{Module}->module(@_);
+}
+
+sub reply {
+  my $s = shift;
+  $s->{Module}->reply(@_);
+}
+
+sub emote {
+  my $s = shift;
+  $s->{Module}->emote(@_);
+}
+
 package DaZeus2Module;
 use strict;
 use warnings;
@@ -10,12 +43,14 @@ my $uniqueid;
 sub new {
     my $class = shift;
     my %param = @_;
+    my $self = \%param;
 
     my $name = ref($class) || $class;
     $name =~ s/^.*:://;
-    $param{Name} ||= $name;
+    $self->{Name} ||= $name;
+    $self->{Bot}  = { Module => $self };
+    bless $self->{Bot}, "Bot";
 
-    my $self = \%param;
     bless $self, $class;
 
     eval {
@@ -35,7 +70,7 @@ sub uniqueid {
 
 sub bot {
     # bot == module
-    return shift;
+    return shift->{Bot};
 }
 
 sub store {
