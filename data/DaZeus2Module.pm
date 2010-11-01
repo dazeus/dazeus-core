@@ -132,15 +132,18 @@ sub sendWhois {
 
 sub reply {
   my $self = shift;
-  die( "Reply: " . Dumper(\@_) );
-  return $self->{Bot}->reply(@_);
+  my $mess = $_[0];
+  $self->say( {
+    channel => $mess->{channel},
+    $mess->{channel} eq "msg" ? (who => $mess->{who}) : (),
+    body    => $_[1],
+  } );
 }
 
 sub tell {
   my $self = shift;
   my $target = shift;
   my $body = shift;
-  die( "Tell target=$target, body: $body" );
   if ($target =~ /^#/) {
     $self->say({ channel => $target, body => $body });
   } else {
