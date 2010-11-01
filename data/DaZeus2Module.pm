@@ -31,6 +31,11 @@ sub emote {
   $s->{Module}->emote(@_);
 }
 
+sub getNick {
+  my $s = shift;
+  $s->{Module}->getNick(@_);
+}
+
 package DaZeus2Module;
 use strict;
 use warnings;
@@ -79,7 +84,7 @@ sub store {
 }
 
 sub module {
-    return __module($_[1]);
+  return ::getModule($_[1]);
 }
 
 sub var {

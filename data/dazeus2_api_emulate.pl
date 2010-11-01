@@ -42,17 +42,6 @@ sub message {
   return;
 }
 
-sub __module {
-  my $name = @_;
-  foreach(@modules)
-  {
-    if( $_->{Name} eq $name )
-    {
-      return $_;
-    }
-  }
-}
-
 sub getModule {
   foreach(@modules)
   {
@@ -61,6 +50,7 @@ sub getModule {
       return $_;
     }
   }
+  return undef;
 }
 
 sub reloadModule {
