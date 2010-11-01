@@ -20,31 +20,15 @@ use strict;
 use warnings;
 
 my @modules;
-my $perms;
 my $uniqueid;
 
 sub init {
   ($uniqueid) = @_;
-  $perms = {
-    Sjors => {"dazeus.commands.fortune" => 1,
-              "dazeus.commands.order"   => 1,
-              "dazeus.commands.dosay"   => 1,
-              "dazeus.commands.dosay.setchannel" => 1},
-    any   => {"dazeus.commands.fortune" => 1,
-              "dazeus.commands.order"   => 1,
-              "dazeus.commands.learn"   => 1,
-              "dazeus.commands.forget"  => 1},
-  };
-  bless $perms->{Sjors}, "Perms";
-  bless $perms->{any}, "Perms";
-
-  do "DaZeus2Module.pm";
 }
 
 sub message {
   my ($sender, $receiver, $body, $raw_body) = @_;
   my $mess = {
-    perms   => ($sender eq "Sjors" ? $perms->{Sjors} : $perms->{any}),
     channel => $receiver,
     body    => $body,
     raw_body => $raw_body,
