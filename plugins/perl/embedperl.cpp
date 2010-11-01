@@ -70,6 +70,13 @@ void unsetPropertyEmbed(const char *uniqueid, const char *variable)
   }
 }
 
+const char *getNickEmbed(const char *uniqueid)
+{
+  FOR_EVERY_EMBED(uniqueid,getNickCallback) {
+    return ePerl[i]->getNickCallback( ePerl[i]->data );
+  }
+}
+
 /***** END CALLBACKS ****/
 }
 
@@ -123,6 +130,7 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
                               const char* (*getPropertyCallback)(const char*, const char*, void*),
                               void (*setPropertyCallback)(const char*, const char*, const char*, void*),
                               void (*unsetPropertyCallback)(const char*, const char*, void*),
+                              const char* (*getNickCallback)(void*),
                               void *data )
 {
   this->emoteCallback = emoteCallback;
@@ -130,6 +138,7 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
   this->getPropertyCallback = getPropertyCallback;
   this->setPropertyCallback = setPropertyCallback;
   this->unsetPropertyCallback = unsetPropertyCallback;
+  this->getNickCallback = getNickCallback;
   this->data = data;
 }
 

@@ -35,3 +35,10 @@ void
 unsetProperty(const char *uniqueid, const char *variable)
   CODE:
     unsetPropertyEmbed(uniqueid, variable);
+
+const char*
+getNick()
+  CODE:
+    RETVAL = getNickEmbed();
+  OUTPUT:
+    RETVAL

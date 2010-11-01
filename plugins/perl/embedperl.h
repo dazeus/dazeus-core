@@ -30,6 +30,7 @@ class EmbedPerl
                        const char* (*getPropertyCallback)(const char*, const char*, void*),
                        void (*setPropertyCallback)(const char*, const char*, const char*, void*),
                        void (*unsetPropertyCallback)(const char*, const char*, void*),
+                       const char* (*getNickCallback)(void*),
                        void *data );
 
     void (*emoteCallback)(const char*, const char*, const char*, void*);
@@ -37,6 +38,7 @@ class EmbedPerl
     const char* (*getPropertyCallback)(const char*, const char*, void*);
     void (*setPropertyCallback)(const char*, const char*, const char*, void*);
     void (*unsetPropertyCallback)(const char*, const char*, void*);
+    const char* (*getNickCallback)(void*);
     void *data;
 
     const char *uniqueid() const;

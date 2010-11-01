@@ -34,6 +34,7 @@ class PerlPlugin : public Plugin
     const char*getPropertyCallback(const char *network, const char *variable);
     void       setPropertyCallback(const char *network, const char *variable, const char *value);
     void       unsetPropertyCallback(const char *network, const char *variable);
+    const char*getNickCallback();
 
   protected slots:
     virtual QHash<QString, VariableScope> variables();

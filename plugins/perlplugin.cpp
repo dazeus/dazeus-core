@@ -6,6 +6,7 @@
 #include "perlplugin.h"
 #include "perl/embedperl.h"
 #include "../config.h"
+#include "pluginmanager.h"
 
 #include <QtCore/QDebug>
 #include <ircclient-qt/IrcBuffer>
@@ -38,6 +39,11 @@ extern "C" {
     PerlPlugin *pp = (PerlPlugin*) data;
     pp->unsetPropertyCallback(net, variable);
   }
+  const char*perlplugin_getNick_callback( void *data )
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    return pp->getNickCallback();
+  }
 }
 
 PerlPlugin::PerlPlugin( PluginManager *man )
@@ -62,7 +68,7 @@ EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
   EmbedPerl *newPerl = new EmbedPerl( net.config()->name.toLatin1() );
   newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
                          perlplugin_getProperty_callback, perlplugin_setProperty_callback,
-                         perlplugin_unsetProperty_callback, this );
+                         perlplugin_unsetProperty_callback, perlplugin_getNick_callback, this );
   newPerl->loadModule( "DazMessages" );
   newPerl->loadModule( "DazFactoids" );
 
@@ -147,4 +153,11 @@ void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable
 #ifdef DEBUG
   qDebug() << "Unset property: " << variable;
 #endif
+}
+
+const char *PerlPlugin::getNickCallback()
+{
+  Network *net = Network::getNetwork( manager()->context()->network );
+  Q_ASSERT( net != 0 );
+  return net->user()->nick().toUtf8().constData();
 }

@@ -53,6 +53,19 @@ sub var {
     }
 }
 
+sub getNick {
+    my $self = shift;
+    my $nick;
+    eval {
+      $nick = DaZeus2::getNick();
+    };
+    if( $@ )
+    {
+      warn "Error executing getNick(): $@";
+    }
+    return $nick;
+}
+
 sub set {
     my $self = shift;
     my $qualifier = "perl." . $self->{Name} . "." . $_[0];
