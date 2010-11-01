@@ -64,13 +64,13 @@ sub loadModule {
     }
   }
 
-  if( ! -e "$module.pm" )
+  if( ! -e "./modules/$module.pm" )
   {
-    warn "Could not find $module.pm\n";
+    warn "Could not find modules/$module.pm\n";
     return 0;
   }
 
-  eval "do \"$module.pm\";";
+  eval "do \"./modules/$module.pm\";";
   if( $@ )
   {
     warn("Error loading modules: $@");
