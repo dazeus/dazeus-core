@@ -37,8 +37,8 @@ unsetProperty(const char *uniqueid, const char *variable)
     unsetPropertyEmbed(uniqueid, variable);
 
 const char*
-getNick()
+getNick(const char *uniqueid)
   CODE:
-    RETVAL = getNickEmbed();
+    RETVAL = getNickEmbed(uniqueid);
   OUTPUT:
     RETVAL
