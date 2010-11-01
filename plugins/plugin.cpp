@@ -29,6 +29,10 @@ QVariant Plugin::get( const QString &name, VariableScope *scope ) const
   return manager_->get(name, scope);
 }
 
+PluginManager *Plugin::manager() const
+{
+  return manager_;
+}
 
 /*******STUB HANDLERS********/
 void Plugin::init() {}
