@@ -41,7 +41,9 @@ void Plugin::connected( Network &net, const Server &serv ) {}
 void Plugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {}
 void Plugin::parted( Network &net, const QString &who, const QString &leaveMessage,
                          Irc::Buffer *channel ) {}
-QHash<QString, Plugin::VariableScope> Plugin::variables() {}
+QHash<QString, Plugin::VariableScope> Plugin::variables() {
+  return QHash<QString,Plugin::VariableScope>();
+}
 void Plugin::disconnected( Network& ) {}
 void Plugin::motdReceived( Network&, const QString&, Irc::Buffer* ) {}
 void Plugin::quit(   Network&, const QString&, const QString&,
