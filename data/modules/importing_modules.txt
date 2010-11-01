@@ -1,0 +1,14 @@
+To import a DaZeus legacy module, just copy it here. Then, replace all
+instances of "Bot::BasicBot::Pluggable::Module" to "DaZeus2Module". For
+example, open the file in vim, then type these two commands (with ENTER in
+between):
+
+  :%s/Bot::BasicBot::Pluggable::Module/DaZeus2Module/g
+  :wq
+
+The last command will save and close the file. You should now be able to use
+the module.
+
+Warning: The API is not 100% complete. You may need to change your module a
+little bit to make it work. If there are serious holes in the current legacy
+API implementation, let me know.
