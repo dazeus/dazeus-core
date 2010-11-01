@@ -43,6 +43,10 @@ sub store {
     return shift;
 }
 
+sub module {
+    return __module($_[1]);
+}
+
 sub var {
     my $self = shift;
     my $name = shift;
