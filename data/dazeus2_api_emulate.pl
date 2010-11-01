@@ -1,19 +1,3 @@
-
-package Perms;
-
-use Data::Dumper;
-use strict;
-use warnings;
-
-sub has {
-  my ($self, $whatperm) = @_;
-  my $res = $self->{$whatperm} || 0;
-  warn("Perms::has($whatperm)=$res\n");
-  return $res;
-}
-
-package main;
-
 use DaZeus2;
 use Data::Dumper;
 use strict;
