@@ -264,6 +264,11 @@ void Network::say( QString destination, QString message )
 }
 
 
+void Network::sendWhois( QString destination )
+{
+  activeServer_->whois(destination);
+}
+
 const QList<ServerConfig*> &Network::servers() const
 {
   return config_->servers;

@@ -61,6 +61,7 @@ class Network : public QObject
     void say( QString destination, QString message );
     void action( QString destination, QString message );
     void ctcp( QString destination, QString message );
+    void sendWhois( QString destination );
 
   signals:
     void connected();
