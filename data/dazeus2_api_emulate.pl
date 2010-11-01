@@ -35,9 +35,9 @@ sub message {
     who     => $sender,
   };
 
-  NEXTMOD: for my $mod (@modules)
+  for my $pri (0..3)
   {
-    for my $pri (0..3)
+    NEXTMOD: for my $mod (@modules)
     {
       my $message;
       eval { $message = $mod->said($mess,$pri) };
@@ -47,13 +47,10 @@ sub message {
         $mod->say({channel => $receiver, body => "Error executing $mod ->said(): $@\n" });
         next NEXTMOD;
       }
-      elsif( $message )
+      elsif( $message && $message ne "1" )
       {
-        if( $message ne "1" )
-        {
-          $mod->say({channel => $receiver, body => $message});
-        }
-        next NEXTMOD;
+        $mod->say({channel => $receiver, body => $message});
+        return;
       }
     }
   }
