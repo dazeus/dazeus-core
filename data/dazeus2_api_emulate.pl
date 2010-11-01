@@ -77,7 +77,6 @@ sub unloadModule {
   my $module = getModule($to_remove);
   return 1 if(!$module);
   @modules = grep { $_->{Name} != $to_remove } @modules;
-  delete $module;
 }
 
 sub loadModule {
