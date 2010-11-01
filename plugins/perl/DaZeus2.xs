@@ -36,6 +36,21 @@ unsetProperty(const char *uniqueid, const char *variable)
   CODE:
     unsetPropertyEmbed(uniqueid, variable);
 
+void
+sendWhois(const char *uniqueid, const char *who)
+  CODE:
+    sendWhoisEmbed(uniqueid, who);
+
+void
+join(const char *uniqueid, const char *channel)
+  CODE:
+    joinEmbed(uniqueid,channel);
+
+void
+part(const char *uniqueid, const char *channel)
+  CODE:
+    partEmbed(uniqueid,channel);
+
 const char*
 getNick(const char *uniqueid)
   CODE:

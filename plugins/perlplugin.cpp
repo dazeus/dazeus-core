@@ -39,6 +39,21 @@ extern "C" {
     PerlPlugin *pp = (PerlPlugin*) data;
     pp->unsetPropertyCallback(net, variable);
   }
+  void perlplugin_sendWhois_callback(const char *who, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->sendWhoisCallback(who);
+  }
+  void perlplugin_join_callback(const char *channel, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->joinCallback(channel);
+  }
+  void perlplugin_part_callback(const char *channel, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    pp->partCallback(channel);
+  }
   const char*perlplugin_getNick_callback( void *data )
   {
     PerlPlugin *pp = (PerlPlugin*) data;
@@ -68,7 +83,9 @@ EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
   EmbedPerl *newPerl = new EmbedPerl( net.config()->name.toLatin1() );
   newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
                          perlplugin_getProperty_callback, perlplugin_setProperty_callback,
-                         perlplugin_unsetProperty_callback, perlplugin_getNick_callback, this );
+                         perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
+                         perlplugin_join_callback, perlplugin_part_callback,
+                         perlplugin_getNick_callback, this );
   newPerl->loadModule( "DazMessages" );
   newPerl->loadModule( "DazFactoids" );
 
@@ -161,3 +178,25 @@ const char *PerlPlugin::getNickCallback()
   Q_ASSERT( net != 0 );
   return net->user()->nick().toUtf8().constData();
 }
+
+void PerlPlugin::sendWhoisCallback(const char *who)
+{
+  Network *net = Network::getNetwork( manager()->context()->network );
+  Q_ASSERT( net != 0 );
+  net->sendWhois( who );
+}
+
+void PerlPlugin::joinCallback(const char *channel)
+{
+  Network *net = Network::getNetwork( manager()->context()->network );
+  Q_ASSERT( net != 0 );
+  net->joinChannel( channel );
+}
+
+void PerlPlugin::partCallback(const char *channel)
+{
+  Network *net = Network::getNetwork( manager()->context()->network );
+  Q_ASSERT( net != 0 );
+  net->leaveChannel( channel );
+}
+

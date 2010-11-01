@@ -143,8 +143,35 @@ sub emote {
 
 sub sendWhois {
   my $self = shift;
-  die( "Send whois: " . Dumper(\@_) );
-  return $self->{Bot}->sendWhois(@_);
+  eval {
+    DaZeus2::sendWhois($uniqueid, $_[0]);
+  };
+  if( $@ )
+  {
+    warn "Error executing sendWhois(): $@\n";
+  }
+}
+
+sub join {
+  my $self = shift;
+  eval {
+    DaZeus2::join($uniqueid, $_[0]);
+  };
+  if( $@ )
+  {
+    warn "Error executing join(): $@\n";
+  }
+}
+
+sub part {
+  my $self = shift;
+  eval {
+    DaZeus2::part($uniqueid, $_[0]);
+  };
+  if( $@ )
+  {
+    warn "Error executing part(): $@\n";
+  }
 }
 
 sub reply {
