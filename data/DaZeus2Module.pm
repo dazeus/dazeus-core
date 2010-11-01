@@ -61,7 +61,7 @@ sub getNick {
     my $self = shift;
     my $nick;
     eval {
-      $nick = DaZeus2::getNick();
+      $nick = DaZeus2::getNick($uniqueid);
     };
     if( $@ )
     {
