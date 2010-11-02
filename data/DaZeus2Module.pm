@@ -36,6 +36,12 @@ sub getNick {
   $s->{Module}->getNick(@_);
 }
 
+sub said {
+  my $s = shift;
+  # This is NOT the same said as in DaZeus2Module!
+  ::__said($_[0]);
+}
+
 package DaZeus2Module;
 use strict;
 use warnings;

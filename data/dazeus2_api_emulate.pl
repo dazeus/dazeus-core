@@ -19,6 +19,12 @@ sub message {
     who     => $sender,
   };
 
+  __said($mess);
+}
+
+sub __said {
+  my ($mess) = @_;
+
   for my $pri (0..3)
   {
     NEXTMOD: for my $mod (@modules)
@@ -28,12 +34,16 @@ sub message {
       if( $@ )
       {
         warn("Error executing $mod ->said(): $@\n" );
-        $mod->say({channel => $receiver, body => "Error executing $mod ->said(): $@\n" });
+        $mod->say({channel => $mess->{channel},
+                   who     => $mess->{who},
+                   body    => "Error executing $mod ->said(): $@\n" });
         next NEXTMOD;
       }
-      elsif( $message && $message ne "1" )
+      elsif( $message && $message ne "1" && !ref($message) )
       {
-        $mod->say({channel => $receiver, body => $message});
+        $mod->say({channel => $mess->{channel},
+                   who     => $mess->{who},
+                   body    => $message});
         return;
       }
     }
