@@ -135,6 +135,7 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
   else if( code == 366 )
   {
     getNetworkEmbed(net)->namesReceived( args.at(1).toLatin1().constData(), names_.toLatin1().constData() );
+    names_.clear();
   }
 }
 
