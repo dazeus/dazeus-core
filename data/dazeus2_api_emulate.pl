@@ -2,12 +2,32 @@ use DaZeus2;
 use Data::Dumper;
 use strict;
 use warnings;
+use POE;
 
 my @modules;
 my $uniqueid;
+my $dummy_session;
+
+sub run_timeslice {
+  # This method should be called every once in a while to bump events in
+  # POE sessions.
+  $poe_kernel->post( $dummy_session, "dummy" );
+  $poe_kernel->run_one_timeslice();
+}
 
 sub init {
   ($uniqueid) = @_;
+
+  # Here, we start a dummy POE session. It does nothing at all, but because
+  # the reference counter is increased during start, it will never be
+  # destroyed. Because this session will never be destroyed, there will always
+  # be an active session, keeping POE from destroying other sessions thinking
+  # the application is in deadlock.
+  $dummy_session = POE::Session->create( inline_states =>
+    { _start => sub { $_[KERNEL]->refcount_increment( $_[SESSION]->ID,
+                        "keep_me_alive" ) },
+      dummy  => sub { } } );
+  run_timeslice();
 }
 
 sub whois {
@@ -26,6 +46,7 @@ sub whois {
       next;
     }
   }
+  run_timeslice();
 }
 
 sub message {
@@ -38,6 +59,7 @@ sub message {
   };
 
   __said($mess);
+  run_timeslice();
 }
 
 sub __said {
@@ -103,15 +125,18 @@ sub join {
       who => $who,
       channel => $channel,
   });
+  run_timeslice();
 }
 
 sub nick {
   my ($who, $new_nick) = @_;
   dispatch( "nick_change", 0, 0, $who, $new_nick );
+  run_timeslice();
 }
 
 sub connected {
   dispatch( "connected" );
+  run_timeslice();
 }
 
 sub namesReceived {
@@ -129,10 +154,12 @@ sub namesReceived {
     channel => $channel,
     names   => \%names,
   } );
+  run_timeslice();
 }
 
 sub tick {
   dispatch( "tick" );
+  run_timeslice();
 }
 
 sub reloadModule {
@@ -172,6 +199,7 @@ sub loadModule {
   $module = "DaZeus2Module::$module";
 
   push @modules, $module->new( UniqueID => $uniqueid );
+  run_timeslice();
   return 1;
 }
 
