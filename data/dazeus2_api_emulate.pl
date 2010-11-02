@@ -77,7 +77,8 @@ sub dispatch {
     if( $@ )
     {
       warn("Error executing $mod -> $method: $@\n" );
-      return if( $error_callback->($@, $mod, \@_) eq "-1" );
+      my $result = $error_callback->($@, $mod, \@_);
+      return if( $result && $result eq "-1" );
       next;
     }
     my $result = $message_callback->($message, $mod, \@_);
