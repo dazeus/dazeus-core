@@ -165,17 +165,10 @@ sub loadModule {
   }
 
   # force a reload of the file
-  eval {
-    no warnings 'redefine';
-    delete $INC{$file};
-    require $file;
-  };
+  no warnings 'redefine';
+  delete $INC{$file};
+  require $file;
 
-  if( $@ )
-  {
-    warn("Error loading modules: $@");
-    return 0;
-  }
   $module = "DaZeus2Module::$module";
 
   push @modules, $module->new( UniqueID => $uniqueid );
