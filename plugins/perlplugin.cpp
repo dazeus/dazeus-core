@@ -93,37 +93,12 @@ EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
   return newPerl;
 }
 
-void PerlPlugin::connected( Network &net, const Server &serv )
-{
-  Q_ASSERT( &serv == net.activeServer() );
-}
-
-void PerlPlugin::welcomed( Network &net )
-{
-}
-
 void PerlPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
                                   Irc::Buffer *buffer )
 {
   getNetworkEmbed(net)->message( origin.toLatin1(), buffer->receiver().toLatin1(), message.toUtf8() );
 }
 
-void PerlPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel )
-{
-  //getNetworkEmbed(net)->message( "Sjors", "#dazjorz", QString("}hi " + who).toLatin1() );
-}
-
-void PerlPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
-                              Irc::Buffer *channel )
-{
-  //getNetworkEmbed(net)
-}
-
-QHash<QString, Plugin::VariableScope> PerlPlugin::variables()
-{
-  QHash<QString, Plugin::VariableScope> variables;
-  return variables;
-}
 
 void PerlPlugin::emoteCallback( const char *network, const char *receiver, const char *body )
 {

@@ -20,11 +20,6 @@ class PerlPlugin : public Plugin
 
   public slots:
     virtual void init();
-    virtual void welcomed( Network &net );
-    virtual void connected( Network &net, const Server &serv );
-    virtual void joined( Network &net, const QString &who, Irc::Buffer *b );
-    virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
-                              Irc::Buffer *b );
     virtual void messageReceived( Network &net, const QString &origin, const QString &message,
                                   Irc::Buffer *buffer );
 
@@ -40,7 +35,6 @@ class PerlPlugin : public Plugin
     const char*getNickCallback();
 
   protected slots:
-    virtual QHash<QString, VariableScope> variables();
     EmbedPerl *getNetworkEmbed( Network &net );
 
   private:
