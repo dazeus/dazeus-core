@@ -148,7 +148,9 @@ const char *PerlPlugin::getPropertyCallback(const char *network, const char *var
 #endif
   if( value.isNull() )
     return 0;
-  return value.toString().toUtf8().constData();
+  // save it here until the next call, it will be copied later
+  propertyCopy_ = value.toString().toUtf8();
+  return propertyCopy_.constData();
 }
 
 void PerlPlugin::setPropertyCallback(const char *network, const char *variable, const char *value)

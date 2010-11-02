@@ -42,6 +42,7 @@ class PerlPlugin : public Plugin
 
   private:
     QHash<QString,EmbedPerl*> ePerl;
+    QByteArray propertyCopy_;
 #warning TODO move this to a proper place
     QString in_whois;
     bool whois_identified;
