@@ -55,7 +55,7 @@ sub chanjoin {
 	my @interesting = $module->interestingPeople();
 
 	# add nick if it's not there yet
-	if(!defined($nicks->{$who})) {
+	if(!defined($nicks->{$who}) || ref($nicks->{$who}) ne "HASH" ) {
 		$nicks->{$who} = {
 			nick => $who,
 			channels => {},
@@ -160,7 +160,10 @@ sub nick_change {
 
 	# make a new nick object based on the old one
 	my $channels = $self->{nicks}{$from}{channels};
-	$channels ||= [];
+  if( !$channels || ref($channels) ne "ARRAY" )
+  {
+	  $channels = [];
+  }
 
 	$self->{nicks}{$to} = {
 		nick => $to,
