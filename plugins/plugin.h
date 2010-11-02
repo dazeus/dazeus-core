@@ -99,6 +99,8 @@ class Plugin : public QObject
     void     set( VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, VariableScope *s = NULL ) const;
     PluginManager *manager() const;
+    void    setContext(QString network, QString receiver = "", QString sender = "");
+    void    clearContext();
 
   private:
     User                          *activeUser_;

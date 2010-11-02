@@ -30,6 +30,7 @@ QDebug operator<<(QDebug, const Context *);
 class PluginManager : public QObject
 {
   Q_OBJECT
+  friend class Plugin;
 
   public:
             PluginManager( Database *db );

@@ -34,6 +34,16 @@ PluginManager *Plugin::manager() const
   return manager_;
 }
 
+void Plugin::setContext(QString network, QString receiver, QString sender)
+{
+  manager_->setContext( network, receiver, sender );
+}
+
+void Plugin::clearContext()
+{
+  manager_->clearContext();
+}
+
 /*******STUB HANDLERS********/
 void Plugin::init() {}
 void Plugin::welcomed( Network &net ) {}
