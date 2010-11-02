@@ -43,15 +43,15 @@ class Plugin : public QObject
    * victim.
    */
   enum VariableScope {
+    /// The variable doesn't bind and is the same everywhere.
+    GlobalScope = 0x0,
     /// The variable binds to this network only.
     NetworkScope = 0x1,
-    /// The variable binds to one user specifically, but can bind to that user
-    /// across the network.
-    UserScope = NetworkScope | 0x2,
-    /// The variable binds to the channel and network specifically.
-    ChannelScope = NetworkScope | 0x4,
-    /// The variable doesn't bind and is the same everywhere.
-    GlobalScope = 0x8,
+    /// The variable binds to a specific receiver (for example, a channel) on
+    /// a specific network
+    ReceiverScope = 0x2 | NetworkScope,
+    /// The variable binds to a network, a receiver, and the sender.
+    SenderScope = 0x4 | ReceiverScope,
   };
 
   public slots:

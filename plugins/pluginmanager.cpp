@@ -147,8 +147,8 @@ void PluginManager::set( Plugin::VariableScope s, const QString &name, const QVa
 {
   database_->setProperty( name, value,
     s & Plugin::NetworkScope ? context_->network  : QString(),
-    s & Plugin::ChannelScope ? context_->receiver : QString(),
-    s & Plugin::UserScope    ? context_->sender   : QString() );
+    s & Plugin::ReceiverScope? context_->receiver : QString(),
+    s & Plugin::SenderScope  ? context_->sender   : QString() );
 }
 
 /**
