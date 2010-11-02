@@ -10,6 +10,24 @@ sub init {
   ($uniqueid) = @_;
 }
 
+sub whois {
+  my ($nick, $is_identified) = @_;
+  my $whois = {
+    nick => $nick,
+    identified => $is_identified,
+  };
+
+  for my $mod (@modules)
+  {
+    eval { $mod->whois($whois); };
+    if( $@ )
+    {
+      warn("Error executing $mod ->whois(): $@\n" );
+      next;
+    }
+  }
+}
+
 sub message {
   my ($sender, $receiver, $body, $raw_body) = @_;
   my $mess = {

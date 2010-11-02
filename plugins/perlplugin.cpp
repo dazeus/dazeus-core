@@ -63,6 +63,7 @@ extern "C" {
 
 PerlPlugin::PerlPlugin( PluginManager *man )
 : Plugin(man)
+, whois_identified(false)
 {
 }
 
@@ -99,6 +100,26 @@ void PerlPlugin::messageReceived( Network &net, const QString &origin, const QSt
   getNetworkEmbed(net)->message( origin.toLatin1(), buffer->receiver().toLatin1(), message.toUtf8() );
 }
 
+void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, uint code,
+                                     const QStringList &args, Irc::Buffer *buf )
+{
+  if( code == 311 )
+  {
+    in_whois = args[1];
+    Q_ASSERT( !whois_identified );
+  }
+#warning This will not work - should use CAP IDENTIFY_MSG for this:
+  else if( code == 307 || code == 330 ) // 330 means "logged in as", but doesn't check whether nick is grouped.
+  {
+    whois_identified = true;
+  }
+  else if( code == 318 )
+  {
+    getNetworkEmbed(net)->whois( in_whois.toLatin1().constData(), whois_identified ? 1 : 0 );
+    whois_identified = false;
+    in_whois.clear();
+  }
+}
 
 void PerlPlugin::emoteCallback( const char *network, const char *receiver, const char *body )
 {

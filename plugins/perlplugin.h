@@ -22,6 +22,9 @@ class PerlPlugin : public Plugin
     virtual void init();
     virtual void messageReceived( Network &net, const QString &origin, const QString &message,
                                   Irc::Buffer *buffer );
+    virtual void numericMessageReceived( Network &net, const QString &origin, uint code,
+                                     const QStringList &params,
+                                     Irc::Buffer *buffer );
 
     // Do *not* call from the outside!
     void       emoteCallback  ( const char *network, const char *receiver, const char *body );
@@ -39,6 +42,9 @@ class PerlPlugin : public Plugin
 
   private:
     QHash<QString,EmbedPerl*> ePerl;
+#warning TODO move this to a proper place
+    QString in_whois;
+    bool whois_identified;
 };
 
 #endif

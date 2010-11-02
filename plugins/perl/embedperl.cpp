@@ -217,6 +217,30 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
 #endif
 }
 
+void EmbedPerl::whois(char const *nick, int isIdentified)
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::whois(%s,%d)\n", nick, isIdentified);
+#endif
+  PerlInterpreter *my_perl = perl;
+  dSP;
+  ENTER;
+  SAVETMPS;
+  PUSHMARK(SP);
+  XPUSHs( newSVpv(nick, strlen(nick)) );
+  XPUSHs( newSVpv(isIdentified == 1 ? "1" : "0", strlen("1")));
+  PUTBACK;
+  call_pv("whois", G_SCALAR);
+  SPAGAIN;
+  int result = POPi;
+  PUTBACK;
+  FREETMPS;
+  LEAVE;
+#ifdef DEBUG
+  fprintf(stderr, ".. whois(...)=%d\n", result);
+#endif
+}
+
 bool EmbedPerl::loadModule(const char *module)
 {
 #ifdef DEBUG

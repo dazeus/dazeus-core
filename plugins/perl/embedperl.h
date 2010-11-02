@@ -24,6 +24,7 @@ class EmbedPerl
 
     bool loadModule(const char*);
     void message(const char*, const char*, const char*);
+    void whois(const char*, int);
 
     void setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
                        void (*privmsgCallback)(const char*, const char*, const char*, void*),
