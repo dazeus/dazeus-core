@@ -98,30 +98,44 @@ sub getModule {
 sub join {
   my ($channel, $who) = @_;
   print "** Join: $channel $who\n";
-  # TODO
+  dispatch( "chanjoin", 0, 0, {
+      who => $who,
+      channel => $channel,
+  });
 }
 
 sub nick {
   my ($who, $new_nick) = @_;
   print "** Nick: $who $new_nick\n";
-  # TODO
+  dispatch( "nick_change", 0, 0, $who, $new_nick );
 }
 
 sub connected {
   print "** Connected\n";
-  # TODO
+  dispatch( "connected" );
 }
 
 sub namesReceived {
   my ($channel, $names ) = @_;
   print "** Names Received: $channel $names\n";
-  my @names = split /,/, $names;
-  # TODO
+  my %names;
+  foreach( split /,/, $names )
+  {
+    my $op = /^\+?@/;
+    my $voice = /^@?\+/;
+    s/^[\+@]+//;
+    $names{$_} = {op => $op, voice => $voice};
+  }
+
+  dispatch( "got_names", 0, 0, {
+    channel => $channel,
+    names   => \%names,
+  } );
 }
 
 sub tick {
   print "** Tick\n";
-  # TODO
+  dispatch( "tick" );
 }
 
 sub reloadModule {
