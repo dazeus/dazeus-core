@@ -172,23 +172,32 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
   this->data = data;
 }
 
+#define PREPARE_CALL \
+  PerlInterpreter *my_perl = perl; \
+  dSP; \
+  ENTER; \
+  SAVETMPS; \
+  PUSHMARK(SP);
+
+#define DO_CALL(NAME) \
+  PUTBACK; \
+  call_pv(NAME, G_SCALAR); \
+  SPAGAIN;
+
+#define END_CALL \
+  PUTBACK; \
+  FREETMPS; \
+  LEAVE;
+
 void EmbedPerl::init()
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::init()\n");
 #endif
-  PerlInterpreter *my_perl = perl;
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
+  PREPARE_CALL;
   XPUSHs( newSVpv(uniqueid_, strlen(uniqueid_)));
-  PUTBACK;
-  call_pv("init", G_SCALAR);
-  SPAGAIN;
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
+  DO_CALL( "init" );
+  END_CALL;
 }
 
 void EmbedPerl::message(const char *from, const char *to, const char *msg)
@@ -196,22 +205,14 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::message(%s,%s,%s)\n", from, to, msg);
 #endif
-  PerlInterpreter *my_perl = perl;
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
+  PREPARE_CALL;
   XPUSHs( newSVpv(from, strlen(from)) );
   XPUSHs( newSVpv(to,   strlen(to))   );
   XPUSHs( newSVpv(msg,  strlen(msg))  );
   XPUSHs( newSVpv(msg,  strlen(msg))  );
-  PUTBACK;
-  call_pv("message", G_SCALAR);
-  SPAGAIN;
+  DO_CALL("message");
   int result = POPi;
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
+  END_CALL;
 #ifdef DEBUG
   fprintf(stderr, "... message(...)=%d\n", result);
 #endif
@@ -222,20 +223,12 @@ void EmbedPerl::whois(char const *nick, int isIdentified)
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::whois(%s,%d)\n", nick, isIdentified);
 #endif
-  PerlInterpreter *my_perl = perl;
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
+  PREPARE_CALL;
   XPUSHs( newSVpv(nick, strlen(nick)) );
   XPUSHs( newSVpv(isIdentified == 1 ? "1" : "0", strlen("1")));
-  PUTBACK;
-  call_pv("whois", G_SCALAR);
-  SPAGAIN;
+  DO_CALL( "whois" );
   int result = POPi;
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
+  END_CALL;
 #ifdef DEBUG
   fprintf(stderr, ".. whois(...)=%d\n", result);
 #endif
@@ -246,19 +239,11 @@ bool EmbedPerl::loadModule(const char *module)
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::loadModule(%s)", module);
 #endif
-  PerlInterpreter *my_perl = perl;
-  dSP;
-  ENTER;
-  SAVETMPS;
-  PUSHMARK(SP);
+  PREPARE_CALL;
   XPUSHs( newSVpv(module, strlen(module)) );
-  PUTBACK;
-  call_pv("loadModule", G_SCALAR);
-  SPAGAIN;
+  DO_CALL("loadModule");
   int result = POPi;
-  PUTBACK;
-  FREETMPS;
-  LEAVE;
+  END_CALL;
 #ifdef DEBUG
   fprintf(stderr, "=%d\n", result);
 #endif
