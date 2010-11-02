@@ -45,29 +45,43 @@ sub __said {
 
   for my $pri (0..3)
   {
-    NEXTMOD: for my $mod (@modules)
-    {
-      my $message;
-      eval { $message = $mod->said($mess,$pri) };
-      if( $@ )
-      {
-        warn("Error executing $mod ->said(): $@\n" );
-        $mod->say({channel => $mess->{channel},
-                   who     => $mess->{who},
-                   body    => "Error executing $mod ->said(): $@\n" });
-        next NEXTMOD;
-      }
-      elsif( $message && $message ne "1" && !ref($message) )
-      {
-        $mod->say({channel => $mess->{channel},
-                   who     => $mess->{who},
-                   body    => $message});
-        return;
-      }
-    }
+    dispatch( "said",
+      sub {
+        my ($error, $mod, $args) = @_;
+        my $mess = $args->[0];
+        $mod->reply($mess, "Error executing $mod ->said(): $error\n");
+      },
+      sub {
+        my $message = $_[0];
+        my $mess = $_[2][0];
+        if( $message && $message ne "1" && !ref($message) )
+        {
+          $mod->reply($mess, $message);
+          return -1;
+        }
+      }, $mess, $pri );
   }
 
   return;
+}
+
+sub dispatch {
+  my $method = shift;
+  my $error_callback   = shift || sub {};
+  my $message_callback = shift || sub {};
+
+  for my $mod (@modules)
+  {
+    my $message;
+    eval { $message = $mod->$method( @_ ); };
+    if( $@ )
+    {
+      warn("Error executing $mod -> $method: $@\n" );
+      return if( $error_callback->($@, $mod, \@_) == -1 );
+      next;
+    }
+    return if( $message_callback->($message) == -1 );
+  }
 }
 
 sub getModule {
