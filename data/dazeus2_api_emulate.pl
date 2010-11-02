@@ -13,7 +13,7 @@ sub init {
 sub message {
   my ($sender, $receiver, $body, $raw_body) = @_;
   my $mess = {
-    channel => $receiver,
+    channel => ($receiver =~ /^(#|&)/) ? $receiver : "msg",
     body    => $body,
     raw_body => $raw_body,
     who     => $sender,
