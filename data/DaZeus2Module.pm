@@ -128,7 +128,14 @@ sub get {
     {
       warn "Error executing getProperty: $@\n";
     }
-    $value = thaw(decode_base64($value)) if( defined($value) );
+    eval {
+      $value = thaw(decode_base64($value)) if( defined($value) );
+    };
+    if( $@ )
+    {
+      warn "Error thawing property $qualifier: $@\n";
+      return undef;
+    }
     return $value;
 }
 
