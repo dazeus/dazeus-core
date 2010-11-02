@@ -42,6 +42,16 @@ sub said {
   ::__said($_[0]);
 }
 
+sub join {
+  my $s = shift;
+  $s->{Module}->join(@_);
+}
+
+sub part {
+  my $s = shift;
+  $s->{Module}->part(@_);
+}
+
 package DaZeus2Module;
 use strict;
 use warnings;
