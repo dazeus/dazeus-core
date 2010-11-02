@@ -31,7 +31,6 @@ void TestPlugin::connected( Network &net, const Server &serv )
 void TestPlugin::welcomed( Network &net )
 {
   qDebug() << "Authenticated to network " << net;
-  net.joinChannel( "#dazjorz" );
 }
 
 void TestPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel )
@@ -53,10 +52,4 @@ void TestPlugin::parted( Network &net, const QString &who, const QString &leaveM
 {
   qDebug() << "User " << who << " left channel " << channel << "on" << net
            << " (leave message " << leaveMessage << ")";
-}
-
-QHash<QString, Plugin::VariableScope> TestPlugin::variables()
-{
-  QHash<QString, Plugin::VariableScope> variables;
-  return variables;
 }
