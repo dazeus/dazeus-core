@@ -52,8 +52,8 @@ sub __said {
         $mod->reply($mess, "Error executing $mod ->said(): $error\n");
       },
       sub {
-        my $message = $_[0];
-        my $mess = $_[2][0];
+        my ($message, $mod, $args) = @_;
+        my $mess    = $args->[0];
         if( $message && $message ne "1" && !ref($message) )
         {
           $mod->reply($mess, $message);
@@ -77,10 +77,11 @@ sub dispatch {
     if( $@ )
     {
       warn("Error executing $mod -> $method: $@\n" );
-      return if( $error_callback->($@, $mod, \@_) == -1 );
+      return if( $error_callback->($@, $mod, \@_) eq "-1" );
       next;
     }
-    return if( $message_callback->($message) == -1 );
+    my $result = $message_callback->($message, $mod, \@_);
+    return if( $result && $result eq "-1" );
   }
 }
 
