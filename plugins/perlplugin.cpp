@@ -87,6 +87,9 @@ EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
                          perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
                          perlplugin_join_callback, perlplugin_part_callback,
                          perlplugin_getNick_callback, this );
+  newPerl->loadModule( "DazAuth" );
+  newPerl->loadModule( "DazChannel" );
+  newPerl->loadModule( "DazLoader" );
   newPerl->loadModule( "DazMessages" );
   newPerl->loadModule( "DazFactoids" );
 
