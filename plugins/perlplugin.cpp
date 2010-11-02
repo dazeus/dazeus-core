@@ -195,7 +195,7 @@ void PerlPlugin::setPropertyCallback(const char *network, const char *variable, 
 {
   Q_UNUSED(network);
 
-  set(Plugin::GlobalScope, variable, value);
+  set(Plugin::NetworkScope, variable, value);
 #ifdef DEBUG
   qDebug() << "Set property: " << variable << "to:" << value;
 #endif
