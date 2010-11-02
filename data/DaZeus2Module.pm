@@ -52,6 +52,11 @@ sub part {
   $s->{Module}->part(@_);
 }
 
+sub say {
+  my $s = shift;
+  $s->{Module}->say(@_);
+}
+
 package DaZeus2Module;
 use strict;
 use warnings;
