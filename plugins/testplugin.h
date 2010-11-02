@@ -24,9 +24,6 @@ class TestPlugin : public Plugin
     virtual void joined( Network &net, const QString &who, Irc::Buffer *b );
     virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
                               Irc::Buffer *b );
-
-  protected slots:
-    virtual QHash<QString, VariableScope> variables();
 };
 
 #endif
