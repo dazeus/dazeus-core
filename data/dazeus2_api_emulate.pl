@@ -96,8 +96,7 @@ sub loadModule {
   }
   $module = "DaZeus2Module::$module";
 
-  push @modules, $module->new();
-  $module->uniqueid( $uniqueid );
+  push @modules, $module->new( UniqueID => $uniqueid );
   return 1;
 }
 

@@ -43,8 +43,6 @@ use Data::Dumper;
 use Storable qw(thaw freeze);
 use MIME::Base64 qw(encode_base64 decode_base64);
 
-my $uniqueid;
-
 sub new {
     my $class = shift;
     my %param = @_;
@@ -67,10 +65,6 @@ sub new {
     }
 
     return $self;
-}
-
-sub uniqueid {
-    (undef,$uniqueid) = @_;
 }
 
 sub bot {
@@ -101,7 +95,7 @@ sub getNick {
     my $self = shift;
     my $nick;
     eval {
-      $nick = DaZeus2::getNick($uniqueid);
+      $nick = DaZeus2::getNick($self->{UniqueID});
     };
     if( $@ )
     {
@@ -115,7 +109,7 @@ sub set {
     my $qualifier = "perl." . $self->{Name} . "." . $_[0];
     my $value     = encode_base64(freeze($_[1]));
     eval {
-      DaZeus2::setProperty($uniqueid, $qualifier, $value);
+      DaZeus2::setProperty($self->{UniqueID}, $qualifier, $value);
     };
     if( $@ )
     {
@@ -128,7 +122,7 @@ sub get {
     my $qualifier = "perl." . $self->{Name} . "." . $_[0];
     my $value;
     eval {
-        $value = DaZeus2::getProperty($uniqueid, $qualifier);
+        $value = DaZeus2::getProperty($self->{UniqueID}, $qualifier);
     };
     if( $@ )
     {
@@ -142,7 +136,7 @@ sub unset {
     my $self = shift;
     my $qualifier = "perl." . $self->{Name} . "." . $_[0];
     eval {
-      DaZeus2::unsetProperty($uniqueid, $qualifier);
+      DaZeus2::unsetProperty($self->{UniqueID}, $qualifier);
     };
     if( $@ )
     {
@@ -161,7 +155,7 @@ sub say {
   my $args = $_[0];
   my $channel = $args->{channel} eq "msg" ? $args->{who} : $args->{channel};
   eval {
-    DaZeus2::privmsg($uniqueid, $channel, $args->{body});
+    DaZeus2::privmsg($self->{UniqueID}, $channel, $args->{body});
   };
   if( $@ )
   {
@@ -173,7 +167,7 @@ sub emote {
   my $self = shift;
   my %args = @_;
   eval {
-    DaZeus2::emote($uniqueid, $args{channel}, $args{body});
+    DaZeus2::emote($self->{UniqueID}, $args{channel}, $args{body});
   };
   if( $@ )
   {
@@ -184,7 +178,7 @@ sub emote {
 sub sendWhois {
   my $self = shift;
   eval {
-    DaZeus2::sendWhois($uniqueid, $_[0]);
+    DaZeus2::sendWhois($self->{UniqueID}, $_[0]);
   };
   if( $@ )
   {
@@ -195,7 +189,7 @@ sub sendWhois {
 sub join {
   my $self = shift;
   eval {
-    DaZeus2::join($uniqueid, $_[0]);
+    DaZeus2::join($self->{UniqueID}, $_[0]);
   };
   if( $@ )
   {
@@ -206,7 +200,7 @@ sub join {
 sub part {
   my $self = shift;
   eval {
-    DaZeus2::part($uniqueid, $_[0]);
+    DaZeus2::part($self->{UniqueID}, $_[0]);
   };
   if( $@ )
   {
