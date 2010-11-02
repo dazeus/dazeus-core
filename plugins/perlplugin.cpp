@@ -154,10 +154,12 @@ void PerlPlugin::nickChanged( Network &net, const QString &origin, const QString
 
 void PerlPlugin::tick() {
   // tick every NetworkEmbed
+  setContext( "" );
   foreach(EmbedPerl *e, ePerl)
   {
     e->tick();
   }
+  clearContext();
 }
 
 void PerlPlugin::emoteCallback( const char *network, const char *receiver, const char *body )
