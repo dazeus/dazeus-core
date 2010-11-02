@@ -249,3 +249,65 @@ bool EmbedPerl::loadModule(const char *module)
 #endif
   return result != 0;
 }
+
+void EmbedPerl::join(const char *channel, const char *who)
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::join(%s, %s)\n", channel, who);
+#endif
+  PREPARE_CALL;
+  XPUSHs( newSVpv(channel, strlen(channel)) );
+  XPUSHs( newSVpv(who,     strlen(who))     );
+  DO_CALL("join");
+  END_CALL;
+}
+
+void EmbedPerl::nick(const char *who, const char *new_nick)
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::nick(%s, %s)\n", who, new_nick);
+#endif
+  PREPARE_CALL;
+  XPUSHs( newSVpv(who,      strlen(who))      );
+  XPUSHs( newSVpv(new_nick, strlen(new_nick)) );
+  DO_CALL("nick");
+  END_CALL;
+}
+
+void EmbedPerl::connected()
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::connected()\n");
+#endif
+  PREPARE_CALL;
+  DO_CALL("connected");
+  END_CALL;
+}
+
+/**
+ * 'names' should be comma-separated!
+ */
+void EmbedPerl::namesReceived(const char *channel, const char *names)
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::namesReceived(%s, %s)\n", channel, names);
+#endif
+  PREPARE_CALL;
+  XPUSHs( newSVpv(channel, strlen(channel)) );
+  XPUSHs( newSVpv(names,   strlen(names))   );
+  DO_CALL("namesReceived");
+  END_CALL;
+}
+
+/**
+ * Call this method every 5 seconds
+ */
+void EmbedPerl::tick()
+{
+#ifdef DEBUG
+  fprintf(stderr, "EmbedPerl::tick()\n");
+#endif
+  PREPARE_CALL;
+  DO_CALL("tick");
+  END_CALL;
+}

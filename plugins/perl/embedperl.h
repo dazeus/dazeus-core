@@ -25,6 +25,11 @@ class EmbedPerl
     bool loadModule(const char*);
     void message(const char*, const char*, const char*);
     void whois(const char*, int);
+    void join(const char *channel, const char *who);
+    void nick(const char *who, const char *new_nick);
+    void connected();
+    void namesReceived(const char *channel, const char *names);
+    void tick();
 
     void setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
                        void (*privmsgCallback)(const char*, const char*, const char*, void*),

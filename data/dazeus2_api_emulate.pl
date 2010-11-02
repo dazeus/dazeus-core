@@ -81,6 +81,35 @@ sub getModule {
   return undef;
 }
 
+sub join {
+  my ($channel, $who) = @_;
+  print "** Join: $channel $who\n";
+  # TODO
+}
+
+sub nick {
+  my ($who, $new_nick) = @_;
+  print "** Nick: $who $new_nick\n";
+  # TODO
+}
+
+sub connected {
+  print "** Connected\n";
+  # TODO
+}
+
+sub namesReceived {
+  my ($channel, $names ) = @_;
+  print "** Names Received: $channel $names\n";
+  my @names = split /,/, $names;
+  # TODO
+}
+
+sub tick {
+  print "** Tick\n";
+  # TODO
+}
+
 sub reloadModule {
   my $oldmod = getModule($_[0]);
   unloadModule($_[0]) if($oldmod);
