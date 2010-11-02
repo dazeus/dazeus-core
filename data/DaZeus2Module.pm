@@ -5,15 +5,15 @@ package Bot;
 # (because sometimes, they overlap!)
 
 sub reload {
-  return reloadModule($_[1]);
+  return ::reloadModule($_[1]);
 }
 
 sub load {
-  return loadModule($_[1]);
+  return ::loadModule($_[1]);
 }
 
 sub unload {
-  return loadModule($_[1]);
+  return ::loadModule($_[1]);
 }
 
 sub module {
