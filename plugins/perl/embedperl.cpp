@@ -285,7 +285,7 @@ void EmbedPerl::connected()
 }
 
 /**
- * 'names' should be comma-separated!
+ * 'names' should be space separated!
  */
 void EmbedPerl::namesReceived(const char *channel, const char *names)
 {

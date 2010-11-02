@@ -119,7 +119,7 @@ sub namesReceived {
   my ($channel, $names ) = @_;
   print "** Names Received: $channel $names\n";
   my %names;
-  foreach( split /,/, $names )
+  foreach( split /\s+/, $names )
   {
     my $op = /^\+?@/;
     my $voice = /^@?\+/;

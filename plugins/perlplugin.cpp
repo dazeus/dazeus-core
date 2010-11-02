@@ -127,7 +127,15 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
     whois_identified = false;
     in_whois.clear();
   }
-  // TODO namesReceived
+  // part of NAMES
+  else if( code == 353 )
+  {
+    names_ += " " + args.last();
+  }
+  else if( code == 366 )
+  {
+    getNetworkEmbed(net)->namesReceived( args.at(1).toLatin1().constData(), names_.toLatin1().constData() );
+  }
 }
 
 void PerlPlugin::connected( Network &net, const Server & ) {

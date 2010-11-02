@@ -56,6 +56,7 @@ class PerlPlugin : public Plugin
 #warning TODO move this to a proper place
     QString in_whois;
     bool whois_identified;
+    QString names_;
 };
 
 #endif
