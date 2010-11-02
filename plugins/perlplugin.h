@@ -9,6 +9,7 @@
 #include "plugin.h"
 #include "perl/embedperl.h"
 #include <QtCore/QVariant>
+#include <QtCore/QTimer>
 
 class PerlPlugin : public Plugin
 {
@@ -25,6 +26,11 @@ class PerlPlugin : public Plugin
     virtual void numericMessageReceived( Network &net, const QString &origin, uint code,
                                      const QStringList &params,
                                      Irc::Buffer *buffer );
+    virtual void connected( Network &net, const Server &serv );
+    virtual void joined( Network &net, const QString &who, Irc::Buffer *channel );
+    virtual void nickChanged( Network &net, const QString &origin, const QString &nick,
+                          Irc::Buffer *buffer );
+
 
     // Do *not* call from the outside!
     void       emoteCallback  ( const char *network, const char *receiver, const char *body );
@@ -37,12 +43,16 @@ class PerlPlugin : public Plugin
     void       partCallback(const char *channel);
     const char*getNickCallback();
 
-  protected slots:
+  protected:
     EmbedPerl *getNetworkEmbed( Network &net );
+
+  private slots:
+    void       tick();
 
   private:
     QHash<QString,EmbedPerl*> ePerl;
     QByteArray propertyCopy_;
+    QTimer tickTimer_;
 #warning TODO move this to a proper place
     QString in_whois;
     bool whois_identified;

@@ -65,6 +65,10 @@ PerlPlugin::PerlPlugin( PluginManager *man )
 : Plugin(man)
 , whois_identified(false)
 {
+  tickTimer_.setSingleShot( false );
+  tickTimer_.setInterval( 5000 );
+  connect( &tickTimer_, SIGNAL( timeout() ),
+           this,        SLOT(      tick() ) );
 }
 
 PerlPlugin::~PerlPlugin() {}
@@ -74,6 +78,7 @@ void PerlPlugin::init()
 #ifdef DEBUG
   qDebug() << "PerlPlugin initialising.";
 #endif
+  tickTimer_.start();
 }
 
 EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
@@ -121,6 +126,28 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
     getNetworkEmbed(net)->whois( in_whois.toLatin1().constData(), whois_identified ? 1 : 0 );
     whois_identified = false;
     in_whois.clear();
+  }
+  // TODO namesReceived
+}
+
+void PerlPlugin::connected( Network &net, const Server & ) {
+  getNetworkEmbed(net)->connected();
+}
+
+void PerlPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {
+  getNetworkEmbed(net)->join( channel->receiver().toLatin1(), who.toLatin1() );
+}
+
+void PerlPlugin::nickChanged( Network &net, const QString &origin, const QString &nick,
+                          Irc::Buffer* ) {
+  getNetworkEmbed(net)->nick( origin.toLatin1(), nick.toLatin1() );
+}
+
+void PerlPlugin::tick() {
+  // tick every NetworkEmbed
+  foreach(EmbedPerl *e, ePerl)
+  {
+    e->tick();
   }
 }
 
