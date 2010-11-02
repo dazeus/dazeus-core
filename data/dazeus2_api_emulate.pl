@@ -98,7 +98,6 @@ sub getModule {
 
 sub join {
   my ($channel, $who) = @_;
-  print "** Join: $channel $who\n";
   dispatch( "chanjoin", 0, 0, {
       who => $who,
       channel => $channel,
@@ -107,18 +106,15 @@ sub join {
 
 sub nick {
   my ($who, $new_nick) = @_;
-  print "** Nick: $who $new_nick\n";
   dispatch( "nick_change", 0, 0, $who, $new_nick );
 }
 
 sub connected {
-  print "** Connected\n";
   dispatch( "connected" );
 }
 
 sub namesReceived {
   my ($channel, $names ) = @_;
-  print "** Names Received: $channel $names\n";
   my %names;
   foreach( split /\s+/, $names )
   {
@@ -135,7 +131,6 @@ sub namesReceived {
 }
 
 sub tick {
-  print "** Tick\n";
   dispatch( "tick" );
 }
 
