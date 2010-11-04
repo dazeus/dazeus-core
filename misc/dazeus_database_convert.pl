@@ -242,7 +242,9 @@ If you need to give a username or password along with the DSN, you can do this
 by appending the DSN with a username or password, with exclamation marks in
 between. For example:
 
-  $0 "DBI:mysql:database=foo;host=localhost!username!password" \
+  $0 \
+      "DBI:mysql:database=foo;host=localhost!username!password" \
+      "freenode" \
       "DBI:SQLite:bot-basicbot.sqlite" "DBI:SQLite:bot-basicbot2.sqlite"
 
 This command merges the input from the two given SQLite databases, and inserts
