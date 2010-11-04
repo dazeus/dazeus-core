@@ -13,7 +13,7 @@ sub load {
 }
 
 sub unload {
-  return ::loadModule($_[1]);
+  return ::unloadModule($_[1]);
 }
 
 sub module {
