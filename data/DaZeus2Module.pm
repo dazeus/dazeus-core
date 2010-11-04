@@ -128,7 +128,7 @@ sub getNick {
 sub set {
     my $self = shift;
     my $qualifier = "perl." . $self->{Name} . "." . $_[0];
-    my $value     = encode_base64(freeze($_[1]));
+    my $value     = ref($_[1]) ? encode_base64(freeze($_[1])) : $_[1];
     eval {
       DaZeus2::setProperty($self->{UniqueID}, $qualifier, $value);
     };
@@ -149,14 +149,10 @@ sub get {
     {
       warn "Error executing getProperty: $@\n";
     }
-    eval {
-      $value = thaw(decode_base64($value)) if( defined($value) );
-    };
-    if( $@ )
-    {
-      warn "Error thawing property $qualifier: $@\n";
-      return undef;
-    }
+
+    return undef if( !defined($value) );
+
+    $value = eval { thaw(decode_base64($value)) } || $value;
     return $value;
 }
 
