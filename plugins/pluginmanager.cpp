@@ -145,10 +145,14 @@ void PluginManager::reset()
  */
 void PluginManager::set( Plugin::VariableScope s, const QString &name, const QVariant &value )
 {
+  bool isSenderScope   =                    s & Plugin::SenderScope;
+  bool isReceiverScope = isSenderScope   || s & Plugin::ReceiverScope;
+  bool isNetworkScope  = isReceiverScope || s & Plugin::NetworkScope;
+
   database_->setProperty( name, value,
-    s & Plugin::NetworkScope ? context_->network  : QString(),
-    s & Plugin::ReceiverScope? context_->receiver : QString(),
-    s & Plugin::SenderScope  ? context_->sender   : QString() );
+    isNetworkScope  ? context_->network  : QString(),
+    isReceiverScope ? context_->receiver : QString(),
+    isSenderScope   ? context_->sender   : QString() );
 }
 
 /**

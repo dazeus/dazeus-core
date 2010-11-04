@@ -49,9 +49,9 @@ class Plugin : public QObject
     NetworkScope = 0x1,
     /// The variable binds to a specific receiver (for example, a channel) on
     /// a specific network
-    ReceiverScope = 0x2 | NetworkScope,
+    ReceiverScope = 0x2,
     /// The variable binds to a network, a receiver, and the sender.
-    SenderScope = 0x4 | ReceiverScope,
+    SenderScope = 0x4,
   };
 
   public slots:
