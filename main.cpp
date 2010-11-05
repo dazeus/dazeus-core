@@ -11,11 +11,13 @@
 #include <IrcGlobal>
 #include <Irc>
 
-#if IRC_VERSION < 0x000500
- #if IRC_VERSION != 0x000000
-  #error IRC_VERSION must be at least 0.5.0.
- #else
-  #warning You are using libircclient-qt trunk. Stuff might break.
+#if IRC_VERSION == 0xffffff || IRC_VERSION == 0x000000
+ #warning **WARNING**
+ #warning You are using libircclient-qt trunk. Use at your own risk!
+ #warning **WARNING**
+#else
+ #if IRC_VERSION < 0x005000
+  #error This bot requires at least libircclient-qt 0.5.0.
  #endif
 #endif
 
