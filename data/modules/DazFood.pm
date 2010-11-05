@@ -1,11 +1,11 @@
 # DaZeus - A highly functional IRC bot
 # Copyright (C) 2007  Sjors Gielen <sjorsgielen@gmail.com>
 # 
-package Bot::BasicBot::Pluggable::Module::DazFood;
+package DaZeus2Module::DazFood;
 use strict;
 use warnings;
 no warnings 'redefine';
-use base qw(Bot::BasicBot::Pluggable::Module);
+use base qw(DaZeus2Module);
 
 my @foodlist;
 my ($cook, $cookwhat, $cookedit);
