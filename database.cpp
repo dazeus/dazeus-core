@@ -230,14 +230,24 @@ bool Database::createTable()
     return true; // database already exists
 
   QSqlQuery data(db_);
-  return data.exec("CREATE TABLE properties ("
-                   "  id       INT(10) PRIMARY KEY AUTO_INCREMENT,"
+  QString idrow = "INT(10) PRIMARY KEY AUTO_INCREMENT";
+  if( db_.driverName().toLower().startsWith("qsqlite") )
+  {
+    idrow = "INTEGER PRIMARY KEY AUTOINCREMENT";
+  }
+  bool ok = data.exec("CREATE TABLE properties ("
+                   "  id      " + idrow + ","
                    "  variable VARCHAR(150),"
                    "  network VARCHAR(50)," // enforced limit in config.cpp
                    "  receiver VARCHAR(50)," // usually, max = 9 or 30
                    "  sender VARCHAR(50)," //  usually, max = 9 or 30
                    "  value TEXT"
                    ");");
+  if( !ok )
+  {
+    qWarning() << data.lastError();
+  }
+  return ok;
 }
 bool Database::tableExists() const
 {
