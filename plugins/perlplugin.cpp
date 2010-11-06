@@ -205,7 +205,7 @@ void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable
 {
   Q_UNUSED(network);
 
-  set(Plugin::GlobalScope, variable, QVariant());
+  set(Plugin::NetworkScope, variable, QVariant());
 #ifdef DEBUG
   qDebug() << "Unset property: " << variable;
 #endif
