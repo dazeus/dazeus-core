@@ -16,7 +16,7 @@
  #warning You are using libircclient-qt trunk. Use at your own risk!
  #warning **WARNING**
 #else
- #if IRC_VERSION < 0x005000
+ #if IRC_VERSION < 0x000500
   #error This bot requires at least libircclient-qt 0.5.0.
  #endif
 #endif
