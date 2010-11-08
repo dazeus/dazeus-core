@@ -18,12 +18,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 package DaZeus2Module::PiepNoms;
-use strict;
+#use strict;
 use warnings;
 no warnings 'redefine';
 use base qw(DaZeus2Module);
 use MIME::Base64;
-use HTML::Tree;
+use XML::DOM::XPath;
 use LWP::Simple;
 use Encode;
 
@@ -35,37 +35,34 @@ sub nomget {
 	my @dag = @_;
 	my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
 	
-	my $menulink = "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/";
+	my $menulink = "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-week/?rss=true";
 	my $menucontent = get($menulink);
-	# Weg met die <br /> tags. HRRM. 
-	$menucontent =~ s/(\w)<br \/>(\w)/\1, \2/g;
-	my $tree = HTML::Tree->new();
-	$tree->parse($menucontent);
-	my $tbody = $tree->look_down( '_tag', 'tbody' );
-	my @rows = $tbody->look_down( '_tag', 'tr');
+	my $tree = XML::DOM::Parser->new();
+	my $doc = $tree->parse($menucontent);
+    my @items = $doc->findnodes('//item');
 	my @noms;
-	foreach (@rows) {
-		my @data = $_->look_down( '_tag', 'td');
-		my $nomcount = scalar(@data);
-		if ($dag[1]) {
-			$compare = lc(substr($dag[1], 0, 2));
-			if ($compare eq "mo") {
-				$compare = lc(substr($week[$dayOfWeek+1], 0, 2));
-			} elsif ($compare eq "ov") {
-				$compare = lc(substr($week[$dayOfWeek+2], 0, 2));
-			}
-		}
+    foreach (@items) {
+        my $title = $_->getElementsByTagName('title')->item(0)->getFirstChild()->getNodeValue();
+        my $url = $_->getElementsByTagName('link')->item(0)->getFirstChild()->getNodeValue();
+        my $desc = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
+        $desc =~ s/\<p\>//;
+        $desc =~ s/\<\/p\>//;
+        if ($dag[1]) {
+            $compare = lc(substr($dag[1], 0, 2));
+            if ($compare eq "mo") {
+                $compare = lc(substr($week[$dayOfWeek+1], 0, 2));
+            } elsif ($compare eq "ov") {
+                $compare = lc(substr($week[$dayOfWeek+2], 0, 2));
+            }
+        }
 
-		if ($compare eq "") {
-			$compare =  lc($week[$dayOfWeek]); 
-		}
-		if ($compare eq lc(substr($data[0]->as_text, 0, 2))) {
-			for (my $i=1; $i< $nomcount; $i++) {
-				push(@noms, $data[$i]->as_text);
-			}
-			last;
-		}
-		$compare = "";
+        if ($compare eq "") {
+            $compare =  lc($week[$dayOfWeek]); 
+        }
+        if ($compare eq lc(substr($title, 0, 2))) {
+            push(@noms, $desc);
+        }
+        $compare = "";
 	}
 	return @noms;
 }
