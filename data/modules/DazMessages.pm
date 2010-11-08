@@ -213,7 +213,7 @@ sub told
 		if($rest eq "") {
 			return "Je moeder is een null-pointer!";
 		}
-		return	"Je moeder is " . $rest . "!";
+		return "Je moeder is " . $rest . "!";
 	}
 }
 
