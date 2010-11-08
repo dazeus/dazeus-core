@@ -213,8 +213,7 @@ sub told
 		if($rest eq "") {
 			return "Je moeder is een null-pointer!";
 		}
-		return	"Je moeder is " . ($rest =~ /^een/i ? "" : "een ") 
-			. $rest . "!";
+		return	"Je moeder is " . $rest . "!";
 	}
 }
 
