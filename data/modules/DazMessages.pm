@@ -209,9 +209,12 @@ sub told
 		$search =~ s/ /+/g;
 		$search =~ s/&/&amp;/g;
 		return "http://www.google.com/codesearch?q=" . $search;
-	} elsif($command eq "moeder" ) {
+	} elsif( $command eq "moeder" or $command eq "jemoeder" ) {
 		if($rest eq "") {
 			return "Je moeder is een null-pointer!";
+		}
+		if( $command =~ /^een/i ) {
+			return "Je moeder is " . $rest . "!";
 		}
 		return "Je moeder is een " . $rest . "!";
 	}
