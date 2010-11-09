@@ -147,7 +147,8 @@ void Database::setProperty( const QString &variable,
 
   // set in database
   QSqlQuery finder(db_);
-  finder.prepare("SELECT id FROM properties WHERE variable=? AND network"
+  // because size() always returns -1 on an SQLite backend, we use COUNT.
+  finder.prepare("SELECT id,COUNT(id) FROM properties WHERE variable=? AND network"
                  + QString(networkScope.isEmpty()  ? " IS NULL" : "=?")
                  + " AND receiver"
                  + QString(receiverScope.isEmpty() ? " IS NULL" : "=?")
@@ -167,15 +168,22 @@ void Database::setProperty( const QString &variable,
     qWarning() << "Select property before setting failed: " << finder.lastError();
     return;
   }
-  if( finder.size() < 0 )
+
+  if( !finder.next() )
   {
-    qWarning() << "Select property before setting gave no results: " << finder.lastError();
+    qWarning() << "Could not select first value row before setting: " << finder.lastError();
     return;
   }
 
+  int resultSize = finder.value(1).isValid() ? finder.value(1).toInt() : 0;
+  int returnedId = finder.value(0).isValid() ? finder.value(0).toInt() : -1;
+
+  if( resultSize > 1 )
+    qWarning() << "*** WARNING: More than one result to variable retrieve! This is a bug. ***";
+
   QSqlQuery data(db_);
 
-  if( finder.size() == 0 )
+  if( !resultSize )
   {
     // insert
     if( !value.isValid() )
@@ -201,9 +209,6 @@ void Database::setProperty( const QString &variable,
   else
   {
     // update
-    finder.next();
-    int returnedId = finder.value(0).toInt();
-
     if( !value.isValid() )
     {
       // Don't insert null values - delete the old one
