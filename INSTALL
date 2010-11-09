@@ -1,13 +1,16 @@
 
-This application requires libircclient 0.5.0. At this moment, 0.5.0 is only
-in the Hg repository, but it will be released soon.
+This application requires libircclient 0.5.0, which was released in November
+2010. It also works with libircclient trunk past 0.5.0, but does not check
+whether the trunk version is correct, so make sure you have an up-to-date
+version.
 
 To compile DaVinci, run qmake and make in the main directory:
-  qmake davinci.pro
+  qmake
   make
 
-This creates a 'davinci' binary that you can run or manually copy to whatever
-bin directory you want.
+This creates a 'davinci' binary in the 'data' directory that you can run. If
+you intend to run DaZeus 2.0 elsewhere, manually copy the 'data' directory
+there.
 
 For the Perl plugin (which is always enabled[0]) you need some Perl modules
 to be installed: Data::Dumper, Storable and MIME::Base64. They are likely
