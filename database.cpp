@@ -145,7 +145,8 @@ void Database::setProperty( const QString &variable,
   qDebug() << "Setting property " << variable << "to" << value;
 #endif
 
-  // set in database
+  // first, select it from the database, to see whether to update or insert
+  // (not all database engines support "on duplicate key update".)
   QSqlQuery finder(db_);
   // because size() always returns -1 on an SQLite backend, we use COUNT.
   finder.prepare("SELECT id,COUNT(id) FROM properties WHERE variable=? AND network"
@@ -222,6 +223,11 @@ void Database::setProperty( const QString &variable,
     }
     data.addBindValue(returnedId);
   }
+
+#ifdef DEBUG
+  qDebug() << "Executing data query: " << data.lastQuery();
+  qDebug() << "Bound data query values: " << data.boundValues();
+#endif
 
   if( !data.exec() )
   {
