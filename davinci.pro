@@ -10,6 +10,7 @@ QT       -= gui
 TARGET    = data/davinci
 CONFIG   += console libircclient-qt
 CONFIG   -= app_bundle
+VERSION   = 1.9.1
 
 TEMPLATE = app
 OBJECTS_DIR = build
