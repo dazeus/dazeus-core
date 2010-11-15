@@ -102,7 +102,7 @@ sub seen
 			$self->unset("karma_$thing");
 		}
 	}
-	if($num>=5) {
+	if($num>=5 and $thing =~ /^-*$/) {
 		my $newkarma = $self->decrease_karma($w);
 		$self->bot->reply($mess, $w."--: You karma-spamwhore!\n");
 		print "I lowered karma for $w to $newkarma (karma-spamming).\n";
