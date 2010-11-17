@@ -215,6 +215,8 @@ sub told
 			return "Je moeder is een null-pointer!";
 		}
 		return "Je moeder is " . $rest . "!";
+	} elsif( $command eq "sarcasm") {
+		return "+-------+\n|Sarcasm|\n+---+---+\n    | (o.o;\n    o=";
 	}
 }
 
