@@ -80,24 +80,26 @@ void Server::disconnectFromServer( Network::DisconnectReason reason )
   QString reasonString;
   switch( reason )
   {
+#define rw(x) QLatin1String(x)
   case Network::ShutdownReason:
-    reasonString = "Shutting down";
+    reasonString = rw("Shutting down");
     break;
   case Network::ConfigurationReloadReason:
-    reasonString = "Reloading configuration";
+    reasonString = rw("Reloading configuration");
     break;
   case Network::SwitchingServersReason:
-    reasonString = "Switching servers";
+    reasonString = rw("Switching servers");
     break;
   case Network::ErrorReason:
-    reasonString = "Unknown error";
+    reasonString = rw("Unknown error");
     break;
   case Network::AdminRequestReason:
-    reasonString = "An admin asked me to disconnect";
+    reasonString = rw("An admin asked me to disconnect");
     break;
   case Network::UnknownReason:
   default:
-    reasonString = "See you around!";
+    reasonString = rw("See you around!");
+#undef rw
   }
 
   quit( reasonString );
@@ -128,7 +130,7 @@ void Server::leaveChannel( QString channel, const QString &reason )
 QString Server::motd() const
 {
   qWarning() << "MOTD cannot be retrieved.";
-  return "";
+  return QString();
 }
 
 
