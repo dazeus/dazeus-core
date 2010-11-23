@@ -45,7 +45,7 @@ sub seen
 		my $thing = lc($1);
 		# if someone lowers or increases the karma of something only
 		# consisting of +'s or -'s, ignore
-		next if $thing =~ /^(-|\+)*$/);
+		next if $thing =~ /^(-|\+)*$/;
 
 		++$num;
 
