@@ -270,10 +270,10 @@ bool Database::tableExists() const
 QLatin1String Database::typeToQtPlugin(const QString &type)
 {
   if( type.toLower() == QLatin1String("sqlite") )
-    return "QSQLITE";
+    return QLatin1String("QSQLITE");
   if( type.toLower() == QLatin1String("mysql") )
-    return "QMYSQL";
+    return QLatin1String("QMYSQL");
 
   qWarning() << "typeToQtPlugin: Unknown type: " << type;
-  return "";
+  return QLatin1String("");
 }
