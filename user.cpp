@@ -80,13 +80,13 @@ void User::setHost( const QString &host )
 
 void User::setFullName( const QString &fullName )
 {
-  int pos1 = fullName.indexOf( '!' );
-  int pos2 = fullName.indexOf( '@', pos1 == -1 ? 0 : pos1 );
+  int pos1 = fullName.indexOf( QLatin1Char('!') );
+  int pos2 = fullName.indexOf( QLatin1Char('@'), pos1 == -1 ? 0 : pos1 );
 
   // left(): The entire string is returned if n is [...] less than zero.
   setNick( fullName.left( pos1 != -1 ? pos1 : pos2 ) );
-  setIdent( pos1 == -1 ? "" : fullName.mid( pos1 + 1, pos2 - pos1 - 1 ) );
-  setHost(  pos2 == -1 ? "" : fullName.mid( pos2 + 1 ) );
+  setIdent( pos1 == -1 ? QString() : fullName.mid( pos1 + 1, pos2 - pos1 - 1 ) );
+  setHost(  pos2 == -1 ? QString() : fullName.mid( pos2 + 1 ) );
   //setIdent( fullName.mid( pos1 + 1 ) );
   //setIdent( fullName.mid( pos1 + 1 ), pos2 - pos1 - 1 );
 }
