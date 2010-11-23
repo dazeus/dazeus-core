@@ -83,7 +83,7 @@ class PluginManager : public QObject
 
   private slots:
     void    reset();
-    void    setContext(QString network, QString receiver = "", QString sender = "");
+    void    setContext(QString network, QString receiver = QString(), QString sender = QString());
     void    clearContext();
 
   private:
