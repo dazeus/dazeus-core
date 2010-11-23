@@ -41,10 +41,14 @@ sub seen
 	}
 	my $w = lc($mess->{who});
 	while($body =~ /\[(.+?)\](\+\+|--)/g) {
-		last if(++$num>=5);
+		last if($num > 4);
 		my $thing = lc($1);
-		# if someone lowers or increases the karma of a line only consisting of +'s or -'s, ignore
+		# if someone lowers or increases the karma of something only
+		# consisting of +'s or -'s, ignore
 		next if $thing =~ /^(-|\+)*$/);
+
+		++$num;
+
 		my $op = $2 eq "++" ? "higher" : "lower";
 		my $karma = $self->get("karma_$thing");
 		$karma = 0 if(!defined($karma));
