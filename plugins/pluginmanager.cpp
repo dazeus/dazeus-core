@@ -99,7 +99,7 @@ QVariant PluginManager::get( const QString &name, Plugin::VariableScope *s  ) co
 bool PluginManager::initialize()
 {
   Q_ASSERT( config_ != 0 );
-  setContext("");
+  setContext(QString());
 
   Plugin *plugin = new TestPlugin( this );
   plugin->init();
