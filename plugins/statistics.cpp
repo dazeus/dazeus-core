@@ -14,9 +14,9 @@ Statistics::~Statistics() {}
 void Statistics::init()
 {
   // null QVariant::toInt() returns 0
-  int numInits = get("numinits").toInt();
+  int numInits = get(QLatin1String("numinits")).toInt();
   ++numInits;
-  set(Plugin::GlobalScope, "numinits", numInits);
+  set(Plugin::GlobalScope, QLatin1String("numinits"), numInits);
   const char *thingy = "th";
   if( numInits%100 == 11 ) ;
   else if( numInits%100 == 12 ) ;
