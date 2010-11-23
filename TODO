@@ -1,4 +1,6 @@
 Reconnecting to a network if the connection failed
+Reconnecting to the database if the "server has gone away" (MySQL)
+Newlines in message() should be split correctly
 Dynamic loading of C++ plugins
 Rewrite of the Perl 'core' modules (DazAuth, DazChannel, DazLoader) in C++ (with interfaces to the Perl modules)
 Python plugin support, along with dynamic loading of Python plugins
