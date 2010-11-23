@@ -13,6 +13,8 @@
 
 // #define DEBUG
 
+#define rw(x) QLatin1String(x)
+
 /**
  * @brief Constructor
  *
@@ -21,7 +23,7 @@
  */
 Config::Config()
 : QObject()
-, error_( "" )
+, error_( QString() )
 , settings_( 0 )
 , databaseConfig_( 0 )
 {
@@ -68,7 +70,7 @@ bool Config::loadFromFile( QString fileName )
   // TODO do this properly in reset()!
   oldNetworks_ = networks_;
   networks_.clear();
-  error_ = "";
+  error_.clear();
   delete settings_;
   settings_ = 0;
 
@@ -78,14 +80,14 @@ bool Config::loadFromFile( QString fileName )
   error_.clear();
   if( !QFile::exists(fileName) )
   {
-    error_ = "Configuration file does not exist: " + fileName;
+    error_ = rw("Configuration file does not exist: ") + fileName;
   }
   if( error_.isEmpty() )
   {
     settings_ = new QSettings(fileName, QSettings::IniFormat);
     if( settings_->status() != QSettings::NoError )
     {
-      error_ = "Could not read configuration file: " + fileName;
+      error_ = rw("Could not read configuration file: ") + fileName;
     }
   }
 
@@ -111,16 +113,16 @@ const QList<NetworkConfig*> &Config::networks()
 
   // Database settings
   bool valid = true;
-  settings_->beginGroup("database");
+  settings_->beginGroup(rw("database"));
   DatabaseConfig *dbc = new DatabaseConfig;
-  dbc->type     = settings_->value("type").toString();
-  dbc->hostname = settings_->value("hostname").toString();
-  QString dbRawPort = settings_->value("port").toString();
+  dbc->type     = settings_->value(rw("type")).toString();
+  dbc->hostname = settings_->value(rw("hostname")).toString();
+  QString dbRawPort = settings_->value(rw("port")).toString();
   dbc->port     = dbRawPort.isEmpty() ? 0 : dbRawPort.toUInt(&valid);
-  dbc->username = settings_->value("username").toString();
-  dbc->password = settings_->value("password").toString();
-  dbc->database = settings_->value("database").toString();
-  dbc->options  = settings_->value("options").toString();
+  dbc->username = settings_->value(rw("username")).toString();
+  dbc->password = settings_->value(rw("password")).toString();
+  dbc->database = settings_->value(rw("database")).toString();
+  dbc->options  = settings_->value(rw("options")).toString();
 
   if(!valid) {
     qWarning() << "Database port is not a valid number: " << dbRawPort;
@@ -137,15 +139,15 @@ const QList<NetworkConfig*> &Config::networks()
   databaseConfig_ = dbc;
   settings_->endGroup();
 
-  QString defaultNickname = settings_->value("nickname").toString();
-  QString defaultUsername = settings_->value("username").toString();
-  QString defaultFullname = settings_->value("fullname").toString();
+  QString defaultNickname = settings_->value(rw("nickname")).toString();
+  QString defaultUsername = settings_->value(rw("username")).toString();
+  QString defaultFullname = settings_->value(rw("fullname")).toString();
 
   QHash<QString,NetworkConfig*> networks;
   QMultiHash<QString,ServerConfig*> servers;
   foreach( const QString &category, settings_->childGroups() )
   {
-    if( category.toLower().startsWith("network") )
+    if( category.toLower().startsWith(rw("network")) )
     {
       QString networkName = category.mid(8).toLower();
       if( networkName.length() > 50 )
@@ -165,22 +167,22 @@ const QList<NetworkConfig*> &Config::networks()
 
       NetworkConfig *nc = new NetworkConfig;
       nc->name          = networkName;
-      nc->displayName   = settings_->value(category + "/displayname",
+      nc->displayName   = settings_->value(category + rw("/displayname"),
                                            networkName).toString();
-      nc->autoConnect   = settings_->value(category + "/autoconnect",
+      nc->autoConnect   = settings_->value(category + rw("/autoconnect"),
                                            false).toBool();
-      nc->nickName      = settings_->value(category + "/nickname",
+      nc->nickName      = settings_->value(category + rw("/nickname"),
                                            defaultNickname).toString();
-      nc->userName      = settings_->value(category + "/username",
+      nc->userName      = settings_->value(category + rw("/username"),
                                            defaultUsername).toString();
-      nc->fullName      = settings_->value(category + "/fullname",
+      nc->fullName      = settings_->value(category + rw("/fullname"),
                                            defaultFullname).toString();
-      nc->password      = settings_->value(category + "/password",
-                                           "").toString();
+      nc->password      = settings_->value(category + rw("/password"),
+                                           QString()).toString();
 
       networks.insert(networkName, nc);
     }
-    else if( category.toLower().startsWith("server") )
+    else if( category.toLower().startsWith(rw("server")) )
     {
       QString networkName = category.mid(7).toLower();
 
@@ -192,10 +194,10 @@ const QList<NetworkConfig*> &Config::networks()
       }
 
       ServerConfig *sc = new ServerConfig;
-      sc->host         = settings_->value(category + "/host","").toString();
-      sc->port         = settings_->value(category + "/port",6667).toInt();
-      sc->priority     = settings_->value(category + "/category", 5).toInt();
-      sc->ssl          = settings_->value(category + "/ssl", false).toBool();
+      sc->host         = settings_->value(category + rw("/host"),QString()).toString();
+      sc->port         = settings_->value(category + rw("/port"),6667).toInt();
+      sc->priority     = settings_->value(category + rw("/category"), 5).toInt();
+      sc->ssl          = settings_->value(category + rw("/ssl"), false).toBool();
       sc->network      = networks[networkName];
       networks[networkName]->servers.append( sc );
 
@@ -203,8 +205,8 @@ const QList<NetworkConfig*> &Config::networks()
       qDebug() << "Server for network: " << networkName;
 #endif
     }
-    else if( category.toLower() != "generic"
-          && category.toLower() != "database" )
+    else if( category.toLower() != rw("generic")
+          && category.toLower() != rw("database") )
     {
       qWarning() << "Warning: Configuration category name not recognized: "
                  << category;
