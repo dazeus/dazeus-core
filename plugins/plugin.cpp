@@ -17,7 +17,7 @@ Plugin::~Plugin()
 
 void Plugin::set( VariableScope scope, const QString &name, const QVariant &value )
 {
-  if( !name.contains('.') )
+  if( !name.contains(QLatin1Char('.')) )
   {
     qWarning() << "Warning: Variable contains no dot, is it qualified?" << name;
   }
