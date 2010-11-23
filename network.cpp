@@ -279,7 +279,8 @@ User *Network::user()
 {
   if( me_ == 0 )
   {
-    me_ = new User( config_->nickName, config_->nickName, "__local__", this );
+    me_ = new User( config_->nickName, config_->nickName,
+                    QLatin1String("__local__"), this );
   }
 
   return me_;
