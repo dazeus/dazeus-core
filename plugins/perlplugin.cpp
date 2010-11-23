@@ -130,7 +130,7 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
   // part of NAMES
   else if( code == 353 )
   {
-    names_ += " " + args.last();
+    names_ += QLatin1Char(' ') + args.last();
   }
   else if( code == 366 )
   {
@@ -156,31 +156,35 @@ void PerlPlugin::tick() {
   // tick every NetworkEmbed
   foreach(EmbedPerl *e, ePerl)
   {
-    setContext( e->uniqueid() );
+    // assume e->uniqueid() is latin1
+    setContext( QString::fromLatin1(e->uniqueid()) );
     e->tick();
     clearContext();
   }
 }
 
+// Read as a Perl string (assume it's utf8)
+#define ps(x) QString::fromUtf8(x)
+
 void PerlPlugin::emoteCallback( const char *network, const char *receiver, const char *body )
 {
-  Network *net = Network::getNetwork( network );
+  Network *net = Network::getNetwork( ps(network) );
   Q_ASSERT( net != 0 );
-  net->action( receiver, body );
+  net->action( ps(receiver), ps(body) );
 }
 
 void PerlPlugin::privmsgCallback( const char *network, const char *receiver, const char *body )
 {
-  Network *net = Network::getNetwork( network );
+  Network *net = Network::getNetwork( ps(network) );
   Q_ASSERT( net != 0 );
-  net->say( receiver, body );
+  net->say( ps(receiver), ps(body) );
 }
 
 const char *PerlPlugin::getPropertyCallback(const char *network, const char *variable)
 {
   Q_UNUSED(network);
 
-  QVariant value = get(variable);
+  QVariant value = get(ps(variable));
 #ifdef DEBUG
   qDebug() << "Get property: " << variable << "=" << value;
 #endif
@@ -195,7 +199,7 @@ void PerlPlugin::setPropertyCallback(const char *network, const char *variable, 
 {
   Q_UNUSED(network);
 
-  set(Plugin::NetworkScope, variable, value);
+  set(Plugin::NetworkScope, ps(variable), ps(value));
 #ifdef DEBUG
   qDebug() << "Set property: " << variable << "to:" << value;
 #endif
@@ -205,7 +209,7 @@ void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable
 {
   Q_UNUSED(network);
 
-  set(Plugin::NetworkScope, variable, QVariant());
+  set(Plugin::NetworkScope, ps(variable), QVariant());
 #ifdef DEBUG
   qDebug() << "Unset property: " << variable;
 #endif
@@ -222,20 +226,20 @@ void PerlPlugin::sendWhoisCallback(const char *who)
 {
   Network *net = Network::getNetwork( manager()->context()->network );
   Q_ASSERT( net != 0 );
-  net->sendWhois( who );
+  net->sendWhois( ps(who) );
 }
 
 void PerlPlugin::joinCallback(const char *channel)
 {
   Network *net = Network::getNetwork( manager()->context()->network );
   Q_ASSERT( net != 0 );
-  net->joinChannel( channel );
+  net->joinChannel( ps(channel) );
 }
 
 void PerlPlugin::partCallback(const char *channel)
 {
   Network *net = Network::getNetwork( manager()->context()->network );
   Q_ASSERT( net != 0 );
-  net->leaveChannel( channel );
+  net->leaveChannel( ps(channel) );
 }
 
