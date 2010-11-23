@@ -43,15 +43,16 @@ class Database : public QObject
 
     const QString  &network() const;
     bool            open();
+    void            checkDatabaseConnection();
 
     bool            createTable();
-    bool            tableExists() const;
+    bool            tableExists();
     QSqlError       lastError() const;
 
     QVariant    property( const QString &variable,
                           const QString &networkScope  = QString(),
                           const QString &receiverScope = QString(),
-                          const QString &senderScope   = QString() ) const;
+                          const QString &senderScope   = QString() );
     void        setProperty( const QString &variable,
                              const QVariant &value,
                              const QString &networkScope  = QString(),

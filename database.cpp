@@ -85,8 +85,10 @@ bool Database::open()
  */
 QVariant Database::property( const QString &variable,
  const QString &networkScope, const QString &receiverScope,
- const QString &senderScope ) const
+ const QString &senderScope )
 {
+  checkDatabaseConnection();
+
   // retrieve from database
   QSqlQuery data(db_);
   data.prepare(QLatin1String("SELECT value,network,receiver,sender"
@@ -145,6 +147,7 @@ void Database::setProperty( const QString &variable,
 #ifdef DEBUG
   qDebug() << "Setting property " << variable << "to" << value;
 #endif
+  checkDatabaseConnection();
 
   // first, select it from the database, to see whether to update or insert
   // (not all database engines support "on duplicate key update".)
@@ -237,8 +240,31 @@ void Database::setProperty( const QString &variable,
   }
 }
 
+/**
+ * This method checks whether there is still an active database connection, by
+ * executing a simple 'dummy query' (SELECT 1).
+ * 
+ * By calling this function before most other functions in this file, a failed
+ * connection can be detected, and maybe even fixed, before any data is lost.
+ */
+void Database::checkDatabaseConnection()
+{
+#ifdef DEBUG
+  qDebug() << "Check database connection:" << db_.isOpen();
+#endif
+
+  QSqlQuery query(QLatin1String("SELECT 1"), db_);
+  if( !query.exec() )
+  {
+    qWarning() << "Database ping failed: " << query.lastError();
+    bool res = db_.open();
+    qWarning() << "Trying to revive: " << res;
+  }
+}
+
 bool Database::createTable()
 {
+  checkDatabaseConnection();
   if( tableExists() )
     return true; // database already exists
 
@@ -262,8 +288,9 @@ bool Database::createTable()
   }
   return ok;
 }
-bool Database::tableExists() const
+bool Database::tableExists()
 {
+  checkDatabaseConnection();
   return db_.record(QLatin1String("properties")).count() > 0;
 }
 
