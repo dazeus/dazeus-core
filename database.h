@@ -39,7 +39,7 @@ class Database : public QObject
          ~Database();
 
     static Database *fromConfig(const DatabaseConfig *dbc);
-    static QString   typeToQtPlugin(const QString &type);
+    static QLatin1String typeToQtPlugin(const QString &type);
 
     const QString  &network() const;
     bool            open();

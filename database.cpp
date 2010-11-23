@@ -44,7 +44,8 @@ Database::~Database()
  */
 Database *Database::fromConfig(const DatabaseConfig *dbc)
 {
-  return new Database( "", dbc->type, dbc->database, dbc->username,
+#warning network is empty?
+  return new Database( QString(), dbc->type, dbc->database, dbc->username,
                            dbc->password, dbc->hostname, dbc->port,
                            dbc->options );
 }
@@ -88,8 +89,8 @@ QVariant Database::property( const QString &variable,
 {
   // retrieve from database
   QSqlQuery data(db_);
-  data.prepare("SELECT value,network,receiver,sender"
-     " FROM properties WHERE variable=?");
+  data.prepare(QLatin1String("SELECT value,network,receiver,sender"
+     " FROM properties WHERE variable=?"));
   data.addBindValue(variable);
   if( !data.exec() )
   {
@@ -149,12 +150,13 @@ void Database::setProperty( const QString &variable,
   // (not all database engines support "on duplicate key update".)
   QSqlQuery finder(db_);
   // because size() always returns -1 on an SQLite backend, we use COUNT.
-  finder.prepare("SELECT id,COUNT(id) FROM properties WHERE variable=? AND network"
-                 + QString(networkScope.isEmpty()  ? " IS NULL" : "=?")
-                 + " AND receiver"
-                 + QString(receiverScope.isEmpty() ? " IS NULL" : "=?")
-                 + " AND sender"
-                 + QString(senderScope.isEmpty()   ? " IS NULL" : "=?"));
+  finder.prepare(
+      QString(QLatin1String("SELECT id,COUNT(id) FROM properties WHERE "
+                "variable=? AND network %1 AND receiver %2 AND sender %3"))
+      .arg( QLatin1String(networkScope.isEmpty()  ? "IS NULL" : "=?") )
+      .arg( QLatin1String(receiverScope.isEmpty() ? "IS NULL" : "=?") )
+      .arg( QLatin1String(senderScope.isEmpty()   ? "IS NULL" : "=?") )
+  );
   // This ugly hack seems necessary as MySQL does not allow =NULL, requires IS NULL.
   finder.addBindValue(variable);
   if( !networkScope.isEmpty() )
@@ -199,8 +201,8 @@ void Database::setProperty( const QString &variable,
     for (int i = 0; i < list.size(); ++i)
       qDebug() << i << ": " << list.at(i).toString().toAscii().data() << endl;
 #endif
-    data.prepare("INSERT INTO properties (variable,value,network,receiver,sender)"
-                 " VALUES (?, ?, ?, ?, ?)");
+    data.prepare(QLatin1String("INSERT INTO properties (variable,value,"
+                "network,receiver,sender) VALUES (?, ?, ?, ?, ?)"));
     data.addBindValue(variable);
     data.addBindValue(value);
     data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
@@ -213,12 +215,12 @@ void Database::setProperty( const QString &variable,
     if( !value.isValid() )
     {
       // Don't insert null values - delete the old one
-      data.prepare("DELETE FROM properties WHERE id=?");
+      data.prepare(QLatin1String("DELETE FROM properties WHERE id=?"));
     }
     else
     {
       // update the old one
-      data.prepare("UPDATE properties SET value=? WHERE id=?");
+      data.prepare(QLatin1String("UPDATE properties SET value=? WHERE id=?"));
       data.addBindValue(value);
     }
     data.addBindValue(returnedId);
@@ -241,19 +243,19 @@ bool Database::createTable()
     return true; // database already exists
 
   QSqlQuery data(db_);
-  QString idrow = "INT(10) PRIMARY KEY AUTO_INCREMENT";
-  if( db_.driverName().toLower().startsWith("qsqlite") )
+  QLatin1String idrow( "INT(10) PRIMARY KEY AUTO_INCREMENT" );
+  if( db_.driverName().toLower().startsWith(QLatin1String("qsqlite")) )
   {
-    idrow = "INTEGER PRIMARY KEY AUTOINCREMENT";
+    idrow = QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT");
   }
-  bool ok = data.exec("CREATE TABLE properties ("
-                   "  id      " + idrow + ","
+  bool ok = data.exec(QString(QLatin1String("CREATE TABLE properties ("
+                   "  id      %1,"
                    "  variable VARCHAR(150),"
                    "  network VARCHAR(50)," // enforced limit in config.cpp
                    "  receiver VARCHAR(50)," // usually, max = 9 or 30
                    "  sender VARCHAR(50)," //  usually, max = 9 or 30
                    "  value TEXT"
-                   ");");
+                   ");")).arg(idrow));
   if( !ok )
   {
     qWarning() << data.lastError();
@@ -262,14 +264,14 @@ bool Database::createTable()
 }
 bool Database::tableExists() const
 {
-  return db_.record("properties").count() > 0;
+  return db_.record(QLatin1String("properties")).count() > 0;
 }
 
-QString Database::typeToQtPlugin(const QString &type)
+QLatin1String Database::typeToQtPlugin(const QString &type)
 {
-  if( type.toLower() == "sqlite" )
+  if( type.toLower() == QLatin1String("sqlite") )
     return "QSQLITE";
-  if( type.toLower() == "mysql" )
+  if( type.toLower() == QLatin1String("mysql") )
     return "QMYSQL";
 
   qWarning() << "typeToQtPlugin: Unknown type: " << type;
