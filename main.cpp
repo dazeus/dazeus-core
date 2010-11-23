@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     qDebug() << "Irc::version: " << Irc::version();
 
     // TODO parse command-line options
-    DaVinci d( "./davinci.conf" );
+    DaVinci d( QLatin1String("./davinci.conf") );
 
     // find and initialise plugins
     d.initPlugins();
