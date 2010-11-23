@@ -136,7 +136,9 @@ QString Server::motd() const
 
 void Server::say( QString destination, QString message )
 {
-  Irc::Session::message( destination, message );
+  QStringList lines = message.split(QRegExp(QLatin1String("[\\r\\n]+")), QString::SkipEmptyParts);
+  foreach(const QString& line, lines)
+    Irc::Session::message( destination, line );
 }
 
 void Server::slotBufferAdded( Irc::Buffer *buffer )
