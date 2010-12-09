@@ -55,6 +55,10 @@ sub nomget {
                 $compare = lc(substr($week[$dayOfWeek+2], 0, 2));
             }
         }
+     
+        # Hack, I know [Pyro]
+        $desc =~ s/Basismenu 2/\r\nBasismenu 2/;
+        $desc =~ s/Vegetarisch menu/\r\nVegetarisch menu/;
 
         if ($compare eq "") {
             $compare =  lc($week[$dayOfWeek]); 
@@ -108,7 +112,7 @@ sub told
 		my $i = 0;
 		foreach(@noms) {
 			# Newlines weghalen, want die verneuken de output
-			s/[\r\n]+/ /g;
+		#	s/[\r\n]+/ /g;
 			$self->bot->reply($mess, $menus[$i++].": ".$_);
 		}
 		if( @noms == 0 ) {
