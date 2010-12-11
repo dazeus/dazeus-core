@@ -56,7 +56,7 @@ sub nomget {
             }
         }
      
-        # Hack, I know [Pyro]
+        # Manualy insert newlines [Pyro]
         $desc =~ s/Basismenu 2 \(alleen \'s avonds\):/\r\nBasismenu 2:/;
         $desc =~ s/Vegetarisch menu/ \(alleen \'s avonds\)\r\nVegetarisch menu/;
 
@@ -111,8 +111,6 @@ sub told
 		}
 		my $i = 0;
 		foreach(@noms) {
-			# Newlines weghalen, want die verneuken de output
-		#	s/[\r\n]+/ /g;
 			$self->bot->reply($mess, $_);
 		}
 		if( @noms == 0 ) {
