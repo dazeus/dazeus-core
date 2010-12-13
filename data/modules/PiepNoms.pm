@@ -28,7 +28,6 @@ use LWP::Simple;
 use Encode;
 
 my @week = qw(Zo Ma Di Wo Do Vr Za Zo);
-my @menus = ("Basis 1", "Basis 2", "Vega");
 
 sub nomget {
 	my $compare = "";
