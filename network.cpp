@@ -80,11 +80,36 @@ void Network::action( QString destination, QString message )
   return activeServer_->action( destination, message );
 }
 
-bool serverPriorityLessThan( const ServerConfig *c1, const ServerConfig *c2 )
+/**
+ * @brief Chooses one server or the other based on the priority and failure
+ *        rate.
+ * Failure rate is recorded in the Network object that the ServerConfig object
+ * links to via the NetworkConfig, if there is such a NetworkConfig object.
+ * You must give two servers of the same Network.
+ */
+bool serverNicenessLessThan( const ServerConfig *c1, const ServerConfig *c2 )
 {
-  // TODO: also take in consideration some "error factor" or "last error given"
-  // so DaVinci doesn't try to reconnect to a failing server
-  return c1->priority < c2->priority;
+  int var1 = c1->priority;
+  int var2 = c2->priority;
+
+  Network *n;
+
+  // if no network is configured for either, we're done
+  if( c1->network == 0 || c2->network == 0 )
+    goto ready;
+
+  // otherwise, look at server undesirability (failure rate) too
+  n = Network::fromNetworkConfig( c1->network );
+  Q_ASSERT( n == Network::fromNetworkConfig( c2->network ) );
+
+  var1 -= n->serverUndesirability( c1 );
+  var2 -= n->serverUndesirability( c2 );
+
+ready:
+  // If the priorities are equal, randomise the order.
+  if( var1 == var2 )
+    return (qrand() % 2) == 0 ? -1 : 1;
+  return var1 < var2;
 }
 
 const NetworkConfig *Network::config() const
@@ -109,9 +134,9 @@ void Network::connectToNetwork( bool reconnect )
 
   // Find the best server to use
 
-  // First, sort the list by priority
+  // First, sort the list by priority and earlier failures
   QList<ServerConfig*> sortedServers = servers();
-  qSort( sortedServers.begin(), sortedServers.end(), serverPriorityLessThan );
+  qSort( sortedServers.begin(), sortedServers.end(), serverNicenessLessThan );
 
   // Then, take the first one and create a Server around it
   ServerConfig *best = sortedServers[0];
@@ -157,21 +182,29 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   #undef RELAY_SIGN
 
   connect( activeServer_, SIGNAL(      disconnected() ),
-           this,          SLOT(       cleanupServer() ) );
+           this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL( connectionTimeout() ),
-           this,          SLOT(       cleanupServer() ) );
+           this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(         destroyed() ),
-           this,          SLOT(       cleanupServer() ) );
+           this,          SLOT(  onFailedConnection() ) );
+  connect( activeServer_, SIGNAL(          welcomed() ),
+           this,          SLOT(serverIsActuallyOkay() ) );
   activeServer_->connectToServer();
 }
 
 
-void Network::cleanupServer()
+void Network::onFailedConnection()
 {
-  // TODO: auto-reconnect if not shutting down
   Q_ASSERT( sender() == activeServer_ );
+
+  qDebug() << "Connection failed on " << this;
+
+  // Flag old server as undesirable
+  flagUndesirableServer( activeServer_->config() );
   disconnect( activeServer_, 0, 0, 0 );
   activeServer_ = 0;
+
+  connectToNetwork();
 }
 
 
@@ -191,6 +224,8 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
   if( activeServer_ == 0 )
     return;
 
+  // Disconnect the activeServer first, so its disconnected() signal will not
+  // trigger the reconnection in this class
   disconnect( activeServer_, 0, 0, 0 );
   activeServer_->disconnectFromServer( reason );
   activeServer_->deleteLater();
@@ -284,4 +319,27 @@ User *Network::user()
   }
 
   return me_;
+}
+
+int Network::serverUndesirability( const ServerConfig *sc ) const
+{
+  return undesirables_.contains(sc) ? undesirables_.value(sc) : 0;
+}
+
+void Network::flagUndesirableServer( const ServerConfig *sc )
+{
+  if( undesirables_.contains(sc) )
+    undesirables_.insert( sc, undesirables_.value(sc) + 1 );
+  undesirables_.insert( sc, 0 );
+}
+
+void Network::serverIsActuallyOkay()
+{
+  Q_ASSERT( activeServer_ != 0 );
+  serverIsActuallyOkay( activeServer_->config() );
+}
+
+void Network::serverIsActuallyOkay( const ServerConfig *sc )
+{
+  undesirables_.remove(sc);
 }

@@ -52,6 +52,7 @@ class Network : public QObject
     User                       *user();
     const Server               *activeServer() const;
     const NetworkConfig        *config() const;
+    int                         serverUndesirability( const ServerConfig *sc ) const;
 
   public slots:
     void connectToNetwork( bool reconnect = false );
@@ -62,6 +63,8 @@ class Network : public QObject
     void action( QString destination, QString message );
     void ctcp( QString destination, QString message );
     void sendWhois( QString destination );
+    void flagUndesirableServer( const ServerConfig *sc );
+    void serverIsActuallyOkay( const ServerConfig *sc );
 
   signals:
     void connected();
@@ -98,10 +101,12 @@ class Network : public QObject
     Server               *activeServer_;
     const NetworkConfig  *config_;
     static QHash<QString,Network*> networks_;
+    QHash<const ServerConfig*,int> undesirables_;
     User                 *me_;
 
   private slots:
-    void cleanupServer();
+    void onFailedConnection();
+    void serverIsActuallyOkay();
 
 };
 
