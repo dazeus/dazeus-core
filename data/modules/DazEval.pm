@@ -217,8 +217,12 @@ sub evaler {
 	}
 	
 	my $deny_code = "";
+	# Disallow calls that may change the filesystem, shared memory
+	# or other processes, or that give away sensitive information.
 	for( "msgctl", "msgget", "msgrcv", "msgsnd", "semctl", "semget",
-		"semop", "shmctl", "shmget", "shmread", "shmwrite" )
+		"semop", "shmctl", "shmget", "shmread", "shmwrite", "unlink",
+		"chmod", "chown", "opendir", "link", "mkdir", "stat",
+		"rename", "rmdir", "stat", "syscall", "truncate" )
 	{
 		$deny_code .= "*CORE::GLOBAL::$_ = sub {die}; \n";
 	}
