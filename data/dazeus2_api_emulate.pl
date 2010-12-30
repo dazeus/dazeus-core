@@ -8,11 +8,19 @@ my @modules;
 my $uniqueid;
 my $dummy_session;
 
+sub poe_queue_count {
+  return $poe_kernel->[POE::Kernel::KR_QUEUE]->get_item_count();
+}
+
 sub run_timeslice {
   # This method should be called every once in a while to bump events in
   # POE sessions.
-  $poe_kernel->post( $dummy_session, "dummy" );
-  $poe_kernel->run_one_timeslice();
+  my $counter = 0;
+  if($counter < 6 && get_poe_queue_count() > 0)
+  {
+    $poe_kernel->run_one_timeslice();
+    $counter++;
+  }
 }
 
 sub init {
@@ -25,8 +33,7 @@ sub init {
   # the application is in deadlock.
   $dummy_session = POE::Session->create( inline_states =>
     { _start => sub { $_[KERNEL]->refcount_increment( $_[SESSION]->ID,
-                        "keep_me_alive" ) },
-      dummy  => sub { } } );
+                        "keep_me_alive" ) }});
   run_timeslice();
 }
 
@@ -157,8 +164,14 @@ sub namesReceived {
   run_timeslice();
 }
 
+my $tick_counter = 0;
 sub tick {
-  dispatch( "tick" );
+  # 'Tick' should be dispatched about once every 5 seconds.
+  # Timeslice runs every second.
+  if( ++$tick_counter == 5 ) {
+    dispatch( "tick" );
+    $tick_counter = 0;
+  }
   run_timeslice();
 }
 
