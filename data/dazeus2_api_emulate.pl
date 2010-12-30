@@ -16,7 +16,7 @@ sub run_timeslice {
   # This method should be called every once in a while to bump events in
   # POE sessions.
   my $counter = 0;
-  if($counter < 6 && get_poe_queue_count() > 0)
+  if($counter < 6 && poe_queue_count() > 0)
   {
     $poe_kernel->run_one_timeslice();
     $counter++;
