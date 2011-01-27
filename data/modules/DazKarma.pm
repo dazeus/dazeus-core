@@ -159,6 +159,28 @@ sub told {
 		} else {
 			return "$thing has a karma of $karma.";
 		}
+	} elsif($command eq "karmafight") {
+		return "You don't have dazeus.commands.karma permissions."
+			if(!$p->has("dazeus.commands.karma"));
+		my $thing = lc($rest);
+		if(!defined($thing) or !length($thing)) {
+			return "Syntax: karmafight <forwhat> [<forwhat2> [...]]";
+		}
+		# TODO, match "quoted stuff"
+		my @things = split(/ +/,$thing);
+		my %map = ();
+		foreach $thingy (@things) {
+			my $karma = $self->get("karma_$thing");
+			$map{$thingy} = (defined($karma)) ? $karma : 0;
+		}
+		@things = sort {$map{$b} cmp $map{$a}} keys %map;
+		my $out =  $things[0]." wins!!!  results:";
+		my $count = 0;
+		foreach $thingy (@things) {
+			$count++;
+			$out .= " $count. $thingy ($map{$thingy})";
+		}
+		return $out;
 	}
 }
 
