@@ -13,7 +13,7 @@ RANLIB=ranlib
 CFLAGS=-DINSIDE_PERLEMBED
 LDFLAGS=
 
-DYNA_LINK_HINTS=${$(PERL) -MExtUtils::Embed -e '$_=ldopts(true);print if s/^.*\s(\S*DynaLoader.a).*$/$1/';}
+DYNA_LINK_HINTS := $(shell $(PERL) -MExtUtils::Embed -e '$$_=ldopts(true);print if s/^.*\s(\S*DynaLoader.a).*$$/$$1/';)
 
 all: embedperl.a
 
@@ -22,7 +22,7 @@ embedperl.a: DaZeus2.o embedperl.o xsinit.o DynaLoader.o
 	cp "$(PERLLIBDIR)"/libperl.a embedperl.a
 	chmod 0644 embedperl.a
 	$(AR) cur embedperl.a DaZeus2.o embedperl.o xsinit.o
-	-[ -n "$(DYNA_LINK_HINTS)" ] && $(AR) cur DynaLoader.o
+	-[ -n "$(DYNA_LINK_HINTS)" ] && $(AR) cur embedperl.a DynaLoader.o
 	$(RANLIB) embedperl.a
 
 DynaLoader.o:
@@ -45,5 +45,5 @@ xsinit.o: xsinit.c
 	$(CC) $(CFLAGS) -c xsinit.c `$(PERL) -MExtUtils::Embed -e ccopts`
 
 clean:
-	rm -f DaZeus2.c DaZeus2.o embedperl.o xsinit.c xsinit.o
+	rm -f DaZeus2.c DaZeus2.o embedperl.o xsinit.c xsinit.o __.SYMDEF\ SORTED
 
