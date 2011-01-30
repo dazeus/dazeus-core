@@ -66,7 +66,7 @@ PerlPlugin::PerlPlugin( PluginManager *man )
 , whois_identified(false)
 {
   tickTimer_.setSingleShot( false );
-  tickTimer_.setInterval( 5000 );
+  tickTimer_.setInterval( 1000 );
   connect( &tickTimer_, SIGNAL( timeout() ),
            this,        SLOT(      tick() ) );
 }

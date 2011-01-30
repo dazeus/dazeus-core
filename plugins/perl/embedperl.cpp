@@ -300,7 +300,7 @@ void EmbedPerl::namesReceived(const char *channel, const char *names)
 }
 
 /**
- * Call this method every 5 seconds
+ * Call this method every second
  */
 void EmbedPerl::tick()
 {
