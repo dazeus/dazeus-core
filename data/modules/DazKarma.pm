@@ -167,7 +167,7 @@ sub told {
 			return "Syntax: karmafight <forwhat> [<forwhat2> [...]]";
 		}
 		# TODO, match "quoted stuff"
-		my @things = split(/ +/,$thing);
+		my @things = @rest;	# THAR I FIXED IT :(
 		my %map = ();
 		foreach $thingy (@things) {
 			my $karma = $self->get("karma_$thing");
