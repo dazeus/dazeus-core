@@ -116,7 +116,7 @@ EmbedPerl::EmbedPerl(const char *uniqueid)
 
   for( int i = 0; i < numEmbedPerl; ++i )
   {
-    if( strcmp(ePerl[i]->uniqueid(), uniqueid) != 0 )
+    if( strcmp(ePerl[i]->uniqueid(), uniqueid) == 0 )
     {
       fprintf(stderr,"EmbedPerl created for a duplicate uniqueid.\n");
       abort();
