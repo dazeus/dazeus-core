@@ -196,7 +196,7 @@ const QList<NetworkConfig*> &Config::networks()
       ServerConfig *sc = new ServerConfig;
       sc->host         = settings_->value(category + rw("/host"),QString()).toString();
       sc->port         = settings_->value(category + rw("/port"),6667).toInt();
-      sc->priority     = settings_->value(category + rw("/category"), 5).toInt();
+      sc->priority     = settings_->value(category + rw("/priority"), 5).toInt();
       sc->ssl          = settings_->value(category + rw("/ssl"), false).toBool();
       sc->network      = networks[networkName];
       networks[networkName]->servers.append( sc );
