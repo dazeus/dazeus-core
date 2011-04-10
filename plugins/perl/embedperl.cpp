@@ -130,8 +130,7 @@ EmbedPerl::EmbedPerl(const char *uniqueid)
       abort();
     }
   }
-  uniqueid_ = (char*)malloc(strlen(uniqueid));
-  strcpy(uniqueid_, uniqueid);
+  uniqueid_ = strdup(uniqueid);
   ePerl[numEmbedPerl++] = this;
 
   my_perl = perl_alloc();
