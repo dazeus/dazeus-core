@@ -53,6 +53,7 @@ class Network : public QObject
     const Server               *activeServer() const;
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
+    QString                     networkName() const;
 
   public slots:
     void connectToNetwork( bool reconnect = false );

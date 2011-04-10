@@ -38,6 +38,7 @@ sub init {
 }
 
 sub whois {
+  $uniqueid = shift;
   my ($nick, $is_identified) = @_;
   my $whois = {
     nick => $nick,
@@ -57,6 +58,7 @@ sub whois {
 }
 
 sub message {
+  $uniqueid = shift;
   my ($sender, $receiver, $body, $raw_body) = @_;
   my $mess = {
     channel => ($receiver =~ /^(#|&)/) ? $receiver : "msg",
@@ -127,6 +129,7 @@ sub getModule {
 }
 
 sub join {
+  $uniqueid = shift;
   my ($channel, $who) = @_;
   dispatch( "chanjoin", 0, 0, {
       who => $who,
@@ -136,17 +139,20 @@ sub join {
 }
 
 sub nick {
+  $uniqueid = shift;
   my ($who, $new_nick) = @_;
   dispatch( "nick_change", 0, 0, $who, $new_nick );
   run_timeslice();
 }
 
 sub connected {
+  $uniqueid = shift;
   dispatch( "connected" );
   run_timeslice();
 }
 
 sub namesReceived {
+  $uniqueid = shift;
   my ($channel, $names ) = @_;
   my %names;
   foreach( split /\s+/, $names )
@@ -166,6 +172,7 @@ sub namesReceived {
 
 my $tick_counter = 0;
 sub tick {
+  $uniqueid = shift;
   # 'Tick' should be dispatched about once every 5 seconds.
   # Timeslice runs every second.
   if( ++$tick_counter == 5 ) {
@@ -192,6 +199,7 @@ sub unloadModule {
 }
 
 sub loadModule {
+  $uniqueid = shift;
   my ($module) = @_;
 
   return 1 if getModule($module);

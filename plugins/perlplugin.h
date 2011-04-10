@@ -47,12 +47,14 @@ class PerlPlugin : public Plugin
     EmbedPerl *getNetworkEmbed( Network &net );
 
   private slots:
+    void       initNetwork(QString uniqueId);
     void       tick();
 
   private:
-    QHash<QString,EmbedPerl*> ePerl;
+    EmbedPerl* ePerl;
     QByteArray propertyCopy_;
     QTimer tickTimer_;
+    QList<QString> uniqueIds_;
 #warning TODO move this to a proper place
     QString in_whois;
     bool whois_identified;

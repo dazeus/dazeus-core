@@ -69,6 +69,13 @@ PerlPlugin::PerlPlugin( PluginManager *man )
   tickTimer_.setInterval( 1000 );
   connect( &tickTimer_, SIGNAL( timeout() ),
            this,        SLOT(      tick() ) );
+
+  ePerl = new EmbedPerl();
+  ePerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
+                       perlplugin_getProperty_callback, perlplugin_setProperty_callback,
+                       perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
+                       perlplugin_join_callback, perlplugin_part_callback,
+                       perlplugin_getNick_callback, this );
 }
 
 PerlPlugin::~PerlPlugin() {}
@@ -81,31 +88,29 @@ void PerlPlugin::init()
   tickTimer_.start();
 }
 
-EmbedPerl *PerlPlugin::getNetworkEmbed( Network &net )
+void PerlPlugin::initNetwork(QString uniqueId)
 {
-  if( ePerl.contains( net.config()->name ) )
-    return ePerl.value( net.config()->name );
+  Q_ASSERT(!uniqueIds_.contains(uniqueId));
+  uniqueIds_.append(uniqueId);
+  ePerl->init(uniqueId.toLatin1().constData());
 
-  EmbedPerl *newPerl = new EmbedPerl( net.config()->name.toLatin1() );
-  newPerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
-                         perlplugin_getProperty_callback, perlplugin_setProperty_callback,
-                         perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
-                         perlplugin_join_callback, perlplugin_part_callback,
-                         perlplugin_getNick_callback, this );
-  newPerl->loadModule( "DazAuth" );
-  newPerl->loadModule( "DazChannel" );
-  newPerl->loadModule( "DazLoader" );
-  newPerl->loadModule( "DazMessages" );
-  newPerl->loadModule( "DazFactoids" );
-
-  ePerl.insert( net.config()->name, newPerl );
-  return newPerl;
+#warning fix this the right way...
+  ePerl->loadModule( uniqueId.toLatin1(), "DazAuth" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazChannel" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazLoader" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazMessages" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazFactoids" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazFiglet" );
+  ePerl->loadModule( uniqueId.toLatin1(), "Twitter" );
+  ePerl->loadModule( uniqueId.toLatin1(), "PiepNoms" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazKarma" );
+  ePerl->loadModule( uniqueId.toLatin1(), "DazFood" );
 }
 
 void PerlPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
                                   Irc::Buffer *buffer )
 {
-  getNetworkEmbed(net)->message( origin.toLatin1(), buffer->receiver().toLatin1(), message.toUtf8() );
+  ePerl->message( net.networkName().toLatin1(), origin.toLatin1(), buffer->receiver().toLatin1(), message.toUtf8() );
 }
 
 void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, uint code,
@@ -123,7 +128,7 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
   }
   else if( code == 318 )
   {
-    getNetworkEmbed(net)->whois( in_whois.toLatin1().constData(), whois_identified ? 1 : 0 );
+    ePerl->whois( net.networkName().toLatin1(), in_whois.toLatin1(), whois_identified ? 1 : 0 );
     whois_identified = false;
     in_whois.clear();
   }
@@ -134,31 +139,30 @@ void PerlPlugin::numericMessageReceived( Network &net, const QString &origin, ui
   }
   else if( code == 366 )
   {
-    getNetworkEmbed(net)->namesReceived( args.at(1).toLatin1().constData(), names_.toLatin1().constData() );
+    ePerl->namesReceived( net.networkName().toLatin1(), args.at(1).toLatin1(), names_.toLatin1() );
     names_.clear();
   }
 }
 
 void PerlPlugin::connected( Network &net, const Server & ) {
-  getNetworkEmbed(net)->connected();
+  initNetwork(net.networkName());
+  ePerl->connected(net.networkName().toLatin1());
 }
 
 void PerlPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {
-  getNetworkEmbed(net)->join( channel->receiver().toLatin1(), who.toLatin1() );
+  ePerl->join( net.networkName().toLatin1(), channel->receiver().toLatin1(), who.toLatin1() );
 }
 
 void PerlPlugin::nickChanged( Network &net, const QString &origin, const QString &nick,
                           Irc::Buffer* ) {
-  getNetworkEmbed(net)->nick( origin.toLatin1(), nick.toLatin1() );
+  ePerl->nick( net.networkName().toLatin1(), origin.toLatin1(), nick.toLatin1() );
 }
 
 void PerlPlugin::tick() {
-  // tick every NetworkEmbed
-  foreach(EmbedPerl *e, ePerl)
+  for(int i = 0; i < uniqueIds_.size(); ++i)
   {
-    // assume e->uniqueid() is latin1
-    setContext( QString::fromLatin1(e->uniqueid()) );
-    e->tick();
+    setContext(uniqueIds_[i]);
+    ePerl->tick(uniqueIds_[i].toLatin1());
     clearContext();
   }
 }
@@ -219,7 +223,8 @@ const char *PerlPlugin::getNickCallback()
 {
   Network *net = Network::getNetwork( manager()->context()->network );
   Q_ASSERT( net != 0 );
-  return net->user()->nick().toUtf8().constData();
+  propertyCopy_ = net->user()->nick().toUtf8();
+  return propertyCopy_.constData();
 }
 
 void PerlPlugin::sendWhoisCallback(const char *who)

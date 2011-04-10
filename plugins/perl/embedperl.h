@@ -19,17 +19,18 @@ class PerlInterpreter;
 class EmbedPerl
 {
   public:
-    EmbedPerl(const char *uniqueid);
+    EmbedPerl();
     ~EmbedPerl();
 
-    bool loadModule(const char*);
-    void message(const char*, const char*, const char*);
-    void whois(const char*, int);
-    void join(const char *channel, const char *who);
-    void nick(const char *who, const char *new_nick);
-    void connected();
-    void namesReceived(const char *channel, const char *names);
-    void tick();
+    void init(const char*);
+    bool loadModule(const char*, const char*);
+    void message(const char*, const char*, const char*, const char*);
+    void whois(const char*, const char*, int);
+    void join(const char*, const char *channel, const char *who);
+    void nick(const char*, const char *who, const char *new_nick);
+    void connected(const char*);
+    void namesReceived(const char*, const char *channel, const char *names);
+    void tick(const char*);
 
     void setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
                        void (*privmsgCallback)(const char*, const char*, const char*, void*),
@@ -53,12 +54,8 @@ class EmbedPerl
     const char* (*getNickCallback)(void*);
     void *data;
 
-    const char *uniqueid() const;
-
   private:
     PerlInterpreter *my_perl;
-    char *uniqueid_;
-    void init();
 };
 
 #endif

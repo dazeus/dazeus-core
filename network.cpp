@@ -321,6 +321,15 @@ User *Network::user()
   return me_;
 }
 
+
+
+QString Network::networkName() const
+{
+  return config()->name;
+}
+
+
+
 int Network::serverUndesirability( const ServerConfig *sc ) const
 {
   return undesirables_.contains(sc) ? undesirables_.value(sc) : 0;

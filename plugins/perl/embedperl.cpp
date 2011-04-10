@@ -11,28 +11,19 @@
 // #define DEBUG
 
 // Totally thread-unsafe...
-static EmbedPerl *ePerl[MAX_EMBED_PERL];
-static int numEmbedPerl = 0;
+static EmbedPerl *ePerl = 0;
 
 extern "C" {
 void xs_init(pTHX);
 
 /***** CALLBACKS *****/
 
-#define FOR_EVERY_EMBED(UNIQUEID,CALLBACK) \
-  for( int i = 0; i < numEmbedPerl; ++i ) \
-     if( strcmp(ePerl[i]->uniqueid(),UNIQUEID)==0 && ePerl[i]->CALLBACK )
-
 void emoteEmbed(const char *uniqueid, const char *receiver, const char *message)
 {
 #ifdef DEBUG
   printf("***Callback*** Send emote to %s (on %s): %s\n", receiver, uniqueid, message);
 #endif
-  FOR_EVERY_EMBED(uniqueid,emoteCallback) {
-    ePerl[i]->emoteCallback( uniqueid, receiver, message, ePerl[i]->data );
-    return;
-  }
-  fprintf(stderr,"[CallbackError] No handler for Emote callback (uniqueid=%s)\n", uniqueid);
+  ePerl->emoteCallback( uniqueid, receiver, message, ePerl->data );
 }
 
 void privmsgEmbed(const char *uniqueid, const char *receiver, const char *message)
@@ -40,71 +31,48 @@ void privmsgEmbed(const char *uniqueid, const char *receiver, const char *messag
 #ifdef DEBUG
   printf("***Callback*** Send privmsg to %s (on %s): %s\n", receiver, uniqueid, message);
 #endif
-  FOR_EVERY_EMBED(uniqueid,privmsgCallback) {
-    ePerl[i]->privmsgCallback( uniqueid, receiver, message, ePerl[i]->data );
-    return;
-  }
-  fprintf(stderr,"[CallbackError] No handler for Privmsg callback (uniqueid=%s)\n", uniqueid);
+  ePerl->privmsgCallback( uniqueid, receiver, message, ePerl->data );
 }
 
 const char *getPropertyEmbed(const char *uniqueid, const char *variable)
 {
-  FOR_EVERY_EMBED(uniqueid,getPropertyCallback) {
-    return ePerl[i]->getPropertyCallback( uniqueid, variable, ePerl[i]->data );
-  }
+  return ePerl->getPropertyCallback( uniqueid, variable, ePerl->data );
 }
 
 void setPropertyEmbed(const char *uniqueid, const char *variable, const char *value)
 {
-  FOR_EVERY_EMBED(uniqueid,setPropertyCallback) {
-    ePerl[i]->setPropertyCallback( uniqueid, variable, value, ePerl[i]->data );
-    return;
-  }
+  ePerl->setPropertyCallback( uniqueid, variable, value, ePerl->data );
 }
 
 void unsetPropertyEmbed(const char *uniqueid, const char *variable)
 {
-  FOR_EVERY_EMBED(uniqueid,unsetPropertyCallback) {
-    ePerl[i]->unsetPropertyCallback( uniqueid, variable, ePerl[i]->data );
-    return;
-  }
+  ePerl->unsetPropertyCallback( uniqueid, variable, ePerl->data );
 }
 
 const char *getNickEmbed(const char *uniqueid)
 {
-  FOR_EVERY_EMBED(uniqueid,getNickCallback) {
-    return ePerl[i]->getNickCallback( ePerl[i]->data );
-  }
+  return ePerl->getNickCallback( ePerl->data );
 }
 
 void sendWhoisEmbed(const char *uniqueid, const char *who)
 {
-  FOR_EVERY_EMBED(uniqueid,sendWhoisCallback) {
-    ePerl[i]->sendWhoisCallback( who, ePerl[i]->data );
-    return;
-  }
+  ePerl->sendWhoisCallback( who, ePerl->data );
 }
 
 void joinEmbed(const char *uniqueid, const char *channel)
 {
-  FOR_EVERY_EMBED(uniqueid,joinCallback) {
-    ePerl[i]->joinCallback( channel, ePerl[i]->data );
-    return;
-  }
+  ePerl->joinCallback( channel, ePerl->data );
 }
 
 void partEmbed(const char *uniqueid, const char *channel)
 {
-  FOR_EVERY_EMBED(uniqueid,partCallback) {
-    ePerl[i]->partCallback( channel, ePerl[i]->data );
-    return;
-  }
+  ePerl->partCallback( channel, ePerl->data );
 }
 
 /***** END CALLBACKS ****/
 }
 
-EmbedPerl::EmbedPerl(const char *uniqueid)
+EmbedPerl::EmbedPerl()
 : emoteCallback(0)
 , privmsgCallback(0)
 , getPropertyCallback(0)
@@ -115,31 +83,14 @@ EmbedPerl::EmbedPerl(const char *uniqueid)
 , partCallback(0)
 , getNickCallback(0)
 {
-  if( MAX_EMBED_PERL == numEmbedPerl )
-  {
-    fprintf(stderr, "Too many EmbedPerls. Raise MAX_EMBED_PERL\n");
-    abort();
-  }
-
-  for( int i = 0; i < numEmbedPerl; ++i )
-  {
-    if( strcmp(ePerl[i]->uniqueid(), uniqueid) == 0 )
-    {
-      fprintf(stderr,"EmbedPerl created for a duplicate uniqueid '%s'.\n",
-        uniqueid);
-      abort();
-    }
-  }
-  uniqueid_ = strdup(uniqueid);
-  ePerl[numEmbedPerl++] = this;
+  assert(ePerl == 0);
+  ePerl = this;
 
   my_perl = perl_alloc();
   perl_construct(my_perl);
 
   char *argv[] = {"", "dazeus2_api_emulate.pl"};
   perl_parse(my_perl, xs_init, 1, argv, NULL);
-
-  init();
 }
 
 EmbedPerl::~EmbedPerl()
@@ -149,11 +100,6 @@ EmbedPerl::~EmbedPerl()
 #endif
   perl_destruct(my_perl);
   perl_free(my_perl);
-}
-
-const char *EmbedPerl::uniqueid() const
-{
-  return uniqueid_;
 }
 
 void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
@@ -196,23 +142,24 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
   FREETMPS; \
   LEAVE;
 
-void EmbedPerl::init()
+void EmbedPerl::init(const char *uniqueid)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::init()\n");
 #endif
   PREPARE_CALL;
-  XPUSHs(sv_2mortal(newSVpv(uniqueid_, strlen(uniqueid_))));
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   DO_CALL( "init" );
   END_CALL;
 }
 
-void EmbedPerl::message(const char *from, const char *to, const char *msg)
+void EmbedPerl::message(const char *uniqueid, const char *from, const char *to, const char *msg)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::message(%s,%s,%s)\n", from, to, msg);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(from, strlen(from)) ));
   XPUSHs(sv_2mortal(newSVpv(to,   strlen(to))   ));
   XPUSHs(sv_2mortal(newSVpv(msg,  strlen(msg))  ));
@@ -225,12 +172,13 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
 #endif
 }
 
-void EmbedPerl::whois(char const *nick, int isIdentified)
+void EmbedPerl::whois(const char *uniqueid, char const *nick, int isIdentified)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::whois(%s,%d)\n", nick, isIdentified);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(nick, strlen(nick)) ));
   XPUSHs(sv_2mortal(newSVpv(isIdentified == 1 ? "1" : "0", strlen("1"))));
   DO_CALL( "whois" );
@@ -241,12 +189,13 @@ void EmbedPerl::whois(char const *nick, int isIdentified)
 #endif
 }
 
-bool EmbedPerl::loadModule(const char *module)
+bool EmbedPerl::loadModule(const char *uniqueid, const char *module)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::loadModule(%s)", module);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(module, strlen(module)) ));
   DO_CALL("loadModule");
   int result = POPi;
@@ -257,36 +206,39 @@ bool EmbedPerl::loadModule(const char *module)
   return result != 0;
 }
 
-void EmbedPerl::join(const char *channel, const char *who)
+void EmbedPerl::join(const char *uniqueid, const char *channel, const char *who)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::join(%s, %s)\n", channel, who);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(channel, strlen(channel)) ));
   XPUSHs(sv_2mortal(newSVpv(who,     strlen(who))     ));
   DO_CALL("join");
   END_CALL;
 }
 
-void EmbedPerl::nick(const char *who, const char *new_nick)
+void EmbedPerl::nick(const char *uniqueid, const char *who, const char *new_nick)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::nick(%s, %s)\n", who, new_nick);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(who,      strlen(who))      ));
   XPUSHs(sv_2mortal(newSVpv(new_nick, strlen(new_nick)) ));
   DO_CALL("nick");
   END_CALL;
 }
 
-void EmbedPerl::connected()
+void EmbedPerl::connected(const char *uniqueid)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::connected()\n");
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   DO_CALL("connected");
   END_CALL;
 }
@@ -294,12 +246,13 @@ void EmbedPerl::connected()
 /**
  * 'names' should be space separated!
  */
-void EmbedPerl::namesReceived(const char *channel, const char *names)
+void EmbedPerl::namesReceived(const char *uniqueid, const char *channel, const char *names)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::namesReceived(%s, %s)\n", channel, names);
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   XPUSHs(sv_2mortal(newSVpv(channel, strlen(channel)) ));
   XPUSHs(sv_2mortal(newSVpv(names,   strlen(names))   ));
   DO_CALL("namesReceived");
@@ -309,12 +262,13 @@ void EmbedPerl::namesReceived(const char *channel, const char *names)
 /**
  * Call this method every second
  */
-void EmbedPerl::tick()
+void EmbedPerl::tick(const char *uniqueid)
 {
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl::tick()\n");
 #endif
   PREPARE_CALL;
+  XPUSHs(sv_2mortal(newSVpv(uniqueid, strlen(uniqueid)) ));
   DO_CALL("tick");
   END_CALL;
 }
