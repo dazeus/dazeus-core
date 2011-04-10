@@ -107,6 +107,13 @@ void partEmbed(const char *uniqueid, const char *channel)
 EmbedPerl::EmbedPerl(const char *uniqueid)
 : emoteCallback(0)
 , privmsgCallback(0)
+, getPropertyCallback(0)
+, setPropertyCallback(0)
+, unsetPropertyCallback(0)
+, sendWhoisCallback(0)
+, joinCallback(0)
+, partCallback(0)
+, getNickCallback(0)
 {
   if( MAX_EMBED_PERL == numEmbedPerl )
   {
