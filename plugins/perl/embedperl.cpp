@@ -134,11 +134,11 @@ EmbedPerl::EmbedPerl(const char *uniqueid)
   strcpy(uniqueid_, uniqueid);
   ePerl[numEmbedPerl++] = this;
 
-  perl = perl_alloc();
-  perl_construct(perl);
+  my_perl = perl_alloc();
+  perl_construct(my_perl);
 
   char *argv[] = {"", "dazeus2_api_emulate.pl"};
-  perl_parse(perl, xs_init, 1, argv, NULL);
+  perl_parse(my_perl, xs_init, 1, argv, NULL);
 
   init();
 }
@@ -148,8 +148,8 @@ EmbedPerl::~EmbedPerl()
 #ifdef DEBUG
   fprintf(stderr, "EmbedPerl destructor\n");
 #endif
-  perl_destruct(perl);
-  perl_free(perl);
+  perl_destruct(my_perl);
+  perl_free(my_perl);
 }
 
 const char *EmbedPerl::uniqueid() const
@@ -181,7 +181,7 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
 }
 
 #define PREPARE_CALL \
-  PerlInterpreter *my_perl = perl; \
+  int argn = 0; \
   dSP; \
   ENTER; \
   SAVETMPS; \

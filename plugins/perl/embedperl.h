@@ -56,7 +56,7 @@ class EmbedPerl
     const char *uniqueid() const;
 
   private:
-    PerlInterpreter *perl;
+    PerlInterpreter *my_perl;
     char *uniqueid_;
     void init();
 };
