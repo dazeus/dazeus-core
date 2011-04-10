@@ -202,7 +202,7 @@ void EmbedPerl::init()
   fprintf(stderr, "EmbedPerl::init()\n");
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(uniqueid_, strlen(uniqueid_)));
+  XPUSHs(sv_2mortal(newSVpv(uniqueid_, strlen(uniqueid_))));
   DO_CALL( "init" );
   END_CALL;
 }
@@ -213,10 +213,10 @@ void EmbedPerl::message(const char *from, const char *to, const char *msg)
   fprintf(stderr, "EmbedPerl::message(%s,%s,%s)\n", from, to, msg);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(from, strlen(from)) );
-  XPUSHs( newSVpv(to,   strlen(to))   );
-  XPUSHs( newSVpv(msg,  strlen(msg))  );
-  XPUSHs( newSVpv(msg,  strlen(msg))  );
+  XPUSHs(sv_2mortal(newSVpv(from, strlen(from)) ));
+  XPUSHs(sv_2mortal(newSVpv(to,   strlen(to))   ));
+  XPUSHs(sv_2mortal(newSVpv(msg,  strlen(msg))  ));
+  XPUSHs(sv_2mortal(newSVpv(msg,  strlen(msg))  ));
   DO_CALL("message");
   int result = POPi;
   END_CALL;
@@ -231,8 +231,8 @@ void EmbedPerl::whois(char const *nick, int isIdentified)
   fprintf(stderr, "EmbedPerl::whois(%s,%d)\n", nick, isIdentified);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(nick, strlen(nick)) );
-  XPUSHs( newSVpv(isIdentified == 1 ? "1" : "0", strlen("1")));
+  XPUSHs(sv_2mortal(newSVpv(nick, strlen(nick)) ));
+  XPUSHs(sv_2mortal(newSVpv(isIdentified == 1 ? "1" : "0", strlen("1"))));
   DO_CALL( "whois" );
   int result = POPi;
   END_CALL;
@@ -247,7 +247,7 @@ bool EmbedPerl::loadModule(const char *module)
   fprintf(stderr, "EmbedPerl::loadModule(%s)", module);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(module, strlen(module)) );
+  XPUSHs(sv_2mortal(newSVpv(module, strlen(module)) ));
   DO_CALL("loadModule");
   int result = POPi;
   END_CALL;
@@ -263,8 +263,8 @@ void EmbedPerl::join(const char *channel, const char *who)
   fprintf(stderr, "EmbedPerl::join(%s, %s)\n", channel, who);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(channel, strlen(channel)) );
-  XPUSHs( newSVpv(who,     strlen(who))     );
+  XPUSHs(sv_2mortal(newSVpv(channel, strlen(channel)) ));
+  XPUSHs(sv_2mortal(newSVpv(who,     strlen(who))     ));
   DO_CALL("join");
   END_CALL;
 }
@@ -275,8 +275,8 @@ void EmbedPerl::nick(const char *who, const char *new_nick)
   fprintf(stderr, "EmbedPerl::nick(%s, %s)\n", who, new_nick);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(who,      strlen(who))      );
-  XPUSHs( newSVpv(new_nick, strlen(new_nick)) );
+  XPUSHs(sv_2mortal(newSVpv(who,      strlen(who))      ));
+  XPUSHs(sv_2mortal(newSVpv(new_nick, strlen(new_nick)) ));
   DO_CALL("nick");
   END_CALL;
 }
@@ -300,8 +300,8 @@ void EmbedPerl::namesReceived(const char *channel, const char *names)
   fprintf(stderr, "EmbedPerl::namesReceived(%s, %s)\n", channel, names);
 #endif
   PREPARE_CALL;
-  XPUSHs( newSVpv(channel, strlen(channel)) );
-  XPUSHs( newSVpv(names,   strlen(names))   );
+  XPUSHs(sv_2mortal(newSVpv(channel, strlen(channel)) ));
+  XPUSHs(sv_2mortal(newSVpv(names,   strlen(names))   ));
   DO_CALL("namesReceived");
   END_CALL;
 }
