@@ -417,6 +417,9 @@ sub told
 		# can't check for permissions, since nobody has them ATM.
 		#return "You don't have dazeus.commands.checkident permissions."
 		#	if(!$p->has("dazeus.commands.checkident"));
+		if(!$rest) {
+			return "Usage: checkident [command] - your whois will be checked, and command will be executed";
+		}
 		$self->{checkidentcmd} = [$rest, $mess];
 		$self->sendWhois($mess->{who});
 		return "Going to check if you are identified before running this command.";
