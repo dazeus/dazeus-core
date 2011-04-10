@@ -36,6 +36,6 @@ QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
 LIBS += plugins/perl/embedperl.a
 unix {
   !macx {
-    LIBS += -Wl,--export-dynamic -lcrypt
+    LIBS += -Wl,--export-dynamic -lcrypt -ldl
   }
 }
