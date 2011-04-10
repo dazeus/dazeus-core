@@ -13,7 +13,7 @@
 
 #include <IrcSession>
 
-#define SERVER_FULLDEBUG
+// #define SERVER_FULLDEBUG
 
 class QTimer;
 struct ServerConfig;
