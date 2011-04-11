@@ -167,14 +167,14 @@ sub told {
 		}
 		# TODO, match "quoted stuff"
 		my %map = ();
-		foreach $thingy (@rest) {
-			my $karma = $self->get("karma_$thing");
+		foreach my $thingy (@rest) {
+			my $karma = $self->get("karma_$thingy");
 			$map{$thingy} = (defined($karma)) ? $karma : 0;
 		}
 		@rest = sort {$map{$b} <=> $map{$a}} keys %map;
 		my $out =  $rest[0]." wins!!!  results:";
 		my $count = 0;
-		foreach $thingy (@rest) {
+		foreach my $thingy (@rest) {
 			$count++;
 			$out .= " $count. $thingy ($map{$thingy})";
 		}
