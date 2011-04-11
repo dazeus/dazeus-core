@@ -199,8 +199,8 @@ sub unloadModule {
 }
 
 sub loadModule {
-  $uniqueid = shift;
-  my ($module) = @_;
+  my $module = $_[0] if(@_ == 1);
+  ($uniqueid, $module) = @_ if(@_ > 1);
 
   return 1 if getModule($module);
 
