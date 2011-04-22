@@ -21,6 +21,7 @@ no warnings 'redefine';
 use base qw(DaZeus2Module);
 use Net::Twitter::Lite;
 use LWP::UserAgent::POE;
+use HTML::Entities;
 
 my $net_twitter;
 my $ticks;
@@ -114,7 +115,7 @@ sub updateTwitter {
 			$self->bot->say(
 				channel => $tweet_channel,
 				body    => "-Twitter- <" . $status->{user}{screen_name}
-					   . "> " . $status->{text}
+					   . "> " . decode_entities ($status->{text})
 			);
 			if( $last_id <= $status->{id} ) {
 				$last_id = $status->{id};
