@@ -33,6 +33,9 @@ sub init {
 	$ticks = 0;
 }
 
+# tick() is called once every 5 seconds
+# so interval() is how many times 5 seconds it will wait before
+# updating itself
 sub tick {
 	my $self = shift;
 	my $interval = $self->get( "interval" ) || 120;
@@ -64,6 +67,20 @@ sub told
 		my $old_id = $self->get("last_id") || "unset";
 		$self->set("last_id", 0);
 		return "Just reset twitter id. Count was: $old_id";
+	}
+	elsif( $command eq "twitter_setinterval" ) {
+		return "You have no dazeus.commands.twitter.setinterval permissions."
+			if(!$p->has("dazeus.commands.twitter.setinterval"));
+		my $old      = $self->get("interval");
+		$old = "unset" if(!$old);
+		my $interval = $rest[0];
+		if($interval) {
+			$self->set( "interval", $interval );
+			return "Interval changed from $old to $interval.";
+		} else {
+			$self->unset( "interval" );
+			return "Interval changed from $old to unset.";
+		}
 	}
 	elsif( $command eq "twitter_configure" ) {
     		return "You have no dazeus.commands.twitter.configure permissions."
