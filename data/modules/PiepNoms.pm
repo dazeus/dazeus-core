@@ -1,8 +1,9 @@
 # DaZeus - A highly functional IRC bot
 # Copyright (C) 2007  Sjors Gielen <sjorsgielen@gmail.com>
 #
-## Refter module
-# Copyright (C) 2010  Gerdriaan Mulder <har@mrngm.com>
+## Refter-module
+# Copyright (C) 2011  Aaron van Geffen <aaron@aaronweb.net>
+# Original module (C) 2010  Gerdriaan Mulder <har@mrngm.com>
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,140 +18,162 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 package DaZeus2Module::PiepNoms;
-#use strict;
+
+use strict;
 use warnings;
-no warnings 'redefine';
+
 use base qw(DaZeus2Module);
-use MIME::Base64;
 use XML::DOM::XPath;
 use LWP::Simple;
-use Encode;
 
-my @week = qw(Zo Ma Di Wo Do Vr Za Zo);
+my @daysOfWeek = ("zo", "ma", "di", "wo", "do", "vr", "za");
+my %dayToIndex = ("zo" => 0, "ma" => 1, "di" => 2, "wo" => 3, "do" => 4, "vr" => 5, "za" => 6);
+my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
 
-sub nomget {
-	my $compare = "";
-	my @dag = @_;
-	my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
-	
-	my $menulink = "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-week/?rss=true";
-	my $menucontent = get($menulink);
-	my $tree = XML::DOM::Parser->new();
-	my $doc = $tree->parse($menucontent);
-    my @items = $doc->findnodes('//item');
-	my @noms;
-    foreach (@items) {
-        my $title = $_->getElementsByTagName('title')->item(0)->getFirstChild()->getNodeValue();
-        my $url = $_->getElementsByTagName('link')->item(0)->getFirstChild()->getNodeValue();
-        my $desc = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
-        $desc =~ s/\<p\>//;
-        $desc =~ s/\<\/p\>//;
-        if ($dag[1]) {
-            $compare = lc(substr($dag[1], 0, 2));
-            if ($compare eq "mo") {
-                $compare = lc(substr($week[$dayOfWeek+1], 0, 2));
-            } elsif ($compare eq "ov") {
-                $compare = lc(substr($week[$dayOfWeek+2], 0, 2));
-            }
-        }
-     
-        # Manualy insert newlines [Pyro]
-        $desc =~ s/Basismenu 2 \(alleen \'s avonds\):/\r\nBasismenu 2:/;
-        $desc =~ s/Vegetarisch menu/ \(alleen \'s avonds\)\r\nVegetarisch menu/;
+sub getDayKey {
+	my ($self, $day) = @_;
 
-        if ($compare eq "") {
-            $compare =  lc($week[$dayOfWeek]); 
-        }
-        if ($compare eq lc(substr($title, 0, 2))) {
-            push(@noms, $desc);
-        }
-        $compare = "";
+	# The #ru regulars like their puns, so let's shorten this.
+	$day = lc(substr($day, 0, 2));
+
+	# A specific request!
+	if ($day and exists $dayToIndex{$day}) {
+		return $dayToIndex{$day};
 	}
-	return @noms;
+	# Tomorrow ("morgen")
+	elsif ($day eq "mo") {
+		return ($dayOfWeek + 1) % 7;
+	}
+	# The day after tomorrow ("overmorgen")
+	elsif ($day eq "ov") {
+		return ($dayOfWeek + 2) % 7;
+	}
+	# Just today.
+	else {
+		return $dayOfWeek;
+	}
 }
 
-sub told
-{
-	my %dagen = ("ma", "maandag",
-		"di", "dinsdag",
-		"wo", "woensdag",
-		"do", "donderdag",
-		"vr", "vrijdag",
-		"za", "zaterdag",
-		"zo", "zondag",
-		"mo", "morgen",
-		"ov", "overmorgen");
+# NOTE: this sub assumes $day to be an integer in [0..6]
+sub pickMenuUrl {
+	my ($self, $day) = @_;
 
-	my @dagkeys = keys %dagen;
+	return "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-" . ($dayOfWeek > $day ? "komende-" : "") . "week/?rss=true";
+}
+
+sub fetchMenuByDay {
+	my ($self, $day) = @_;
+
+	$day = $self->getDayKey($day);
+
+	my $tree = XML::DOM::Parser->new();
+	my $doc = $tree->parse(get(pickMenuUrl($day)));
+    my @items = $doc->findnodes('//item');
+
+	my ($menu_day, $menu);
+
+    foreach (@items) {
+		# The title is used to determine whether we have the right day.
+        my $title = $_->getElementsByTagName('title')->item(0)->getFirstChild()->getNodeValue();
+
+		# If this item is not relevant to the query, skip it.
+        if ($day != $dayToIndex{lc(substr($title, 0, 2))}) {
+			next;
+        }
+
+		# What day is it, again?
+		$menu_day = lc(($title =~ /([A-z]+dag \d+ [a-z]+):?/)[0]);
+
+		# Fetch the menu for the day.
+        $menu = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
+
+		# Trim any leading and trailing whitespace.
+		$menu =~ s/^\s+(.+?)\s+$/$1/s;
+
+		# Strip superfluous information
+		$menu =~ s/\(\s*['`]s[ -]avonds\s*\)\s?//;
+
+		last;
+	}
+
+	if (!defined $menu_day) {
+		$menu_day = $daysOfWeek[$day];
+	}
+
+	return ($menu_day, $menu);
+}
+
+sub told {
 	my ($self, $mess) = @_;
 	my $p = $mess->{perms};
 	my ($command, $rest, @rest) = $self->parseMsg($mess);
 	my $who = $mess->{who};
-	return if !defined $command;
-	if($command eq "noms") {
-		my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
 
-		my @noms;
-		if ($rest[0]) {
-			my $dag = lc(substr($rest[0], 0, 2));
-			if (grep $_ eq $dag, @dagkeys) {
-				@noms = $self->nomget($dag);
-				$self->bot->reply($mess, "Eten bij de Refter op ".$dagen{$dag});
-			}
-		} else {
-			if ($hour >= 19) {
-				my $morgen = lc $week[$dayOfWeek+1];
-				$self->bot->reply($mess, "Na 19 uur zijn er geen refternoms meer. Daarom krijg je de refternoms van morgen (".$dagen{$morgen}.") te zien ;-)");
-				@noms = $self->nomget($morgen);
-			} else {
-				@noms = $self->nomget();
-				$self->bot->reply($mess, "Wat heeft de Refter vandaag in de aanbieding...");
-			}
-		}
-		my $i = 0;
-		foreach(@noms) {
-			$self->bot->reply($mess, $_);
-		}
-		if( @noms == 0 ) {
-			$self->bot->reply($mess, "Helaas, er is niks :'-(");
-		}
-	} 
+	return if !defined $command or $command ne "noms";
+
+	my ($day, $noms);
+
+	# Any specific day?
+	if ($rest[0]) {
+		($day, $noms) = fetchMenuByDay($rest[0]);
+	}
+	# Tomorrow?
+	elsif ($hour >= 19) {
+		$self->bot->reply($mess, "Na 19 uur zijn er geen refternoms meer. Daarom krijg je de refternoms van morgen te zien ;-)");
+		($day, $noms) = fetchMenuByDay("morgen");
+	}
+	# Just today, please.
+	else {
+		$self->bot->reply($mess, "Wat heeft de Refter vandaag in de aanbieding...");
+		($day, $noms) = fetchMenuByDay();
+	}
+
+	# There's something to eat, right?
+	if (defined $noms) {
+		$self->bot->reply($mess, "Eten bij de Refter op " . $day . ":");
+		$self->bot->reply($mess, $noms);
+	}
+	# No noms whatsoever?! THE AGONY!
+	else {
+		$self->bot->reply($mess, "Helaas, er is niks :'-(");
+	}
 }
 
 sub parseMsg {
-        my ($self, $mess) = @_;
-        my $body = $mess->{body};
+	my ($self, $mess) = @_;
+	my $body = $mess->{body};
 
-        # { argh, stupid vim editing
-        if($body =~ /^}/ or $mess->{channel} eq 'msg' or $mess->{raw_body} =~ /^DazNET(?::|,|;)/i) {
-                # {{{ argh, stupid vim editing
-                my ($command, $rest);
-                if($body =~ /^}\s*$/i) {
-                        return undef;
-                } elsif($body =~ /^}\s*(\w+)$/) {
-                        $command = $1;
-                } elsif($body =~ /^}\s*(\w+)\s+(.*)$/) {
-                        $command = $1; $rest = $2;
-                } elsif($mess->{channel} eq 'msg') {
-                        if($body =~ /^\s*(\w+)\s+(.*)\s*$/) {
-                                $command = $1; $rest = $2;
-                        } elsif($body =~ /^\s*(\w+)\s*$/) {
-                                $command = $1;
-                        }
-                } elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\w+)$/i) {
-                        $command = $1;
-                } elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\w+)\s+(\w+)$/i) {
-                        $command = $1; $rest = $2;
-                }
-                my @rest;
-                @rest = split /\s/, $rest if(defined($rest));
-                $command = lc($command);
-                return ($command, $rest, @rest) if wantarray;
-                return [$command, $rest, @rest];
-        } else {
-                return undef;
-        }
+	# { argh, stupid vim editing
+	if($body =~ /^}/ or $mess->{channel} eq 'msg' or $mess->{raw_body} =~ /^DazNET(?::|,|;)/i) {
+			# {{{ argh, stupid vim editing
+			my ($command, $rest);
+			if($body =~ /^}\s*$/i) {
+					return undef;
+			} elsif($body =~ /^}\s*(\w+)$/) {
+					$command = $1;
+			} elsif($body =~ /^}\s*(\w+)\s+(.*)$/) {
+					$command = $1; $rest = $2;
+			} elsif($mess->{channel} eq 'msg') {
+					if($body =~ /^\s*(\w+)\s+(.*)\s*$/) {
+							$command = $1; $rest = $2;
+					} elsif($body =~ /^\s*(\w+)\s*$/) {
+							$command = $1;
+					}
+			} elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\w+)$/i) {
+					$command = $1;
+			} elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\w+)\s+(\w+)$/i) {
+					$command = $1; $rest = $2;
+			}
+			my @rest;
+			@rest = split /\s/, $rest if(defined($rest));
+			$command = lc($command);
+			return ($command, $rest, @rest) if wantarray;
+			return [$command, $rest, @rest];
+	} else {
+			return undef;
+	}
 }
 
 
