@@ -25,12 +25,12 @@ use strict;
 use warnings;
 
 use base qw(DaZeus2Module);
+use Time::localtime;
 use XML::DOM::XPath;
 use LWP::Simple;
 
-my @daysOfWeek = ("zo", "ma", "di", "wo", "do", "vr", "za");
 my %dayToIndex = ("zo" => 0, "ma" => 1, "di" => 2, "wo" => 3, "do" => 4, "vr" => 5, "za" => 6);
-my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
+my @daysOfWeek = keys %dayToIndex;
 
 sub getDayKey {
 	my ($self, $day) = @_;
@@ -44,15 +44,15 @@ sub getDayKey {
 	}
 	# Tomorrow ("morgen")
 	elsif ($day eq "mo") {
-		return ($dayOfWeek + 1) % 7;
+		return (localtime->wday() + 1) % 7;
 	}
 	# The day after tomorrow ("overmorgen")
 	elsif ($day eq "ov") {
-		return ($dayOfWeek + 2) % 7;
+		return (localtime->wday() + 2) % 7;
 	}
 	# Just today.
 	else {
-		return $dayOfWeek;
+		return localtime->wday();
 	}
 }
 
@@ -60,34 +60,32 @@ sub getDayKey {
 sub pickMenuUrl {
 	my ($self, $day) = @_;
 
-	return "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-" . ($dayOfWeek > $day ? "komende-" : "") . "week/?rss=true";
+	return "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-" . (localtime->wday() > $day ? "komende-" : "") . "week/?rss=true";
 }
 
 sub fetchMenuByDay {
 	my ($self, $day) = @_;
+	my $tree = XML::DOM::Parser->new();
 
 	$day = $self->getDayKey($day);
 
-	my $tree = XML::DOM::Parser->new();
-	my $doc = $tree->parse(get(pickMenuUrl($day)));
-    my @items = $doc->findnodes('//item');
-
+	my $doc = $tree->parse(get(pickMenuUrl($self, $day)));
 	my ($menu_day, $menu);
 
-    foreach (@items) {
+	foreach ($doc->findnodes('//item')) {
 		# The title is used to determine whether we have the right day.
-        my $title = $_->getElementsByTagName('title')->item(0)->getFirstChild()->getNodeValue();
+		my $title = $_->getElementsByTagName('title')->item(0)->getFirstChild()->getNodeValue();
 
 		# If this item is not relevant to the query, skip it.
-        if ($day != $dayToIndex{lc(substr($title, 0, 2))}) {
+		if ($day != $dayToIndex{lc(substr($title, 0, 2))}) {
 			next;
-        }
+		}
 
 		# What day is it, again?
 		$menu_day = lc(($title =~ /([A-z]+dag \d+ [a-z]+):?/)[0]);
 
 		# Fetch the menu for the day.
-        $menu = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
+		$menu = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
 
 		# Trim any leading and trailing whitespace.
 		$menu =~ s/^\s+(.+?)\s+$/$1/s;
@@ -120,7 +118,7 @@ sub told {
 		($day, $noms) = fetchMenuByDay($rest[0]);
 	}
 	# Tomorrow?
-	elsif ($hour >= 19) {
+	elsif (localtime->hour() >= 19) {
 		$self->bot->reply($mess, "Na 19 uur zijn er geen refternoms meer. Daarom krijg je de refternoms van morgen te zien ;-)");
 		($day, $noms) = fetchMenuByDay("morgen");
 	}
