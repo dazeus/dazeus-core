@@ -30,7 +30,7 @@ use XML::DOM::XPath;
 use LWP::Simple;
 
 my %dayToIndex = ("zo" => 0, "ma" => 1, "di" => 2, "wo" => 3, "do" => 4, "vr" => 5, "za" => 6);
-my @daysOfWeek = keys %dayToIndex;
+my @daysOfWeek = qw(zo ma di wo do vr za zo);
 
 sub getDayKey {
 	my ($self, $day) = @_;
@@ -86,6 +86,9 @@ sub fetchMenuByDay {
 
 		# Fetch the menu for the day.
 		$menu = $_->getElementsByTagName('description')->item(0)->getFirstChild()->getNodeValue();
+
+		# Perchance there's additional price info -- we already know!
+		$menu =~ s/Prijs\s*:[^\n]*\n//s;
 
 		# Trim any leading and trailing whitespace.
 		$menu =~ s/^\s+(.+?)\s+$/$1/s;
