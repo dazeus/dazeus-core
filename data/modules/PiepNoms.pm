@@ -36,7 +36,7 @@ sub getDayKey {
 	my ($self, $day) = @_;
 
 	# The #ru regulars like their puns, so let's shorten this.
-	$day = lc(substr($day, 0, 2));
+	$day = lc(substr($day, 0, 2)) if($day);
 
 	# A specific request!
 	if ($day and exists $dayToIndex{$day}) {
@@ -118,17 +118,17 @@ sub told {
 
 	# Any specific day?
 	if ($rest[0]) {
-		($day, $noms) = fetchMenuByDay($rest[0]);
+		($day, $noms) = $self->fetchMenuByDay($rest[0]);
 	}
 	# Tomorrow?
 	elsif (localtime->hour() >= 19) {
 		$self->bot->reply($mess, "Na 19 uur zijn er geen refternoms meer. Daarom krijg je de refternoms van morgen te zien ;-)");
-		($day, $noms) = fetchMenuByDay("morgen");
+		($day, $noms) = $self->fetchMenuByDay("morgen");
 	}
 	# Just today, please.
 	else {
 		$self->bot->reply($mess, "Wat heeft de Refter vandaag in de aanbieding...");
-		($day, $noms) = fetchMenuByDay();
+		($day, $noms) = $self->fetchMenuByDay();
 	}
 
 	# There's something to eat, right?
