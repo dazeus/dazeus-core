@@ -81,7 +81,11 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 			int startPos = pos - 1;
 			for(; startPos >= 0; --startPos) {
 				if(!message[startPos].isLetter())
+				{
+					// revert the negation
+					startPos++;
 					break;
+				}
 			}
 			object = message.mid(startPos, pos - startPos);
 			newVal = modifyKarma(object, isIncrease);
