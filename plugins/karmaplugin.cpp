@@ -42,8 +42,12 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 {
 	if(message.startsWith(QLatin1String("}karma "))) {
 		QString object = message.mid(7);
-		int current = get(QLatin1String("perl.DazKarma.karma_ ") + object).toInt();
-		buffer->message(object + QLatin1String(" has a karma of ") + QString::number(current) + QLatin1Char('.'));
+		int current = get(QLatin1String("perl.DazKarma.karma_") + object).toInt();
+		if(current == 0) {
+			buffer->message(object + QLatin1String(" has neutral karma."));
+		} else {
+			buffer->message(object + QLatin1String(" has a karma of ") + QString::number(current) + QLatin1Char('.'));
+		}
 		return;
 	}
 
