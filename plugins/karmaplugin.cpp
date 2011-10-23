@@ -108,7 +108,8 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 		if(message.indexOf(QLatin1Char(ender), startPos) < pos - 1)
 			continue;
 
-		newVal = modifyKarma(message.mid(startPos + 1, pos - 2 - startPos), isIncrease);
+		object = message.mid(startPos + 1, pos - 2 - startPos);
+		newVal = modifyKarma(object, isIncrease);
 		QString message = origin + QLatin1String(isIncrease ? " increased" : " decreased")
 		                + QLatin1String(" karma of ") + object + QLatin1String(" to ")
 		                + QString::number(newVal) + QLatin1Char('.');
