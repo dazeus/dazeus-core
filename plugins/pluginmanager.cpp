@@ -113,6 +113,10 @@ bool PluginManager::initialize()
   plugin3->init();
   plugins_.append( plugin3 );
 
+  Plugin *karmaPlugin = new KarmaPlugin(this);
+  karmaPlugin->init();
+  plugins_.append(karmaPlugin);
+
   clearContext();
 
   initialized_ = true;
