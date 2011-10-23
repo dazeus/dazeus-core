@@ -23,7 +23,7 @@ class KarmaPlugin : public Plugin
                               Irc::Buffer *buffer );
 
   private:
-    void modifyKarma(QString object, bool increase);
+    int modifyKarma(const QString &object, bool increase);
 };
 
 #endif

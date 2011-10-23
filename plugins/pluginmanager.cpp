@@ -7,6 +7,7 @@
 #include "pluginmanager.h"
 #include "testplugin.h"
 #include "perlplugin.h"
+#include "karmaplugin.h"
 #include "statistics.h"
 #include "database.h"
 #include <IrcBuffer>

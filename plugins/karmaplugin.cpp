@@ -20,8 +20,8 @@ void KarmaPlugin::init()
   qDebug() << "KarmaPlugin initialising.";
 }
 
-int KarmaPlugin::modifyKarma(QString object, bool increase) {
-	QString qualifiedName = "perl.DazKarma.karma_" + object;
+int KarmaPlugin::modifyKarma(const QString &object, bool increase) {
+	QString qualifiedName = QLatin1String("perl.DazKarma.karma_") + object;
 	int current = get(qualifiedName).toInt();
 	if(increase)
 		++current;
@@ -29,9 +29,9 @@ int KarmaPlugin::modifyKarma(QString object, bool increase) {
 	
 	if(current == 0) {
 		// Null QVariant() will unset the variable
-		set(Plugin.NetworkScope, qualifiedName, QVariant());
+		set(Plugin::NetworkScope, qualifiedName, QVariant());
 	} else {
-		set(Plugin.NetworkScope, qualifiedName, current);
+		set(Plugin::NetworkScope, qualifiedName, current);
 	}
 
 	return current;
@@ -40,10 +40,10 @@ int KarmaPlugin::modifyKarma(QString object, bool increase) {
 void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 	const QString &message, Irc::Buffer *buffer )
 {
-	if(message.startsWith("}karma ")) {
+	if(message.startsWith(QLatin1String("}karma "))) {
 		QString object = message.mid(7);
-		int current = get("perl.DazKarma.karma_ " + object).toInt();
-		buffer->message(object + " has a karma of " + QString::number(current) + ".");
+		int current = get(QLatin1String("perl.DazKarma.karma_ ") + object).toInt();
+		buffer->message(object + QLatin1String(" has a karma of ") + QString::number(current) + QLatin1Char('.'));
 		return;
 	}
 
@@ -57,10 +57,10 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 	int len = message.length();
 	for(int i = 1; i < (len - 1); ++i) {
 		bool wordEnd = i == len - 2 || message[i+2].isSpace();
-		if( message[i] == '-' && message[i+1] == '-' && wordEnd ) {
+		if( message[i] == QLatin1Char('-') && message[i+1] == QLatin1Char('-') && wordEnd ) {
 			hits.append(i);
 		}
-		else if( message[i] == '+' && message[i+1] == '+' && wordEnd ) {
+		else if( message[i] == QLatin1Char('+') && message[i+1] == QLatin1Char('+') && wordEnd ) {
 			hits.append(i);
 		}
 	}
@@ -68,7 +68,7 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 	QListIterator<int> i(hits);
 	while(i.hasNext()) {
 		int pos = i.next();
-		bool isIncrease = message[pos] == '+';
+		bool isIncrease = message[pos] == QLatin1Char('+');
 		QString object;
 		int newVal;
 
@@ -88,10 +88,10 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 
 		char beginner;
 		char ender;
-		if(message[pos-1] == ']') {
+		if(message[pos-1] == QLatin1Char(']')) {
 			beginner = '[';
 			ender = ']';
-		} else if(message[pos-1] == ')') {
+		} else if(message[pos-1] == QLatin1Char(')')) {
 			beginner = '(';
 			ender = ')';
 		} else {
@@ -99,14 +99,15 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 		}
 
 		// find the last $beginner before $ender
-		int startPos = message.lastIndexOf(beginner, pos);
+		int startPos = message.lastIndexOf(QLatin1Char(beginner), pos);
 		// unless there's already an $ender between them
-		if(message.indexOf(ender, startPos) < pos - 1)
+		if(message.indexOf(QLatin1Char(ender), startPos) < pos - 1)
 			continue;
 
 		newVal = modifyKarma(message.mid(startPos + 1, pos - 2 - startPos), isIncrease);
-		QString message = origin + (isIncrease ? " increased" : " decreased")
-			          + " karma of " + object + " to " + QString::number(newVal);
+		QString message = origin + QLatin1String(isIncrease ? " increased" : " decreased")
+		                + QLatin1String(" karma of ") + object + QLatin1String(" to ")
+		                + QString::number(newVal) + QLatin1Char('.');
 		qDebug() << message;
 		if(ender == ']') {
 			// Verbose mode, print the result
