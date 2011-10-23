@@ -103,7 +103,6 @@ void PerlPlugin::initNetwork(QString uniqueId)
   ePerl->loadModule( uniqueId.toLatin1(), "DazFiglet" );
   ePerl->loadModule( uniqueId.toLatin1(), "Twitter" );
   ePerl->loadModule( uniqueId.toLatin1(), "PiepNoms" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazKarma" );
   ePerl->loadModule( uniqueId.toLatin1(), "DazFood" );
 }
 
