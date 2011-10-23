@@ -87,6 +87,10 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 					break;
 				}
 			}
+			if(startPos > 0 && !message[startPos-1].isSpace()) {
+				// non-alphanumerics would be in this object, ignore it
+				continue;
+			}
 			object = message.mid(startPos, pos - startPos);
 			newVal = modifyKarma(object, isIncrease);
 			qDebug() << origin << (isIncrease ? "increased" : "decreased")
