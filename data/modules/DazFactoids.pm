@@ -207,9 +207,8 @@ sub told
 	}
 }
 
-my @forwards;
 sub getFactoid {
-	my ($self, $factoid, $mode, $mess) = @_;
+	my ($self, $factoid, $mode, $mess, @forwards) = @_;
 	my $who = $mess->{who};
 	my $chan = $mess->{channel};
 	$mode ||= "normal";
@@ -225,7 +224,6 @@ sub getFactoid {
 		push @forwards, $factoid;
 		
 		if($value->{reply}) {
-			@forwards = ();
 			return $fact;
 		} elsif($value->{forward}) {
 			foreach(@forwards) {
@@ -233,10 +231,8 @@ sub getFactoid {
 					return "[ERROR] Factoid deeplink detected";
 				}
 			}
-			push @forwards, $fact;
-			return $self->getFactoid($fact, $mode, $mess);
+			return $self->getFactoid($fact, $mode, $mess, @forwards, $fact);
 		} else {
-			@forwards = ();
 			return $fact if $mode eq "short";
 			return $factoid." is ".$fact;
 		}
@@ -246,7 +242,6 @@ sub getFactoid {
 		push @forwards, $factoid;
 	
 		if($value =~ /^<REPLY>(.*)$/i) {
-			@forwards = ();
 			return $1;
 		} elsif($value =~ /^<FORWARD>(.+)$/i) {
 			foreach(@forwards) {
@@ -254,17 +249,13 @@ sub getFactoid {
 					return "[ERROR] Factoid deeplink detected";
 				}
 			}
-			push @forwards, $1;
-			return $self->getFactoid($1, $mode, $mess);
+			return $self->getFactoid($1, $mode, $mess, @forwards, $1);
 		} elsif($value =~ /^<BLOCKREPLY>(.*)$/i or $value =~ /^<BLOCK><REPLY>(.*)$/i) {
-			@forwards = ();
 			return $1;
 		} elsif($value =~ /^<BLOCK>(.*)$/i) {
-			@forwards = ();
 			return $1 if $mode eq "short";
 			return $factoid." is ".$1;
 		} else {
-			@forwards = ();
 			return $value if $mode eq "short";
 			return $factoid." is ".$value;
 		}
