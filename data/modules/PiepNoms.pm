@@ -60,7 +60,11 @@ sub getDayKey {
 sub pickMenuUrl {
 	my ($self, $day) = @_;
 
-	return "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-" . (localtime->wday() > $day ? "komende-" : "") . "week/?rss=true";
+	my $next_week = localtime->wday() > $day;
+	# except when it's sunday, then always take next week
+	$next_week = 1 if(localtime->wday() == 0);
+
+	return "http://www.ru.nl/facilitairbedrijf/eten_en_drinken/weekmenu_de_refter/menu-" . ($next_week ? "komende-" : "") . "week/?rss=true";
 }
 
 sub fetchMenuByDay {
