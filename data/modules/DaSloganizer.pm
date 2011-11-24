@@ -25,7 +25,7 @@ use warnings;
 
 use base qw(DaZeus2Module);
 
-my @slogans = [];
+my @slogans;
 
 sub loadSlogans {
 	my ($self) = @_;
@@ -63,7 +63,7 @@ sub told {
 	my $topic = $rest ? $rest : $msg->{who};
 
 	# Slogan time!
-	$self->bot->reply($self->sloganize($topic));
+	$self->bot->reply($msg, $self->sloganize($topic));
 }
 
 sub parseMsg {
