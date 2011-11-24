@@ -25,7 +25,7 @@ use warnings;
 
 use base qw(DaZeus2Module);
 
-my @slogans = [];
+my @slogans;
 
 sub loadSlogans {
 	my ($self) = @_;
