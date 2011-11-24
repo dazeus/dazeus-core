@@ -413,7 +413,7 @@ sub told
 		$self->{makingadmin} = $mess->{who};
 		$self->sendWhois($mess->{who});
 		return "Going to check if you are identified before I make you an admin.";
-	} elsif($command eq "checkident") {
+	} elsif($command eq "checkident" or $command eq "sudo") {
 		# can't check for permissions, since nobody has them ATM.
 		#return "You don't have dazeus.commands.checkident permissions."
 		#	if(!$p->has("dazeus.commands.checkident"));
