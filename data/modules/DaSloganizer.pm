@@ -63,7 +63,7 @@ sub told {
 	my $topic = $rest ? $rest : $msg->{who};
 
 	# Slogan time!
-	$self->bot->reply($self->sloganize($topic));
+	$self->bot->reply($msg, $self->sloganize($topic));
 }
 
 sub parseMsg {
