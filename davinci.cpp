@@ -210,7 +210,7 @@ bool DaVinci::loadConfig()
   if(!connectDatabase())
     return false;
   
-  pluginManager_ = new PluginManager( database_ );
+  pluginManager_ = new PluginManager( database_, this );
 
   foreach( NetworkConfig *netconf, networks )
   {

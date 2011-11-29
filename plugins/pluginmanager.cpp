@@ -33,12 +33,13 @@ QDebug operator<<(QDebug dbg, const Context *c)
  *
  * Does nothing.
  */
-PluginManager::PluginManager( Database *db )
+PluginManager::PluginManager( Database *db, DaVinci *bot )
 : QObject()
 , config_( 0 )
 , database_( db )
 , context_( 0 )
 , initialized_( false )
+, bot_(bot)
 {
 }
 

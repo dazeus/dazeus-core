@@ -8,6 +8,7 @@
 
 #include <QtCore/QObject>
 #include "plugin.h"
+#include "davinci.h"
 
 class Config;
 class User;
@@ -33,7 +34,7 @@ class PluginManager : public QObject
   friend class Plugin;
 
   public:
-            PluginManager( Database *db );
+            PluginManager( Database *db, DaVinci *bot );
            ~PluginManager();
     bool    isInitialized() const;
     Database *database() const;
@@ -41,6 +42,7 @@ class PluginManager : public QObject
     void     set( Plugin::VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, Plugin::VariableScope *s = NULL ) const;
     QVariant getConfig( const QString &pluginName, const QString &variableName ) const;
+    DaVinci *bot() const { return bot_; }
 
   public slots:
     void    setConfig( Config* );
@@ -93,6 +95,7 @@ class PluginManager : public QObject
     Context        *context_;
     QList<Plugin*>  plugins_;
     bool            initialized_;
+    DaVinci        *bot_;
 };
 
 #endif
