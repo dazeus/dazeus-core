@@ -80,7 +80,10 @@ void KarmaPlugin::messageReceived( Network &net, const QString &origin,
 			// only alphanumerics between startPos and pos-1
 			int startPos = pos - 1;
 			for(; startPos >= 0; --startPos) {
-				if(!message[startPos].isLetter())
+				if(!message[startPos].isLetter()
+				&& !message[startPos].isDigit()
+				&& message[startPos] != QLatin1Char('-')
+				&& message[startPos] != QLatin1Char('_'))
 				{
 					// revert the negation
 					startPos++;
