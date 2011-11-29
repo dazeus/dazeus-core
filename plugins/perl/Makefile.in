@@ -21,7 +21,7 @@ all: embedperl.a
 perllib:
 	-[ -f "$(PERLLIBDIR)/libperl.so" ] && cp $(PERLLIBDIR)/libperl.so .
 	-[ -f "$(PERLLIBDIR)/libperl.dylib" ] && cp $(PERLLIBDIR)/libperl.dylib .
-	-[ -f "$(PERLLIBDIR)/libperl.a" ] && cp $(PERLLIBDIR)/libperl.a
+	-[ -f "$(PERLLIBDIR)/libperl.a" ] && cp $(PERLLIBDIR)/libperl.a .
 	touch perllib
 
 embedperl.a: perllib DaZeus2.o embedperl.o xsinit.o DynaLoader.o
