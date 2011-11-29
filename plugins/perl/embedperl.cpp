@@ -85,12 +85,22 @@ EmbedPerl::EmbedPerl()
 {
   assert(ePerl == 0);
   ePerl = this;
+  PERL_SYS_INIT3(NULL, NULL, NULL);
 
   my_perl = perl_alloc();
   perl_construct(my_perl);
 
   char *argv[] = {"", "dazeus2_api_emulate.pl"};
-  perl_parse(my_perl, xs_init, 1, argv, NULL);
+  if(perl_parse(my_perl, xs_init, 1, argv, NULL) != 0
+  || perl_run(my_perl) != 0)
+  {
+    fprintf(stderr, "DaZeus2 API emulation layer failed to parse, quitting.\n");
+    perl_destruct(my_perl);
+    perl_free(my_perl);
+    my_perl = 0;
+    PERL_SYS_TERM();
+    return;
+  }
 }
 
 EmbedPerl::~EmbedPerl()
@@ -100,6 +110,7 @@ EmbedPerl::~EmbedPerl()
 #endif
   perl_destruct(my_perl);
   perl_free(my_perl);
+  PERL_SYS_TERM();
 }
 
 void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, const char*, void*),
@@ -126,7 +137,6 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
 }
 
 #define PREPARE_CALL \
-  int argn = 0; \
   dSP; \
   ENTER; \
   SAVETMPS; \

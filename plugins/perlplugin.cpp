@@ -71,6 +71,10 @@ PerlPlugin::PerlPlugin( PluginManager *man )
            this,        SLOT(      tick() ) );
 
   ePerl = new EmbedPerl();
+  if(!ePerl->isInitialized()) {
+    qWarning() << "Failed to initialize Perl! Quitting.\n";
+    exit(1);
+  }
   ePerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
                        perlplugin_getProperty_callback, perlplugin_setProperty_callback,
                        perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,

@@ -22,6 +22,8 @@ class EmbedPerl
     EmbedPerl();
     ~EmbedPerl();
 
+    bool isInitialized() { return my_perl != 0; }
+
     void init(const char*);
     bool loadModule(const char*, const char*);
     void message(const char*, const char*, const char*, const char*);
