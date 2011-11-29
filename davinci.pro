@@ -22,8 +22,8 @@ HEADERS += davinci.h network.h config.h user.h server.h database.h
 # plugins
 SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
-SOURCES += plugins/statistics.cpp plugins/karmaplugin.cpp
-HEADERS += plugins/statistics.h plugins/karmaplugin.h
+SOURCES += plugins/statistics.cpp plugins/karmaplugin.cpp plugins/socketplugin.cpp
+HEADERS += plugins/statistics.h plugins/karmaplugin.h plugins/socketplugin.h
 
 # perl plugin
 SOURCES += plugins/perlplugin.cpp

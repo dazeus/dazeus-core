@@ -9,6 +9,7 @@
 #include "perlplugin.h"
 #include "karmaplugin.h"
 #include "statistics.h"
+#include "socketplugin.h"
 #include "database.h"
 #include <IrcBuffer>
 #include <IrcSession>
@@ -103,25 +104,20 @@ bool PluginManager::initialize()
   Q_ASSERT( config_ != 0 );
   setContext(QString());
 
-  Plugin *plugin = new TestPlugin( this );
-  plugin->init();
-  plugins_.append( plugin );
+  plugins_.append(new TestPlugin(this));
+  plugins_.append(new PerlPlugin(this));
+  plugins_.append(new Statistics(this));
+  plugins_.append(new KarmaPlugin(this));
+  plugins_.append(new SocketPlugin(this));
 
-  Plugin *plugin2 = new PerlPlugin( this );
-  plugin2->init();
-  plugins_.append( plugin2 );
+  initialized_ = true;
 
-  Plugin *plugin3 = new Statistics( this );
-  plugin3->init();
-  plugins_.append( plugin3 );
-
-  Plugin *karmaPlugin = new KarmaPlugin(this);
-  karmaPlugin->init();
-  plugins_.append(karmaPlugin);
+  foreach(Plugin *p, plugins_) {
+    p->init();
+  }
 
   clearContext();
 
-  initialized_ = true;
   return true;
 }
 
