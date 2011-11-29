@@ -33,7 +33,7 @@ QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
 QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
       plugins/perl/embedperl.o plugins/perl/xsinit.c plugins/perl/xsinit.o \
       plugins/perl/embedperl.a
-LIBS += plugins/perl/embedperl.a
+LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl
 unix {
   !macx {
     LIBS += -Wl,--export-dynamic -lcrypt -ldl
