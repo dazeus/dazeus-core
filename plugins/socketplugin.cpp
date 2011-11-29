@@ -12,6 +12,8 @@
 #include <QtNetwork/QHostInfo>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
 
 #include "socketplugin.h"
 #include "pluginmanager.h"
