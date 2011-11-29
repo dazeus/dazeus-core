@@ -11,7 +11,6 @@ TARGET    = data/davinci
 CONFIG   += console libircclient-qt
 CONFIG   -= app_bundle
 VERSION   = 1.9.1
-DEFINES  += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
 
 TEMPLATE = app
 MOC_DIR = build
