@@ -62,7 +62,7 @@ extern "C" {
 }
 
 PerlPlugin::PerlPlugin( PluginManager *man )
-: Plugin(man)
+: Plugin( "PerlPlugin", man )
 , whois_identified(false)
 {
   tickTimer_.setSingleShot( false );

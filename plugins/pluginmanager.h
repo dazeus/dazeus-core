@@ -40,6 +40,7 @@ class PluginManager : public QObject
     const Context *context() const;
     void     set( Plugin::VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, Plugin::VariableScope *s = NULL ) const;
+    QVariant getConfig( const QString &pluginName, const QString &variableName ) const;
 
   public slots:
     void    setConfig( Config* );

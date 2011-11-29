@@ -10,7 +10,7 @@
 #include "karmaplugin.h"
 
 KarmaPlugin::KarmaPlugin( PluginManager *man )
-: Plugin( man )
+: Plugin( "KarmaPlugin", man )
 {}
 
 KarmaPlugin::~KarmaPlugin() {}

@@ -22,7 +22,7 @@ class Plugin : public QObject
   Q_OBJECT
 
   public:
-            Plugin(PluginManager *man);
+            Plugin(const QString &name, PluginManager *man);
   virtual  ~Plugin();
 
   /**
@@ -98,6 +98,7 @@ class Plugin : public QObject
 
     void     set( VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, VariableScope *s = NULL ) const;
+    QVariant getConfig( const QString &name ) const;
     PluginManager *manager() const;
     void    setContext(QString network, QString receiver = QString(), QString sender = QString());
     void    clearContext();
@@ -106,6 +107,7 @@ class Plugin : public QObject
     User                          *activeUser_;
     PluginManager                 *manager_;
     QHash<QString, VariableScope>  variables_;
+    QString                        name_;
 };
 
 #endif

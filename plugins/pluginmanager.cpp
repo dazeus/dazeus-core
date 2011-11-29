@@ -172,6 +172,15 @@ void PluginManager::setConfig( Config *c )
 }
 
 /**
+ * @brief Gets a configuration element of a plugin from the configuration file.
+ */
+QVariant PluginManager::getConfig( const QString &pluginName, const QString &variableName ) const
+{
+  Q_ASSERT(isInitialized());
+  return config_->pluginConfig(pluginName).value(variableName);
+}
+
+/**
  * @brief Set the context of this call.
  *
  * All PluginManager handlers call this method for later reference. For

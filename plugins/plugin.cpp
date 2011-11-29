@@ -6,9 +6,10 @@
 #include "plugin.h"
 #include "pluginmanager.h"
 
-Plugin::Plugin(PluginManager *man)
+Plugin::Plugin(const QString &name, PluginManager *man)
 : QObject()
 , manager_(man)
+, name_(name)
 {}
 
 Plugin::~Plugin()
@@ -28,6 +29,12 @@ QVariant Plugin::get( const QString &name, VariableScope *scope ) const
 {
   return manager_->get(name, scope);
 }
+
+QVariant Plugin::getConfig( const QString &variable ) const
+{
+  return manager_->getConfig(name_, variable);
+}
+
 
 PluginManager *Plugin::manager() const
 {
