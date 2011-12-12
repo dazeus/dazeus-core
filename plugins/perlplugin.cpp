@@ -98,15 +98,11 @@ void PerlPlugin::initNetwork(QString uniqueId)
   uniqueIds_.append(uniqueId);
   ePerl->init(uniqueId.toLatin1().constData());
 
-#warning fix this the right way...
-  ePerl->loadModule( uniqueId.toLatin1(), "DazAuth" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazChannel" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazLoader" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazMessages" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazFactoids" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazFiglet" );
-  ePerl->loadModule( uniqueId.toLatin1(), "PiepNoms" );
-  ePerl->loadModule( uniqueId.toLatin1(), "DazFood" );
+  int modules = getConfig("modules").toInt();
+  for(int i = 1; i <= modules; ++i) {
+    QString module = getConfig("module" + QString::number(i)).toString();
+    ePerl->loadModule( uniqueId.toLatin1(), module.toLatin1() );
+  }
 }
 
 void PerlPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
