@@ -8,7 +8,7 @@
 #include "config.h"
 #include "user.h"
 
-#include <ircclient-qt/IrcBuffer>
+#include <IrcBuffer>
 
 QHash<QString, Network*> Network::networks_;
 

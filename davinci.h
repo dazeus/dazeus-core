@@ -29,6 +29,7 @@ class DaVinci : public QObject
     bool     configLoaded() const;
 
     Database *database() const;
+    const QList<Network*> &networks() const { return networks_; }
 
   public slots:
     bool     loadConfig();

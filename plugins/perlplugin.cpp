@@ -62,7 +62,7 @@ extern "C" {
 }
 
 PerlPlugin::PerlPlugin( PluginManager *man )
-: Plugin(man)
+: Plugin( "PerlPlugin", man )
 , whois_identified(false)
 {
   tickTimer_.setSingleShot( false );
@@ -71,6 +71,10 @@ PerlPlugin::PerlPlugin( PluginManager *man )
            this,        SLOT(      tick() ) );
 
   ePerl = new EmbedPerl();
+  if(!ePerl->isInitialized()) {
+    qWarning() << "Failed to initialize Perl! Quitting.\n";
+    exit(1);
+  }
   ePerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
                        perlplugin_getProperty_callback, perlplugin_setProperty_callback,
                        perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
@@ -101,7 +105,6 @@ void PerlPlugin::initNetwork(QString uniqueId)
   ePerl->loadModule( uniqueId.toLatin1(), "DazMessages" );
   ePerl->loadModule( uniqueId.toLatin1(), "DazFactoids" );
   ePerl->loadModule( uniqueId.toLatin1(), "DazFiglet" );
-  ePerl->loadModule( uniqueId.toLatin1(), "Twitter" );
   ePerl->loadModule( uniqueId.toLatin1(), "PiepNoms" );
   ePerl->loadModule( uniqueId.toLatin1(), "DazFood" );
 }

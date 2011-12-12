@@ -9,7 +9,7 @@
 #include "testplugin.h"
 
 TestPlugin::TestPlugin( PluginManager *man )
-: Plugin( man )
+: Plugin( "TestPlugin", man )
 {}
 
 TestPlugin::~TestPlugin() {}

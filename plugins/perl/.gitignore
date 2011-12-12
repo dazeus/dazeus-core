@@ -3,3 +3,7 @@ xsinit.c
 Makefile
 embedperl.a
 DynaLoader.o
+libperl.a
+libperl.so
+libperl.dylib
+perllib

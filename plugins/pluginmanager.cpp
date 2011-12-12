@@ -9,6 +9,7 @@
 #include "perlplugin.h"
 #include "karmaplugin.h"
 #include "statistics.h"
+#include "socketplugin.h"
 #include "database.h"
 #include <IrcBuffer>
 #include <IrcSession>
@@ -33,12 +34,13 @@ QDebug operator<<(QDebug dbg, const Context *c)
  *
  * Does nothing.
  */
-PluginManager::PluginManager( Database *db )
+PluginManager::PluginManager( Database *db, DaVinci *bot )
 : QObject()
 , config_( 0 )
 , database_( db )
 , context_( 0 )
 , initialized_( false )
+, bot_(bot)
 {
 }
 
@@ -102,25 +104,20 @@ bool PluginManager::initialize()
   Q_ASSERT( config_ != 0 );
   setContext(QString());
 
-  Plugin *plugin = new TestPlugin( this );
-  plugin->init();
-  plugins_.append( plugin );
+  plugins_.append(new TestPlugin(this));
+  plugins_.append(new PerlPlugin(this));
+  plugins_.append(new Statistics(this));
+  plugins_.append(new KarmaPlugin(this));
+  plugins_.append(new SocketPlugin(this));
 
-  Plugin *plugin2 = new PerlPlugin( this );
-  plugin2->init();
-  plugins_.append( plugin2 );
+  initialized_ = true;
 
-  Plugin *plugin3 = new Statistics( this );
-  plugin3->init();
-  plugins_.append( plugin3 );
-
-  Plugin *karmaPlugin = new KarmaPlugin(this);
-  karmaPlugin->init();
-  plugins_.append(karmaPlugin);
+  foreach(Plugin *p, plugins_) {
+    p->init();
+  }
 
   clearContext();
 
-  initialized_ = true;
   return true;
 }
 
@@ -169,6 +166,15 @@ void PluginManager::setConfig( Config *c )
   config_ = c;
   connect( c,    SIGNAL( configReloaded() ),
            this, SLOT(       initialize() ) );
+}
+
+/**
+ * @brief Gets a configuration element of a plugin from the configuration file.
+ */
+QVariant PluginManager::getConfig( const QString &pluginName, const QString &variableName ) const
+{
+  Q_ASSERT(isInitialized());
+  return config_->pluginConfig(pluginName).value(variableName);
 }
 
 /**

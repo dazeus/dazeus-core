@@ -60,6 +60,7 @@ class Config : public QObject
   const QList<NetworkConfig*> &networks();
   const QString               &lastError();
   const DatabaseConfig        *databaseConfig() const;
+  const QMap<QString,QVariant> pluginConfig(QString plugin) const;
 
   signals:
   void  beforeConfigReload();

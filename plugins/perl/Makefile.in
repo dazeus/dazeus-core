@@ -17,10 +17,15 @@ DYNA_LINK_HINTS := $(shell $(PERL) -MExtUtils::Embed -e '$$_=ldopts(true);print 
 
 all: embedperl.a
 
-# because you can't add .a's into .a's, embedperl first copies libperl.a
-embedperl.a: DaZeus2.o embedperl.o xsinit.o DynaLoader.o
-	cp "$(PERLLIBDIR)"/libperl.a embedperl.a
-	chmod 0644 embedperl.a
+# Copy either libperl.a, libperl.so or libperl.dylib here
+perllib:
+	-[ -f "$(PERLLIBDIR)/libperl.so" ] && cp $(PERLLIBDIR)/libperl.so .
+	-[ -f "$(PERLLIBDIR)/libperl.dylib" ] && cp $(PERLLIBDIR)/libperl.dylib .
+	-[ -f "$(PERLLIBDIR)/libperl.a" ] && cp $(PERLLIBDIR)/libperl.a .
+	touch perllib
+
+embedperl.a: perllib DaZeus2.o embedperl.o xsinit.o DynaLoader.o
+	rm -f embedperl.a
 	$(AR) cur embedperl.a DaZeus2.o embedperl.o xsinit.o
 	-[ -n "$(DYNA_LINK_HINTS)" ] && $(AR) cur embedperl.a DynaLoader.o
 	$(RANLIB) embedperl.a
@@ -46,4 +51,5 @@ xsinit.o: xsinit.c
 
 clean:
 	rm -f DaZeus2.c DaZeus2.o embedperl.o xsinit.c xsinit.o __.SYMDEF\ SORTED
+	rm -f libperl.a libperl.so libperl.dylib embedperl.a perllib
 

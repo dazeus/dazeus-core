@@ -6,7 +6,7 @@
 #include "statistics.h"
 
 Statistics::Statistics(PluginManager *man)
-: Plugin(man)
+: Plugin( "Statistics", man )
 {}
 
 Statistics::~Statistics() {}
