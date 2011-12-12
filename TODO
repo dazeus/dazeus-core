@@ -1,5 +1,4 @@
 Reconnecting to a network if the connection failed
-Definable configuration for plugins
 Better way of initial Perl module loading (using plugin config)
 Dynamic loading of C++ plugins
 Rewrite of the Perl 'core' modules (DazAuth, DazChannel, DazLoader) in C++ (with interfaces to the Perl modules)
