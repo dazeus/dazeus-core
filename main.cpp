@@ -8,26 +8,16 @@
 #include "davinci.h"
 #include "davinciglobal.h"
 
-#include <IrcGlobal>
-#include <Irc>
-
-#if IRC_VERSION == 0xffffff || IRC_VERSION == 0x000000
- #warning **WARNING**
- #warning You are using libircclient-qt trunk. Use at your own risk!
- #warning **WARNING**
-#else
- #if IRC_VERSION < 0x000500
-  #error This bot requires at least libircclient-qt 0.5.0.
- #endif
-#endif
+#include <libircclient.h>
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
     qDebug() << "DaVinci version: " << DAVINCI_VERSION_STR;
-    qDebug() << "libircclient-qt version: " << IRC_VERSION_STR;
-    qDebug() << "Irc::version: " << Irc::version();
+    unsigned int high, low;
+    irc_get_version(&high, &low);
+    fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
 
     // TODO parse command-line options
     DaVinci d( QLatin1String("./davinci.conf") );

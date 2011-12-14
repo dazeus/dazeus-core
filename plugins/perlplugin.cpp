@@ -7,9 +7,10 @@
 #include "perl/embedperl.h"
 #include "../config.h"
 #include "pluginmanager.h"
+#include "../server.h"
 
 #include <QtCore/QDebug>
-#include <ircclient-qt/IrcBuffer>
+#include <QtCore/QStringList>
 
 // #define DEBUG
 

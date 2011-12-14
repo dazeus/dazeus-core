@@ -9,16 +9,13 @@
 #include <QtCore/QObject>
 #include "plugin.h"
 #include "davinci.h"
+#include "../server.h"
 
 class Config;
 class User;
 class Network;
 class Server;
 class Database;
-
-namespace Irc {
-  class Buffer;
-};
 
 struct Context {
   QString network;

@@ -5,8 +5,8 @@
 
 #include <QtCore/QList>
 #include <QtCore/QDebug>
-#include <ircclient-qt/IrcBuffer>
 
+#include "../server.h"
 #include "karmaplugin.h"
 
 KarmaPlugin::KarmaPlugin( PluginManager *man )

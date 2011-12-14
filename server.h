@@ -8,31 +8,50 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <libircclient.h>
+#include <cassert>
+
 #include "user.h"
 #include "network.h"
-
-#include <IrcSession>
 
 // #define SERVER_FULLDEBUG
 
 class QTimer;
 struct ServerConfig;
 
+class ServerThread;
 class Server;
 
 QDebug operator<<(QDebug, const Server &);
 QDebug operator<<(QDebug, const Server *);
 
-class Server : public Irc::Session
+namespace Irc {
+	struct Buffer {
+		// TEMPORARY PLACEHOLDER
+		Server *session_;
+		QString receiver_;
+		inline Server *session() const { return session_; }
+		inline void setReceiver(const QString &p) { receiver_ = p; }
+		inline const QString &receiver() const { return receiver_; }
+
+		Buffer(Server *s) : session_(s) {}
+
+		void message(const QString &message);
+	};
+};
+
+class Server : public QObject
 {
 Q_OBJECT
 
 friend class TestServer;
+friend class ServerThread;
+
+private:
+	   Server();
 
 public:
-	   Server();
 	  ~Server();
-
 	static Server *fromServerConfig( const ServerConfig *c );
 	const ServerConfig *config() const;
 	QString motd() const;
@@ -40,14 +59,18 @@ public:
 public slots:
 	void connectToServer();
 	void disconnectFromServer( Network::DisconnectReason );
-	inline void quit( const QString &reason ) { Irc::Session::quit( reason ); }
-	Q_DECL_DEPRECATED void joinChannel( QString channel, const QString &key = QString() );
-	Q_DECL_DEPRECATED void leaveChannel( QString channel, const QString &reason = QString() );
-	Q_DECL_DEPRECATED void say( QString destination, QString message );
-	Q_DECL_DEPRECATED void action( QString destination, QString message );
-	Q_DECL_DEPRECATED void ctcp( QString destination, QString message );
+	void quit( const QString &reason );
+	void whois( const QString &destination );
+	void ctcpAction( const QString &destination, const QString &message );
+	void ctcpRequest( const QString &destination, const QString &message );
+	void join( const QString &channel, const QString &key = QString() );
+	void part( const QString &channel, const QString &reason = QString() );
+	void message( const QString &destination, const QString &message );
 
 signals:
+	void connected();
+	void disconnected();
+	void welcomed();
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
@@ -67,32 +90,11 @@ signals:
 	void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
 	void unknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *buffer );
 
-
-private slots:
-	void slotBufferAdded( Irc::Buffer *buffer );
-	void slotBufferRemoved( Irc::Buffer *buffer );
-
-	void slotMotdReceived( const QString &motd );
-	void slotJoined( const QString &origin );
-	void slotParted( const QString &origin, const QString &message );
-	void slotQuit(   const QString &origin, const QString &message );
-	void slotNickChanged( const QString &origin, const QString &nick );
-	void slotModeChanged( const QString &origin, const QString &mode, const QString &args );
-	void slotTopicChanged( const QString &origin, const QString &topic );
-	void slotInvited( const QString &origin, const QString &receiver, const QString &channel );
-	void slotKicked( const QString &origin, const QString &nick, const QString &message );
-	void slotMessageReceived( const QString &origin, const QString &message );
-	void slotNoticeReceived( const QString &origin, const QString &notice );
-	void slotCtcpRequestReceived( const QString &origin, const QString &request );
-	void slotCtcpReplyReceived( const QString &origin, const QString &reply );
-	void slotCtcpActionReceived( const QString &origin, const QString &action );
-	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params );
-	void slotUnknownMessageReceived( const QString &origin, const QStringList &params );
-
 private:
 	const ServerConfig *config_;
 	QString   motd_;
 	QTimer   *connectTimer_;
+	ServerThread *thread_;
 };
 
 #endif

@@ -11,8 +11,7 @@
 #include "statistics.h"
 #include "socketplugin.h"
 #include "database.h"
-#include <IrcBuffer>
-#include <IrcSession>
+#include "../server.h"
 
 QDebug operator<<(QDebug dbg, const Context *c)
 {

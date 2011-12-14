@@ -4,9 +4,9 @@
  */
 
 #include <QtCore/QDebug>
-#include <ircclient-qt/IrcBuffer>
 
 #include "testplugin.h"
+#include "../server.h"
 
 TestPlugin::TestPlugin( PluginManager *man )
 : Plugin( "TestPlugin", man )

@@ -8,8 +8,6 @@
 #include "config.h"
 #include "user.h"
 
-#include <IrcBuffer>
-
 QHash<QString, Network*> Network::networks_;
 
 QDebug operator<<(QDebug dbg, const Network &n)
@@ -77,7 +75,7 @@ void Network::action( QString destination, QString message )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->action( destination, message );
+  return activeServer_->ctcpAction( destination, message );
 }
 
 /**
@@ -212,7 +210,7 @@ void Network::ctcp( QString destination, QString message )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->ctcp( destination, message );
+  return activeServer_->ctcpAction( destination, message );
 }
 
 
@@ -279,7 +277,7 @@ void Network::joinChannel( QString channel )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->joinChannel( channel );
+  return activeServer_->join( channel );
 }
 
 
@@ -287,7 +285,7 @@ void Network::leaveChannel( QString channel )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->leaveChannel( channel );
+  activeServer_->part( channel );
 }
 
 
@@ -295,7 +293,7 @@ void Network::say( QString destination, QString message )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->say( destination, message );
+  return activeServer_->message( destination, message );
 }
 
 

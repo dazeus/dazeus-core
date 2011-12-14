@@ -18,7 +18,7 @@ OBJECTS_DIR = build
 
 SOURCES += main.cpp
 SOURCES += davinci.cpp network.cpp config.cpp user.cpp server.cpp database.cpp
-HEADERS += davinci.h network.h config.h user.h server.h database.h
+HEADERS += davinci.h network.h config.h user.h server.h server_p.h database.h
 # plugins
 SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
 HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
@@ -33,7 +33,7 @@ QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
 QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
       plugins/perl/embedperl.o plugins/perl/xsinit.c plugins/perl/xsinit.o \
       plugins/perl/embedperl.a
-LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl -lircclient-qt
+LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl -lircclient
 unix {
   !macx {
     LIBS += -Wl,--export-dynamic -lcrypt -ldl

@@ -6,9 +6,11 @@
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
 #include <QtNetwork/QHostAddress>
-#include <ircclient-qt/IrcBuffer>
+#include <assert.h>
+#include <iostream>
 
 #include "server.h"
+#include "server_p.h"
 #include "config.h"
 
 QDebug operator<<(QDebug dbg, const Server &s)
@@ -31,27 +33,64 @@ QDebug operator<<(QDebug dbg, const Server *s)
 }
 
 Server::Server()
-: Irc::Session()
+: QObject()
 , config_( 0 )
 , connectTimer_( 0 )
+, thread_( new ServerThread(this) )
 {
-	connect( this, SIGNAL( bufferAdded(Irc::Buffer*)),
-	         this, SLOT(   slotBufferAdded(Irc::Buffer*)));
-	connect( this, SIGNAL( bufferRemoved(Irc::Buffer*)),
-	         this, SLOT(   slotBufferRemoved(Irc::Buffer*)));
+#define SERVER_RELAY_1STR( signname ) \
+	connect( thread_, SIGNAL(signname(const QString &, Irc::Buffer *)), \
+	         this,    SIGNAL(signname(const QString &, Irc::Buffer *)), \
+	         Qt::BlockingQueuedConnection );
 
-	setOptions( options() & ~Irc::Session::EchoMessages );
+#define SERVER_RELAY_2STR( signname ) \
+	connect( thread_, SIGNAL(signname(const QString &, const QString &, Irc::Buffer *)), \
+	         this,    SIGNAL(signname(const QString &, const QString &, Irc::Buffer *)), \
+	         Qt::BlockingQueuedConnection );
+
+#define SERVER_RELAY_3STR( signname ) \
+	connect( thread_, SIGNAL(signname(const QString &, const QString &, const QString &, Irc::Buffer *)), \
+	         this,    SIGNAL(signname(const QString &, const QString &, const QString &, Irc::Buffer *)), \
+	         Qt::BlockingQueuedConnection );
+
+	SERVER_RELAY_1STR( motdReceived );
+	SERVER_RELAY_1STR( joined );
+	SERVER_RELAY_2STR( parted );
+	SERVER_RELAY_2STR( quit );
+	SERVER_RELAY_2STR( nickChanged );
+	SERVER_RELAY_3STR( modeChanged );
+	SERVER_RELAY_2STR( topicChanged );
+	SERVER_RELAY_3STR( invited );
+	SERVER_RELAY_3STR( kicked );
+	SERVER_RELAY_2STR( messageReceived );
+	SERVER_RELAY_2STR( noticeReceived );
+	SERVER_RELAY_2STR( ctcpRequestReceived );
+	SERVER_RELAY_2STR( ctcpReplyReceived );
+	SERVER_RELAY_2STR( ctcpActionReceived );
+
+#undef SERVER_RELAY_1STR
+#undef SERVER_RELAY_2STR
+#undef SERVER_RELAY_3STR
+
+	connect( thread_, SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
+	         this,    SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
+	         this,    SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(connected()),
+	         this,    SIGNAL(connected()),
+	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(welcomed()),
+	         this,    SIGNAL(welcomed()),
+	         Qt::BlockingQueuedConnection );
 }
-
 
 Server::~Server()
 {
 	delete connectTimer_;
-}
-
-void Server::action( QString destination, QString message )
-{
-	ctcpAction( destination, message );
+	thread_->quit();
+	delete thread_;
 }
 
 const ServerConfig *Server::config() const
@@ -63,16 +102,9 @@ void Server::connectToServer()
 {
 	qDebug() << "Connecting to server" << this;
 	Q_ASSERT( !config_->network->nickName.isEmpty() );
-	Irc::Session::setNick(				 config_->network->nickName );
-	Irc::Session::setIdent(				config_->network->userName );
-	Irc::Session::setRealName(		 config_->network->fullName );
-	Irc::Session::setPassword(		 config_->network->password );
-	Irc::Session::connectToServer( config_->host, config_->port );
-}
-
-void Server::ctcp( QString destination, QString message )
-{
-	ctcpRequest( destination, message );
+	Q_ASSERT( !thread_->isRunning() );
+	thread_->setConfig(config_);
+	thread_->start();
 }
 
 void Server::disconnectFromServer( Network::DisconnectReason reason )
@@ -117,96 +149,59 @@ Server *Server::fromServerConfig( const ServerConfig *c )
 }
 
 
-void Server::joinChannel( QString channel, const QString &key )
-{
-	join( channel, key );
-}
-
-void Server::leaveChannel( QString channel, const QString &reason )
-{
-	part( channel, reason );
-}
-
 QString Server::motd() const
 {
 	qWarning() << "MOTD cannot be retrieved.";
 	return QString();
 }
 
-
-void Server::say( QString destination, QString message )
-{
-	QStringList lines = message.split(QRegExp(QLatin1String("[\\r\\n]+")), QString::SkipEmptyParts);
-	foreach(const QString& line, lines)
-		Irc::Session::message( destination, line );
+void Server::quit( const QString &reason ) {
+	thread_->quit(reason);
+}
+void Server::whois( const QString &destination ) {
+	//int sep = destination.indexOf('!');
+	//if(sep != -1) {
+	//	thread_->whois(destination.left(sep));
+	//} else {
+		thread_->whois(destination);
+	//}
+}
+void Server::ctcpAction( const QString &destination, const QString &message ) {
+	thread_->ctcpAction(destination, message);
+}
+void Server::ctcpRequest( const QString &destination, const QString &message ) {
+	thread_->ctcpRequest(destination, message);
+}
+void Server::join( const QString &channel, const QString &key ) {
+	thread_->join(channel, key);
+}
+void Server::part( const QString &channel, const QString &reason ) {
+	thread_->part(channel, reason);
+}
+void Server::message( const QString &destination, const QString &message ) {
+	thread_->message(destination, message);
 }
 
-void Server::slotBufferAdded( Irc::Buffer *buffer )
-{
-#define SERVER_SIGNAL_RELAY_1STR( slotname, signname ) \
-	connect( buffer, SIGNAL( signname (const QString&) ), \
-		this,	 SLOT(	 slotname (const QString&) ) );
-#define SERVER_SIGNAL_RELAY_2STR( slotname, signname ) \
-	connect( buffer, SIGNAL( signname (const QString&, const QString&) ), \
-		this,	 SLOT(	 slotname (const QString&, const QString&) ) );
-#define SERVER_SIGNAL_RELAY_3STR( slotname, signname ) \
-	connect( buffer, SIGNAL( signname (const QString&, const QString&, const QString&) ), \
-		this,	 SLOT(	 slotname (const QString&, const QString&, const QString&) ) );
-
-	SERVER_SIGNAL_RELAY_1STR( slotMotdReceived, motdReceived );
-	SERVER_SIGNAL_RELAY_1STR( slotJoined, joined );
-	SERVER_SIGNAL_RELAY_2STR( slotParted, parted );
-	SERVER_SIGNAL_RELAY_2STR( slotQuit, quit );
-	SERVER_SIGNAL_RELAY_2STR( slotNickChanged, nickChanged );
-	SERVER_SIGNAL_RELAY_3STR( slotModeChanged, modeChanged );
-	SERVER_SIGNAL_RELAY_2STR( slotTopicChanged, topicChanged );
-	SERVER_SIGNAL_RELAY_3STR( slotInvited, invited );
-	SERVER_SIGNAL_RELAY_3STR( slotKicked, kicked );
-	SERVER_SIGNAL_RELAY_2STR( slotMessageReceived, messageReceived );
-	SERVER_SIGNAL_RELAY_2STR( slotNoticeReceived, noticeReceived );
-	SERVER_SIGNAL_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
-	SERVER_SIGNAL_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
-	SERVER_SIGNAL_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
-
-#undef SERVER_SIGNAL_RELAY_1STR
-#undef SERVER_SIGNAL_RELAY_2STR
-#undef SERVER_SIGNAL_RELAY_3STR
-
-	connect( buffer, SIGNAL( unknownMessageReceived( const QString&, const QStringList& )),
-	         this,   SLOT(   slotUnknownMessageReceived( const QString&, const QStringList& )));
-	connect( buffer, SIGNAL( numericMessageReceived( const QString&, uint, const QStringList& )),
-	         this,   SLOT(   slotNumericMessageReceived( const QString&, uint, const QStringList& )));
-}
-
-void Server::slotBufferRemoved( Irc::Buffer *buffer )
-{
-	disconnect( buffer );
+void Irc::Buffer::message(const QString &message) {
+	assert(!receiver_.isEmpty());
+	session_->message(receiver_, message);
 }
 
 #define SERVER_SLOT_RELAY_1STR( slotname, signname ) \
-void Server::slotname ( const QString &str ) { \
-	QObject *s = sender(); \
-	Q_ASSERT( s != 0 ); \
-	Irc::Buffer *buf = qobject_cast<Irc::Buffer*>( s ); \
+void ServerThread::slotname ( const QString &str, Irc::Buffer *buf ) { \
 	Q_ASSERT( buf != 0 ); \
 	emit signname ( str, buf ); \
 }
 
 #define SERVER_SLOT_RELAY_2STR( slotname, signname ) \
-void Server::slotname ( const QString &str, const QString &str2 ) { \
-	QObject *s = sender(); \
-	Q_ASSERT( s != 0 ); \
-	Irc::Buffer *buf = qobject_cast<Irc::Buffer*>( s ); \
+void ServerThread::slotname ( const QString &str, const QString &str2, Irc::Buffer *buf ) { \
 	Q_ASSERT( buf != 0 ); \
 	emit signname ( str, str2, buf ); \
 }
 
 #define SERVER_SLOT_RELAY_3STR( slotname, signname ) \
-void Server::slotname (const QString &str, const QString &str2, const QString &str3) \
+void ServerThread::slotname (const QString &str, const QString &str2, const QString &str3, Irc::Buffer *buf ) \
 { \
-	QObject *s = sender(); \
-	Q_ASSERT( s != 0 ); \
-	Irc::Buffer *buf = qobject_cast<Irc::Buffer*>( s ); \
 	Q_ASSERT( buf != 0 ); \
 	emit signname ( str, str2, str3, buf ); \
 }
@@ -230,21 +225,197 @@ SERVER_SLOT_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
 #undef SERVER_SLOT_RELAY_2STR
 #undef SERVER_SLOT_RELAY_3STR
 
-void Server::slotNumericMessageReceived( const QString &str, uint code,
-	const QStringList &list )
+void ServerThread::slotNumericMessageReceived( const QString &str, uint code,
+	const QStringList &list, Irc::Buffer *buf )
 {
-	QObject *s = sender();
-	Q_ASSERT( s != 0 );
-	Irc::Buffer *buf = qobject_cast<Irc::Buffer*>( s );
 	Q_ASSERT( buf != 0 );
 	emit numericMessageReceived( str, code, list, buf );
 }
 
-void Server::slotUnknownMessageReceived( const QString &str, const QStringList &list )
+void ServerThread::slotUnknownMessageReceived( const QString &str, const QStringList &list, Irc::Buffer *buf )
 {
-	QObject *s = sender();
-	Q_ASSERT( s != 0 );
-	Irc::Buffer *buf = qobject_cast<Irc::Buffer*>( s );
 	Q_ASSERT( buf != 0 );
 	emit unknownMessageReceived( str, list, buf );
 }
+
+void ServerThread::slotConnected()
+{
+	emit connected();
+}
+
+void ServerThread::slotWelcomed()
+{
+	emit welcomed();
+}
+
+void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
+	ServerThread *server = (ServerThread*) irc_get_ctx(s);
+	assert(server->getIrc() == s);
+	QStringList params;
+	for(unsigned int i = 0; i < count; ++i) {
+		params.append(QString(p[i]));
+	}
+	printf("SPECIAL CALLBACK! Event: %d from origin: %s\n", event, origin);
+	Irc::Buffer *b = new Irc::Buffer(server->server());
+	server->slotNumericMessageReceived(QString(origin), event, params, b);
+}
+
+void irc_callback(irc_session_t *s, const char *e, const char *o, const char **params, unsigned int count) {
+	ServerThread *server = (ServerThread*) irc_get_ctx(s);
+	assert(server->getIrc() == s);
+
+	std::string event(e);
+	Irc::Buffer *b = new Irc::Buffer(server->server());
+
+	printf("CALLBACK! Event: %s from origin: %s\n", e, o);
+
+	// for now, keep these QStrings:
+	QString origin(o);
+	int exclamMark = origin.indexOf('!');
+	if(exclamMark != -1) {
+		origin = origin.left(exclamMark);
+	}
+
+	if(event == "CONNECT") {
+		assert(count <= 2);
+		server->slotConnected();
+		server->slotWelcomed();
+		// first one is my nick
+		// second one is "End of message of the day"
+		// ignore
+	} else if(event == "NICK") {
+		assert(count == 1);
+		server->slotNickChanged(origin, QString(params[0]), b);
+	} else if(event == "QUIT") {
+		assert(count == 0 || count == 1);
+		QString message;
+		if(count == 1)
+			message = QString(params[0]);
+		server->slotQuit(origin, message, b);
+	} else if(event == "JOIN") {
+		assert(count == 1);
+		b->setReceiver(QString(params[0]));
+		server->slotJoined(origin, b);
+	} else if(event == "PART") {
+		assert(count == 1 || count == 2);
+		QString message;
+		if(count == 2)
+			message = QString(params[1]);
+		b->setReceiver(QString(params[0]));
+		server->slotParted(origin, message, b);
+	} else if(event == "MODE") {
+		assert(count >= 1 && count <= 3);
+		QString mode;
+		if(count == 1) {
+			mode = QString(params[0]);
+		} else {
+			mode = QString(params[1]);
+			b->setReceiver(QString(params[0]));
+		}
+		QString args;
+		if(count == 3)
+			args = QString(params[2]);
+		server->slotModeChanged(origin, mode, args, b);
+	} else if(event == "UMODE") {
+		assert(count == 1);
+		server->slotModeChanged(origin, params[0], QString(), b);
+	} else if(event == "TOPIC") {
+		assert(count == 1 || count == 2);
+		QString topic;
+		if(count == 2)
+			topic = QString(params[1]);
+		b->setReceiver(QString(params[0]));
+		server->slotTopicChanged(origin, topic, b);
+	} else if(event == "KICK") {
+		assert(count > 1 && count <= 3);
+		QString nick;
+		QString message;
+		if(count >= 2)
+			nick = QString(params[1]);
+		if(count == 3)
+			message = QString(params[2]);
+		b->setReceiver(QString(params[0]));
+		server->slotKicked(origin, nick, message, b);
+	} else if(event == "CHANNEL" || event == "PRIVMSG") {
+		assert(count == 1 || count == 2);
+		QString message;
+		if(count == 2)
+			message = QString(params[1]);
+		b->setReceiver(QString(params[0]));
+		server->slotMessageReceived(origin, message, b);
+	} else if(event == "NOTICE" || event == "CHANNEL_NOTICE") {
+		assert(count == 1 || count == 2);
+		QString message;
+		if(count == 2)
+			message = QString(params[1]);
+		b->setReceiver(QString(params[0]));
+		server->slotNoticeReceived(origin, message, b);
+	} else if(event == "INVITE") {
+		assert(count == 2);
+		QString receiver(params[0]);
+		QString channel(params[1]);
+		server->slotInvited(origin, receiver, channel, b);
+	} else if(event == "CTCP_REQ") {
+		assert(count == 1);
+		server->slotCtcpRequestReceived(origin, QString(params[0]), b);
+	} else if(event == "CTCP_REP") {
+		assert(count == 1);
+		server->slotCtcpReplyReceived(origin, QString(params[0]), b);
+	} else if(event == "CTCP_ACTION") {
+		assert(count == 1);
+		server->slotCtcpActionReceived(origin, QString(params[0]), b);
+	} else if(event == "UNKNOWN") {
+		QStringList params;
+		for(unsigned int i = 0; i < count; ++i) {
+			params.append(QString(params[i]));
+		}
+		server->slotUnknownMessageReceived(origin, params, b);
+	} else {
+		std::cerr << "Unknown event received from libircclient: " << event << std::cout;
+		assert(false);
+	}
+}
+
+void ServerThread::run()
+{
+	irc_callbacks_t callbacks;
+	callbacks.event_connect = irc_callback;
+	callbacks.event_nick = irc_callback;
+	callbacks.event_quit = irc_callback;
+	callbacks.event_join = irc_callback;
+	callbacks.event_part = irc_callback;
+	callbacks.event_mode = irc_callback;
+	callbacks.event_umode = irc_callback;
+	callbacks.event_topic = irc_callback;
+	callbacks.event_kick = irc_callback;
+	callbacks.event_channel = irc_callback;
+	callbacks.event_privmsg = irc_callback;
+	callbacks.event_notice = irc_callback;
+	// TODO
+	//callbacks.event_channel_notice = irc_callback;
+	callbacks.event_invite = irc_callback;
+	callbacks.event_ctcp_req = irc_callback;
+	callbacks.event_ctcp_rep = irc_callback;
+	callbacks.event_ctcp_action = irc_callback;
+	callbacks.event_unknown = irc_callback;
+	callbacks.event_numeric = irc_eventcode_callback;
+	callbacks.event_dcc_chat_req = NULL;
+	callbacks.event_dcc_send_req = NULL;
+
+	irc_ = irc_create_session(&callbacks);
+	if(!irc_) {
+		std::cerr << "Couldn't create IRC session in Server.";
+		abort();
+	}
+	irc_set_ctx(irc_, this);
+
+	Q_ASSERT( !config_->network->nickName.isEmpty() );
+	irc_connect(irc_, config_->host.toLatin1(),
+		config_->port,
+		config_->network->password.toLatin1(),
+		config_->network->nickName.toLatin1(),
+		config_->network->userName.toLatin1(),
+		config_->network->fullName.toLatin1());
+	irc_run(irc_);
+}
+
