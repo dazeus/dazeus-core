@@ -109,7 +109,7 @@ sub told
 	} elsif($command eq "blocklearn") {
 		return "You don't have dazeus.commands.learn.block permissions."
 			if(!$p->has("dazeus.commands.learn.block"));
-	        return "Blocklearn is deprecated, use the 'block' option for learn.";
+			return "Blocklearn is deprecated, use the 'block' option for learn.";
 	} elsif($command eq "blockconvert") {
 		return "You don't have dazeus.commands.learn.block.convert permissions."
 			if(!$p->has("dazeus.commands.learn.block.convert"));
@@ -150,40 +150,40 @@ sub told
 				return "But $factoid isn't a blocked variable...";
 			}
 		}
-    } elsif($command eq "forceunlearn" or $command eq "forceforget") {
-    	return "You don't have dazeus.commands.forget.force permissions."
+	} elsif($command eq "forceunlearn" or $command eq "forceforget") {
+		return "You don't have dazeus.commands.forget.force permissions."
 			if(!$p->has("dazeus.commands.forget.force"));
-        my $factoid = $rest;
-        if(defined($self->get("factoid_".lc($factoid)))) {
-        	$self->unset("factoid_".lc($factoid));
-            return "Ok, forgot about $factoid (with force :( ).";
-        } else {
-            return "But I don't know $factoid?";
-        }
-    } elsif($command eq "factoidstats") {
-	return "You don't have dazeus.commands.factoidstats permissions."
-		if(!$p->has("dazeus.commands.factoidstats"));
-	my @keys = $self->store_keys();
-	my @factoids;
-	foreach(@keys) {
-		push @factoids, $1 if($_ =~ /^factoid_(.+)$/);
-	}
-	
-	my $return = "We have " . scalar @factoids . " factoids. ";
-	my ($oldstyle, $newstyle);
-	foreach(@factoids) {
-		if(ref($self->get("factoid_".lc($_))) eq "HASH") {
-			++$newstyle;
+		my $factoid = $rest;
+		if(defined($self->get("factoid_".lc($factoid)))) {
+			$self->unset("factoid_".lc($factoid));
+			return "Ok, forgot about $factoid (with force :( ).";
 		} else {
-			++$oldstyle;
+			return "But I don't know $factoid?";
 		}
-	}
-	my $newstyle_perc = $newstyle / scalar(@factoids) * 100;
-	my $oldstyle_perc = $oldstyle / scalar(@factoids) * 100;
-	$return .= "$newstyle (${newstyle_perc}%) of those are new-style factoids, ".
-			   "$oldstyle (${oldstyle_perc}%) are old-style.";
-	
-	return $return;
+	} elsif($command eq "factoidstats") {
+		return "You don't have dazeus.commands.factoidstats permissions."
+			if(!$p->has("dazeus.commands.factoidstats"));
+		my @keys = $self->store_keys();
+		my @factoids;
+		foreach(@keys) {
+			push @factoids, $1 if($_ =~ /^factoid_(.+)$/);
+		}
+		
+		my $return = "We have " . scalar @factoids . " factoids. ";
+		my ($oldstyle, $newstyle);
+		foreach(@factoids) {
+			if(ref($self->get("factoid_".lc($_))) eq "HASH") {
+				++$newstyle;
+			} else {
+				++$oldstyle;
+			}
+		}
+		my $newstyle_perc = $newstyle / scalar(@factoids) * 100;
+		my $oldstyle_perc = $oldstyle / scalar(@factoids) * 100;
+		$return .= "$newstyle (${newstyle_perc}%) of those are new-style factoids, ".
+				"$oldstyle (${oldstyle_perc}%) are old-style.";
+		
+		return $return;
    } elsif($command eq "pastefactoidlist") {
 		return "You don't have dazeus.commands.pastefactoidlist permissions."
 			if(!$p->has("dazeus.commands.pastefactoidlist"));
@@ -263,38 +263,38 @@ sub getFactoid {
 }
 
 sub parseMsg {
-        my ($self, $mess) = @_;
-        my $body = $mess->{body};
+	my ($self, $mess) = @_;
+	my $body = $mess->{body};
 
-        # { argh, stupid vim editing
-        if($body =~ /^}/ or $mess->{channel} eq 'msg' or $mess->{raw_body} =~ /^DazNET(?::|,|;)/i) {
-                # {{{ argh, stupid vim editing
-                my ($command, $rest);
-                if($body =~ /^}\s*$/i) {
-                        return undef;
-                } elsif($body =~ /^}\s*(\S+)$/) {
-                        $command = $1;
-                } elsif($body =~ /^}\s*(\S+)\s+(.*)$/) {
-                        $command = $1; $rest = $2;
-                } elsif($mess->{channel} eq 'msg') {
-                        if($body =~ /^\s*(\S+)\s+(.*)\s*$/) {
-                                $command = $1; $rest = $2;
-                        } elsif($body =~ /^\s*(\S+)\s*$/) {
-                                $command = $1;
-                        }
-                } elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\S+)$/i) {
-                        $command = $1;
-                } elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\S+)\s+(.+)$/i) {
-                        $command = $1; $rest = $2;
-                }
-                my @rest;
-                @rest = split /\s/, $rest if(defined($rest));
-                $command = lc($command);
-                return ($command, $rest, @rest) if wantarray;
-                return [$command, $rest, @rest];
-        } else {
-                return undef;
-        }
+	# { argh, stupid vim editing
+	if($body =~ /^}/ or $mess->{channel} eq 'msg' or $mess->{raw_body} =~ /^DazNET(?::|,|;)/i) {
+		# {{{ argh, stupid vim editing
+		my ($command, $rest);
+		if($body =~ /^}\s*$/i) {
+				return undef;
+		} elsif($body =~ /^}\s*(\S+)$/) {
+				$command = $1;
+		} elsif($body =~ /^}\s*(\S+)\s+(.*)$/) {
+				$command = $1; $rest = $2;
+		} elsif($mess->{channel} eq 'msg') {
+			if($body =~ /^\s*(\S+)\s+(.*)\s*$/) {
+					$command = $1; $rest = $2;
+			} elsif($body =~ /^\s*(\S+)\s*$/) {
+					$command = $1;
+			}
+		} elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\S+)$/i) {
+				$command = $1;
+		} elsif($mess->{raw_body} =~ /^DazNET(?::|,|;)\s+(\S+)\s+(.+)$/i) {
+				$command = $1; $rest = $2;
+		}
+		my @rest;
+		@rest = split /\s/, $rest if(defined($rest));
+		$command = lc($command);
+		return ($command, $rest, @rest) if wantarray;
+		return [$command, $rest, @rest];
+	} else {
+		return undef;
+	}
 }
 
 
