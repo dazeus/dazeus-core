@@ -38,12 +38,11 @@ sub told {
 
 	# Are we just doing a factoid lookup?
 	if ($mess->{raw_body} =~ /^\](.+)$/) {
-		return $self->getFactoid($1, "normal", $mess);
+		return $self->getFactoid($1, $mess);
 	}
 
 	# Basic sanity checking.
 	return if !defined $command;
-	return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
 	# Teaching new factoids.
 	if ($command eq "learn" || $command eq "reply" || $command eq "forward") {
@@ -84,13 +83,15 @@ sub told {
 		if ($result == 0) {
 			return "Alright, learned " . $rest . ".";
 		} elsif ($result == 1) {
-			return "I already know " . $rest . "; it is " . $self->getFactoid($factoid) . "!";
+			return "I already know " . $rest . "; it is " . $self->getFactoid($factoid, $mess) . "!";
 		}
 	}
 
 	# Forgetting factoids.
 	elsif ($command eq "unlearn" || $command eq "forget") {
 		return "You don't have dazeus.commands.forget permissions." if (!$p->has("dazeus.commands.forget"));
+
+		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
 		my $result = $self->forgetFactoid($rest, $who, $channel);
 		if ($result == 0) {
@@ -106,6 +107,8 @@ sub told {
 	elsif ($command eq "block") {
 		return "You don't have dazeus.commands.learn.block.convert permissions." if (!$p->has("dazeus.commands.learn.block.convert"));
 
+		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
+
 		my $result = $self->blockFactoid($rest, $who, $channel);
 		if ($result == 0) {
 			return "Okay, blocked " . $rest . ".";
@@ -118,6 +121,8 @@ sub told {
 	elsif ($command eq "unblock") {
 		return "You don't have dazeus.commands.learn.block.unconvert permissions." if (!$p->has("dazeus.commands.learn.block.unconvert"));
 
+		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
+
 		my $result = $self->blockFactoid($rest, $who, $channel);
 		if ($result == 0) {
 			return "Okay, unblocked " . $rest . ".";
@@ -129,6 +134,8 @@ sub told {
 	# Forcefully forget something?
 	elsif ($command eq "forceunlearn" or $command eq "forceforget") {
 		return "You don't have dazeus.commands.forget.force permissions." if (!$p->has("dazeus.commands.forget.force"));
+
+		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
 		my $result = $self->forgetFactoid($rest, $who, $channel, 1);
 		if ($result == 0) {
@@ -149,8 +156,9 @@ sub told {
 	elsif ($command eq "search") {
 		return "You don't have dazeus.commands.factoidsearch permissions." if (!$p->has("dazeus.commands.factoidsearch"));
 
-		my ($num_matches, @top5) = $self->searchFactoids($rest);
+		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
+		my ($num_matches, @top5) = $self->searchFactoids($rest);
 		return "I found " . $num_matches . " factoids. Top 5: '" . join("', '", @top5) . "'.";
 	}
 }
@@ -160,6 +168,7 @@ sub getFactoid {
 	my $value = $self->get("factoid_" . lc($factoid));
 	my $who = $mess->{who};
 	my $channel = $mess->{channel};
+	$mode = "normal" if (!defined($mode));
 
 	# Do we know this at all?
 	if (!defined($value)) {
@@ -266,8 +275,8 @@ sub countFactoids {
 	return $num_factoids;
 }
 
-sub searchFactoid {
-	my ($self, $keyphase);
+sub searchFactoids {
+	my ($self, $keyphase) = @_;
 	my @keywords = split(/\s+/, $keyphase);
 	my @keys = $self->store_keys();
 	my %matches;
