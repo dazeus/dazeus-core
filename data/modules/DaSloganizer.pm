@@ -45,7 +45,7 @@ sub sloganize {
 	warn("Tried to generate a slogan for $name, but no slogan templates have been loaded!") and return if !@slogans;
 
 	my $slogan = $slogans[rand @slogans];
-	$slogan =~ s/\%s/$name/;
+	$slogan =~ s/\%s/$name/g;
 
 	return $slogan;
 }
