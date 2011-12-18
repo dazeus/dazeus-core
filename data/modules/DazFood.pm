@@ -161,7 +161,7 @@ sub parseMsg {
                 }
                 my @rest;
                 @rest = split /\s/, $rest if(defined($rest));
-                $command = lc($command);
+                $command = lc($command) if(defined($command));
                 return ($command, $rest, @rest) if wantarray;
                 return [$command, $rest, @rest];
         } else {
