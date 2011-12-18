@@ -53,7 +53,12 @@ class PerlPlugin : public Plugin
 
   private:
     EmbedPerl* ePerl;
+
+    // TODO: write some code so that these can be cleaned up later:
     QByteArray propertyCopy_;
+    const char **cKeys_;
+    int          cKeysLength_;
+
     QTimer tickTimer_;
     QList<QString> uniqueIds_;
 #warning TODO move this to a proper place

@@ -30,6 +30,11 @@ QVariant Plugin::get( const QString &name, VariableScope *scope ) const
   return manager_->get(name, scope);
 }
 
+QStringList Plugin::keys( const QString &ns ) const
+{
+  return manager_->keys(ns);
+}
+
 QVariant Plugin::getConfig( const QString &variable ) const
 {
   return manager_->getConfig(name_, variable);

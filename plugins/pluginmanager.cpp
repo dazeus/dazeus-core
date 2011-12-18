@@ -86,6 +86,16 @@ QVariant PluginManager::get( const QString &name, Plugin::VariableScope *s  ) co
 }
 
 /**
+ * @brief Gets a list of keys with the given namespace.
+ */
+QStringList PluginManager::keys( const QString &ns ) const
+{
+  Q_ASSERT( context_ != 0 );
+  return database_->propertyKeys( ns, context_->network, context_->receiver, context_->sender );
+}
+
+
+/**
  * @brief Initialises plugins.
  *
  * This method takes all configuration from the configuration file, tries to

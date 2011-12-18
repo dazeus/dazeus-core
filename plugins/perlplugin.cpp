@@ -68,6 +68,8 @@ extern "C" {
 
 PerlPlugin::PerlPlugin( PluginManager *man )
 : Plugin( "PerlPlugin", man )
+, cKeys_(0)
+, cKeysLength_(0)
 , whois_identified(false)
 {
   tickTimer_.setSingleShot( false );
@@ -87,7 +89,15 @@ PerlPlugin::PerlPlugin( PluginManager *man )
                        perlplugin_getNick_callback, this );
 }
 
-PerlPlugin::~PerlPlugin() {}
+PerlPlugin::~PerlPlugin()
+{
+  if(cKeys_ != 0) {
+    for(int i = 0; i < cKeysLength_; ++i) {
+      delete [] cKeys_[i];
+    }
+    delete [] cKeys_;
+  }
+}
 
 void PerlPlugin::init()
 {
@@ -224,8 +234,39 @@ void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable
 
 const char **PerlPlugin::getPropertyKeysCallback(const char *network, const char *ns, int *length) {
   Q_UNUSED(network);
-  *length = 0;
-  return 0;
+
+  // Property keys are stored in this object, so they can be copied to SV
+  // safely later on without leaking memory and without reading freed memory
+  if(cKeys_ != 0) {
+    for(int k = 0; k < cKeysLength_; ++k) {
+       delete [] cKeys_[k];
+    }
+    delete [] cKeys_;
+    cKeys_ = 0;
+    cKeysLength_ = 0;
+  }
+
+  QStringList qKeys = keys(ps(ns));
+
+  *length = cKeysLength_ = qKeys.length();
+  cKeys_ = new const char * [cKeysLength_];
+
+  for(int i = 0; i < *length; ++i) {
+    QByteArray val = qKeys.at(i).toUtf8();
+    char *str = new char [val.length() + 1];
+    memcpy(str, val.constData(), val.length());
+    str[val.length()] = '\0';
+
+    cKeys_[i] = str;
+  }
+
+#ifdef DEBUG
+  qDebug() << "In getPropertyKeys, retrieved keys starting with " << ns << ":";
+  for(int j = 0; j < *length; ++j) {
+    qDebug() << "keys[" << j << "]: " << cKeys_[j];
+  }
+#endif
+  return cKeys_;
 }
 
 const char *PerlPlugin::getNickCallback()

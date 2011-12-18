@@ -10,6 +10,7 @@
 #include <QtCore/QHash>
 #include <QtCore/QString>
 #include <QtCore/QVariant>
+#include <QtCore/QStringList>
 
 #include "user.h"
 #include "network.h"
@@ -98,6 +99,7 @@ class Plugin : public QObject
 
     void     set( VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, VariableScope *s = NULL ) const;
+    QStringList keys( const QString &ns ) const;
     QVariant getConfig( const QString &name ) const;
     PluginManager *manager() const;
     void    setContext(QString network, QString receiver = QString(), QString sender = QString());
