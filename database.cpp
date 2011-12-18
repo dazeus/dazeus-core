@@ -72,6 +72,65 @@ bool Database::open()
 }
 
 /**
+ * @brief Retrieve all properties under a certain namespace.
+ *
+ * All properties whose names start with the given namespace name, then a
+ * single dot, and that match the given scope values, are returned from this
+ * method.
+ *
+ * This method guarantees that if it returns a certain key, property() will
+ * return the correct value of that key given that network, receiver and
+ * sender scope are the same.
+ */
+QStringList Database::propertyKeys( const QString &ns, const QString &networkScope,
+ const QString &receiverScope, const QString &senderScope )
+{
+  checkDatabaseConnection();
+
+  QString nsQuery = ns + ".%";
+  QSqlQuery data(db_);
+  data.prepare(QLatin1String("SELECT variable,network,receiver,sender"
+    " FROM properties WHERE variable LIKE ?"));
+  data.addBindValue(nsQuery);
+
+  QStringList k;
+  if( !data.exec() )
+  {
+    qWarning() << "Property retrieve keys failed: " << data.lastError();
+    return k;
+  }
+
+  // index the results
+  while( data.next() )
+  {
+    // Check if the name really matches
+    QString actualName = data.value(0).toString();
+    if( !actualName.startsWith(ns) )
+       continue;
+
+    if( data.value(3).isNull() )
+    {
+      if( data.value(2).isNull() )
+      {
+        if( data.value(1).isNull() )
+          k.append(actualName);
+        else if( data.value(1).toString() == networkScope )
+          k.append(actualName);
+      }
+      else if( data.value(1).toString() == networkScope
+            && data.value(2).toString() == receiverScope )
+        k.append(actualName);
+    }
+    else if( data.value(1).toString() == networkScope
+          && data.value(2).toString() == receiverScope
+          && data.value(3).toString() == senderScope )
+      k.append(actualName);
+  }
+
+  return k;
+}
+
+/**
  * @brief Retrieve property from database.
  *
  * The most specific scope will be selected first, i.e. user-specific scope.
