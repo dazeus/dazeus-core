@@ -93,9 +93,9 @@ sub told {
 		my $result = $self->teachFactoid($factoid, $value, %opts, $who, $channel);
 		if ($result == 0) {
 			if ($command eq "reply") {
-				return "Alright, I will reply to '" . $factoid . "' with '" . $value . "'.";
+				return "Alright, I will reply to " . $factoid . ".";
 			} elsif ($command eq "forward") {
-				return "Alright, I will forward '" . $factoid . "' to '" . $value . "'.";
+				return "Alright, I will forward " . $factoid . ".";
 			} elsif ($command eq "learn") {
 				return "Alright, learned " . $factoid . ".";
 			}
