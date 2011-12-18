@@ -48,11 +48,22 @@ sub told {
 	if ($command eq "learn" || $command eq "reply" || $command eq "forward") {
 		return "You don't have dazeus.commands.learn permissions." if (!$p->has("dazeus.commands.learn"));
 
-		my ($factoid, $value) = $rest =~ /^(.+?)\s+is\s+(.+)$/;
+		# Let's try to keep this as English as possible, okay?
+		my ($factoid, $value, $separator);
+		if ($command eq "reply") {
+			($factoid, $value) = $rest =~ /^(.+?)\s+with\s+(.+)$/;
+			$separator = "with";
+		} elsif ($command eq "forward") {
+			($factoid, $value) = $rest =~ /^(.+?)\s+to\s+(.+)$/;
+			$separator = "to";
+		} else {
+			($factoid, $value) = $rest =~ /^(.+?)\s+is\s+(.+)$/;
+			$separator = $command ne "block" ? "is" : "";
+		}
 
 		# A few sanity checks ...
 		if (!defined($factoid)) {
-			return "The learn command is intended for learning factoids. Please use '}" . $command . " <factoid> is <value>' to add one.";
+			return "The " . $command . " command is intended for learning factoids. Please use '}" . $command . " <factoid> " . $separator . " <value>' to add one.";
 		} elsif ($value =~ /dcc/i) {
 			return "The value contains blocked words (dcc)." ;
 		}
@@ -62,7 +73,7 @@ sub told {
 		# TODO: delete this, eventually?
 		if ($command eq "learn" && $factoid =~ /^([^=]+?)=(.+)$/) {
 			if ($1 eq "block" or $1 eq "forward" or $1 eq "reply") {
-				return "This syntax is deprecated. Please use }" . $1 . " <factoid> is <value> instead.";
+				return "This syntax is no longer in use. Please use }" . $1 . " <factoid> " . $separator . " <value> instead.";
 			} else {
 				return "The learn command is intended for learning simple factoids. Please use '}learn <factoid> is <value>' to add one.";
 			}
@@ -81,9 +92,15 @@ sub told {
 
 		my $result = $self->teachFactoid($factoid, $value, %opts, $who, $channel);
 		if ($result == 0) {
-			return "Alright, learned " . $rest . ".";
+			if ($command eq "reply") {
+				return "Alright, I will reply to '" . $factoid . "' with '" . $value . "'.";
+			} elsif ($command eq "forward") {
+				return "Alright, I will forward '" . $factoid . "' to '" . $value . "'.";
+			} elsif ($command eq "learn") {
+				return "Alright, learned " . $factoid . ".";
+			}
 		} elsif ($result == 1) {
-			return "I already know " . $rest . "; it is " . $self->getFactoid($factoid, $mess) . "!";
+			return "I already know " . $factoid . "; it is '" . $self->getFactoid($factoid, $mess, "short") . "'!";
 		}
 	}
 
@@ -159,7 +176,13 @@ sub told {
 		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
 		my ($num_matches, @top5) = $self->searchFactoids($rest);
-		return "I found " . $num_matches . " factoids. Top 5: '" . join("', '", @top5) . "'.";
+		if ($num_matches == 1) {
+			return "I found one match: '" . $top5[0] . "'.";
+		} elsif ($num_matches > 0) {
+			return "I found " . $num_matches . " factoids. Top " . length(@top5) . ": '" . join("', '", @top5) . "'.";
+		} else {
+			return "Sorry, I couldn't find any matches.";
+		}
 	}
 }
 
@@ -268,7 +291,7 @@ sub unblockFactoid {
 sub countFactoids {
 	my ($self) = @_;
 	my @keys = $self->store_keys();
-	my $num_factoids;
+	my $num_factoids = 0;
 	foreach (@keys) {
 		++$num_factoids if ($_ =~ /^factoid_(.+)$/);
 	}
@@ -285,11 +308,12 @@ sub searchFactoids {
 	# Alright, let's search!
 	foreach my $factoid (@keys) {
 		next if (!($factoid =~ /^factoid_(.+)$/));
+		$factoid = $1;
 
 		my $relevance = 0;
 		foreach my $keyword (@keywords) {
 			next if (length($keyword) < 3);
-			$relevance++ if (index($factoid, $keyword));
+			$relevance++ if (index($factoid, $keyword) > -1);
 		}
 
 		next if $relevance == 0;
@@ -298,7 +322,8 @@ sub searchFactoids {
 	}
 
 	# Return the five most relevant results.
-	return ($num_matches, (sort { $matches{$b} <=> $matches{$a} } keys %matches)[0..4]);
+	my @sorted = sort { $matches{$b} <=> $matches{$a} } keys %matches;
+	return ($num_matches, splice(@sorted, 0, 5));
 }
 
 sub parseMsg {
