@@ -39,6 +39,7 @@ class EmbedPerl
                        const char* (*getPropertyCallback)(const char*, const char*, void*),
                        void (*setPropertyCallback)(const char*, const char*, const char*, void*),
                        void (*unsetPropertyCallback)(const char*, const char*, void*),
+                       const char ** (*getPropertyKeysCallback)(const char *, const char *, int*, void*),
                        void (*sendWhoisCallback)(const char*, void*),
                        void (*joinCallback)(const char*, void*),
                        void (*partCallback)(const char*, void*),
@@ -48,6 +49,7 @@ class EmbedPerl
     void (*emoteCallback)(const char*, const char*, const char*, void*);
     void (*privmsgCallback)(const char*, const char*, const char*, void*);
     const char* (*getPropertyCallback)(const char*, const char*, void*);
+    const char** (*getPropertyKeysCallback)(const char*, const char*, int*, void*);
     void (*setPropertyCallback)(const char*, const char*, const char*, void*);
     void (*unsetPropertyCallback)(const char*, const char*, void*);
     void (*sendWhoisCallback)(const char*, void*);

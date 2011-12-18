@@ -49,6 +49,11 @@ void unsetPropertyEmbed(const char *uniqueid, const char *variable)
   ePerl->unsetPropertyCallback( uniqueid, variable, ePerl->data );
 }
 
+const char **getPropertyKeysEmbed(const char *uniqueid, const char *ns, int *length)
+{
+  return ePerl->getPropertyKeysCallback( uniqueid, ns, length, ePerl->data );
+}
+
 const char *getNickEmbed(const char *uniqueid)
 {
   return ePerl->getNickCallback( ePerl->data );
@@ -78,6 +83,7 @@ EmbedPerl::EmbedPerl()
 , getPropertyCallback(0)
 , setPropertyCallback(0)
 , unsetPropertyCallback(0)
+, getPropertyKeysCallback(0)
 , sendWhoisCallback(0)
 , joinCallback(0)
 , partCallback(0)
@@ -118,6 +124,7 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
                               const char* (*getPropertyCallback)(const char*, const char*, void*),
                               void (*setPropertyCallback)(const char*, const char*, const char*, void*),
                               void (*unsetPropertyCallback)(const char*, const char*, void*),
+                              const char ** (*getPropertyKeysCallback)(const char *, const char *, int*, void*),
                               void (*sendWhoisCallback)(const char*, void*),
                               void (*joinCallback)(const char*, void*),
                               void (*partCallback)(const char*, void*),
@@ -129,6 +136,7 @@ void EmbedPerl::setCallbacks( void (*emoteCallback)  (const char*, const char*, 
   this->getPropertyCallback = getPropertyCallback;
   this->setPropertyCallback = setPropertyCallback;
   this->unsetPropertyCallback = unsetPropertyCallback;
+  this->getPropertyKeysCallback = getPropertyKeysCallback;
   this->sendWhoisCallback = sendWhoisCallback;
   this->joinCallback = joinCallback;
   this->partCallback = partCallback;

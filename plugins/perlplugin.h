@@ -38,6 +38,7 @@ class PerlPlugin : public Plugin
     const char*getPropertyCallback(const char *network, const char *variable);
     void       setPropertyCallback(const char *network, const char *variable, const char *value);
     void       unsetPropertyCallback(const char *network, const char *variable);
+    const char** getPropertyKeysCallback(const char *network, const char *ns, int *length);
     void       sendWhoisCallback(const char *who);
     void       joinCallback(const char *channel);
     void       partCallback(const char *channel);

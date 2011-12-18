@@ -15,6 +15,7 @@ void privmsgEmbed(const char *network, const char *receiver, const char *message
 const char* getPropertyEmbed(const char *uniqueid, const char *variable);
 void setPropertyEmbed(const char *uniqueid, const char *variable, const char *value);
 void unsetPropertyEmbed(const char *uniqueid, const char *variable);
+const char** getPropertyKeysEmbed(const char *uniqueid, const char *ns, int *length);
 void sendWhoisEmbed(const char *uniqueid, const char *who);
 void joinEmbed(const char *uniqueid, const char *channel);
 void partEmbed(const char *uniqueid, const char *channel);

@@ -29,6 +29,11 @@ extern "C" {
     PerlPlugin *pp = (PerlPlugin*) data;
     return pp->getPropertyCallback(net, variable);
   }
+  const char** perlplugin_getPropertyKeys_callback( const char *net, const char *ns, int *length, void *data)
+  {
+    PerlPlugin *pp = (PerlPlugin*) data;
+    return pp->getPropertyKeysCallback(net, ns, length);
+  }
   void perlplugin_setProperty_callback( const char *net, const char *variable, const char *value, void *data)
   {
     PerlPlugin *pp = (PerlPlugin*) data;
@@ -77,7 +82,7 @@ PerlPlugin::PerlPlugin( PluginManager *man )
   }
   ePerl->setCallbacks( perlplugin_emote_callback, perlplugin_privmsg_callback,
                        perlplugin_getProperty_callback, perlplugin_setProperty_callback,
-                       perlplugin_unsetProperty_callback, perlplugin_sendWhois_callback,
+                       perlplugin_unsetProperty_callback, perlplugin_getPropertyKeys_callback, perlplugin_sendWhois_callback,
                        perlplugin_join_callback, perlplugin_part_callback,
                        perlplugin_getNick_callback, this );
 }
@@ -215,6 +220,12 @@ void PerlPlugin::unsetPropertyCallback(const char *network, const char *variable
 #ifdef DEBUG
   qDebug() << "Unset property: " << variable;
 #endif
+}
+
+const char **PerlPlugin::getPropertyKeysCallback(const char *network, const char *ns, int *length) {
+  Q_UNUSED(network);
+  *length = 0;
+  return 0;
 }
 
 const char *PerlPlugin::getNickCallback()

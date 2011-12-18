@@ -168,10 +168,24 @@ sub unset {
     }
 }
 
+sub keys {
+  my ($self, $namespace, $regexp) = @_;
+  my @keys;
+  eval {
+    @keys = @{DaZeus2::getPropertyKeys($self->{UniqueID}, $namespace)};
+  };
+  if($@) {
+    warn "Error executing getPropertyKeys: $@\n";
+  }
+  if($regexp) {
+    @keys = grep { $_ =~ $regexp } @keys;
+  }
+  return @keys;
+}
+
 sub store_keys {
     my $self = shift;
-    $self->store->keys($self->{Name}, @_);
-    die( "In " . $self->{Name} . ", store keys: " . Dumper(\@_ ) );
+    return $self->store->keys("perl." . $self->{Name}, @_);
 }
 
 sub say {
