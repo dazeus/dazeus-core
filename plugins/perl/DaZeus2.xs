@@ -36,6 +36,20 @@ unsetProperty(const char *uniqueid, const char *variable)
   CODE:
     unsetPropertyEmbed(uniqueid, variable);
 
+AV*
+getPropertyKeys(const char *uniqueid, const char *ns)
+  CODE:
+    int length = 0;
+    const char **keys = getPropertyKeysEmbed(uniqueid, ns, &length);
+    RETVAL = newAV();
+    int i;
+    for(i = 0; i < length; ++i) {
+      SV *val = newSVpv(keys[i], 0);
+      av_push(RETVAL, val);
+    }
+  OUTPUT:
+    RETVAL
+
 void
 sendWhois(const char *uniqueid, const char *who)
   CODE:

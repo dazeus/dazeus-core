@@ -7,6 +7,7 @@
 #define DATABASE_H
 
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlError>
 
@@ -58,6 +59,10 @@ class Database : public QObject
                              const QString &networkScope  = QString(),
                              const QString &receiverScope = QString(),
                              const QString &senderScope   = QString());
+    QStringList propertyKeys( const QString &ns,
+                              const QString &networkScope  = QString(),
+                              const QString &receiverScope = QString(),
+                              const QString &senderScope   = QString() );
 
   public slots:
 
