@@ -361,7 +361,7 @@ sub seen
 		@rest = ();
 	}
 
-        $command = lc($command);
+        $command = lc($command) if(defined($command));
 	$mess->{command} = $command;
 	$mess->{rest} = $rest;
 	$mess->{restarray} = \@rest;
