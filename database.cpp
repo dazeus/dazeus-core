@@ -105,8 +105,9 @@ QStringList Database::propertyKeys( const QString &ns, const QString &networkSco
   {
     // Check if the name really matches
     QString actualName = data.value(0).toString();
-    if( !actualName.startsWith(ns) )
+    if( !actualName.startsWith(ns + '.') )
        continue;
+    actualName = actualName.mid(ns.length() + 1);
 
     if( data.value(3).isNull() )
     {
