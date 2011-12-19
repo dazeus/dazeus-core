@@ -58,7 +58,7 @@ sub told {
 			$separator = "to";
 		} else {
 			($factoid, $value) = $rest =~ /^(.+?)\s+is\s+(.+)$/;
-			$separator = $command ne "block" ? "is" : "";
+			$separator = "is";
 		}
 
 		# A few sanity checks ...
@@ -73,7 +73,7 @@ sub told {
 		# TODO: delete this, eventually?
 		if ($command eq "learn" && $factoid =~ /^([^=]+?)=(.+)$/) {
 			if ($1 eq "block" or $1 eq "forward" or $1 eq "reply") {
-				return "This syntax is no longer in use. Please use }" . $1 . " <factoid> " . $separator . " <value> instead.";
+				return "This syntax is no longer in use. Please use }" . $1 . " instead.";
 			} else {
 				return "The learn command is intended for learning simple factoids. Please use '}learn <factoid> is <value>' to add one.";
 			}
@@ -148,20 +148,6 @@ sub told {
 		}
 	}
 
-	# Forcefully forget something?
-	elsif ($command eq "forceunlearn" or $command eq "forceforget") {
-		return "You don't have dazeus.commands.forget.force permissions." if (!$p->has("dazeus.commands.forget.force"));
-
-		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
-
-		my $result = $self->forgetFactoid($rest, $who, $channel, 1);
-		if ($result == 0) {
-			return "Alright, forgot all about " . $rest . ".";
-		} elsif ($result == 1) {
-			return "Sorry chap, I really don't know anything about " . $rest . ".";
-		}
-	}
-
 	# Statistics! Everyone's favourite biatch.
 	elsif ($command eq "factoidstats") {
 		return "You don't have dazeus.commands.factoidstats permissions." if (!$p->has("dazeus.commands.factoidstats"));
@@ -179,7 +165,7 @@ sub told {
 		if ($num_matches == 1) {
 			return "I found one match: '" . $top5[0] . "'.";
 		} elsif ($num_matches > 0) {
-			return "I found " . $num_matches . " factoids. Top " . length(@top5) . ": '" . join("', '", @top5) . "'.";
+			return "I found " . $num_matches . " factoids. Top " . (length(@top5) + 1) . ": '" . join("', '", @top5) . "'.";
 		} else {
 			return "Sorry, I couldn't find any matches.";
 		}
@@ -207,7 +193,7 @@ sub getFactoid {
 	# Traverse forwards if necessary.
 	if ($value->{forward}) {
 		if ($fact ~~ @forwards) {
-			return "[ERROR] Factoid deeplink detected" 
+			return "[ERROR] Factoid deeplink detected";
 		} else {
 			return $self->getFactoid($fact, $mess, $mode, @forwards);
 		}
@@ -235,7 +221,7 @@ sub teachFactoid {
 }
 
 sub forgetFactoid {
-	my ($self, $factoid, $who, $channel, $force) = @_;
+	my ($self, $factoid, $who, $channel) = @_;
 	my $value = $self->get("factoid_" . lc($factoid));
 
 	# Is this a factoid known at all?
@@ -245,7 +231,7 @@ sub forgetFactoid {
 	}
 
 	# Blocked, perhaps?
-	if (defined($value->{block}) && !$force) {
+	if (defined($value->{block})) {
 		print "DazFactoids: $who tried to make me forget $factoid in $channel, but it is blocked.\n";
 		return 2;
 	}
