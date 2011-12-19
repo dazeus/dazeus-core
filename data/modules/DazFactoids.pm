@@ -165,7 +165,7 @@ sub told {
 		if ($num_matches == 1) {
 			return "I found one match: '" . $top5[0] . "'.";
 		} elsif ($num_matches > 0) {
-			return "I found " . $num_matches . " factoids. Top " . (length(@top5) + 1) . ": '" . join("', '", @top5) . "'.";
+			return "I found " . $num_matches . " factoids. Top " . (scalar @top5) . ": '" . join("', '", @top5) . "'.";
 		} else {
 			return "Sorry, I couldn't find any matches.";
 		}
