@@ -173,7 +173,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
 		int space1 = line.indexOf(' ', 5);
 		int space2 = line.indexOf(' ', space1 + 1);
 		if(space1 == -1 || space2 == -1) {
-			dev->write("Usage: !msg <net> <chan> <len>\n");
+			dev->write("Usage: !msg <net> <chan> <len>\\n<payload, utf8 encoded>\n");
 			return;
 		}
 		QString network = line.mid(5, space1 - 5);
@@ -184,37 +184,45 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
 		if(length == 0 || length > 512) {
 			qWarning() << "Invalid length " << length << " in SocketPlugin";
 			dev->write("NAK, invalid length\n");
+			dev->close();
 			return;
 		}
 
-		Network *net = 0;
+		char *rawMessage = new char[length];
+		unsigned int lengthRead = 0;
+		int tries = 5;
+		while(lengthRead < length && tries >= 0) {
+			dev->waitForReadyRead(100);
+			int lengthRest = length - lengthRead;
+			char *messagePart = new char[lengthRest];
+			long partRead = dev->read(messagePart, lengthRest);
+			if(partRead >= 0) {
+				memcpy(rawMessage, messagePart, partRead);
+				lengthRead += partRead;
+			}
+			delete [] messagePart;
+			tries--;
+		}
+
+		if(lengthRead < length) {
+			qWarning() << "Didn't write data: reading took too long.";
+			qWarning() << "Wanted " << length << "bytes, got " << lengthRead;
+			dev->close(); // unread data still coming, ignore it
+			return;
+		}
+
+		QString message = QString::fromUtf8(rawMessage, lengthRead);
+		delete [] rawMessage;
+
 		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
-				net = n; break;
-			}
-		}
-		if(net == 0) {
-			dev->write(QString("NAK '" + network + "'\n").toLatin1());
-			return;
-		} else {
-			// TODO: check if channel is joined
-			QByteArray message;
-			int tries = 5;
-			while((unsigned int)message.length() < length && tries >= 0) {
-				dev->waitForReadyRead(100);
-				message.append(dev->read(length - message.length()));
-				tries--;
-			}
-			if((unsigned int)message.length() == length) {
-				net->say(channel, message);
+				n->say(channel, message);
 				dev->write("ACK\n");
-			} else {
-				qWarning() << "Didn't write data: reading took too long.";
-				qWarning() << "Wanted " << length << "bytes, got " << message.length();
-				dev->close(); // unread data still coming, ignore it
 				return;
 			}
 		}
+		qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
+		dev->write(QString("NAK '" + network + "'\n").toLatin1());
 	} else {
 		dev->write("This is DaZeus 2.0 SocketPlugin. Usage:\n");
 		dev->write("?networks, ?channels <net>, !msg <net> <chan> <len>\n");
