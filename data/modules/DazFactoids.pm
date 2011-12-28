@@ -161,9 +161,11 @@ sub told {
 
 		return "You'll have to give me something to work with, chap." if (!defined($rest) || $rest eq "");
 
+		return "No valid keywords were provided. Keywords must be at least three characters long; shorter ones will be ignored." if (!$self->checkKeywords($rest));
+
 		my ($num_matches, @top5) = $self->searchFactoids($rest);
 		if ($num_matches == 1) {
-			return "I found one match: '" . $top5[0] . "'.";
+			return "I found one match: '" . $top5[0] . "': " . $self->getFactoid($top5[0], $mess, "short");
 		} elsif ($num_matches > 0) {
 			return "I found " . $num_matches . " factoids. Top " . (scalar @top5) . ": '" . join("', '", @top5) . "'.";
 		} else {
@@ -310,6 +312,17 @@ sub searchFactoids {
 	# Return the five most relevant results.
 	my @sorted = sort { $matches{$b} <=> $matches{$a} } keys %matches;
 	return ($num_matches, splice(@sorted, 0, 5));
+}
+
+sub checkKeywords {
+	my ($self, $keyphrase) = @_;
+	my @keywords = split(/\s+/, $keyphrase);
+
+	foreach my $keyword (@keywords) {
+		return 1 if length $keyword >= 3;
+	}
+
+	return 0;
 }
 
 sub parseMsg {

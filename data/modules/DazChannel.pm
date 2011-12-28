@@ -389,7 +389,7 @@ sub told
 		}
 
 		return "Ok, joined ".join(", ", @$channellist);
-	} elsif($command eq "leave") {
+	} elsif($command eq "leave" or $command eq "part") {
 		return "You don't have dazeus.commands.leave permissions."
 			if(!$p->has("dazeus.commands.leave"));
 		my $channellist = [];
