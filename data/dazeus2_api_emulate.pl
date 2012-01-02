@@ -3,6 +3,7 @@ use Data::Dumper;
 use strict;
 use warnings;
 use POE;
+use Config;
 
 my @modules;
 my $uniqueid;
@@ -24,6 +25,13 @@ sub run_timeslice {
 }
 
 sub init {
+  # Set $^X to a real Perl interpreter, as some modules depend on that
+  $^X = $Config{perlpath};
+  if($^O ne 'VMS') {
+    $^X .= $Config{_exe}
+      unless $^X =~ m/\Q$Config{_exe}\E$/;
+  }
+
   ($uniqueid) = @_;
 
   # Here, we start a dummy POE session. It does nothing at all, but because
