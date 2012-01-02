@@ -8,7 +8,7 @@ QT       += network sql
 QT       -= gui
 
 TARGET    = data/davinci
-CONFIG   += console libircclient-qt
+CONFIG   += console
 CONFIG   -= app_bundle
 VERSION   = 1.9.1
 
