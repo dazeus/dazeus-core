@@ -197,7 +197,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
 			char *messagePart = new char[lengthRest];
 			long partRead = dev->read(messagePart, lengthRest);
 			if(partRead >= 0) {
-				memcpy(rawMessage, messagePart, partRead);
+				memcpy(rawMessage + lengthRead, messagePart, partRead);
 				lengthRead += partRead;
 			}
 			delete [] messagePart;
