@@ -255,7 +255,6 @@ void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *or
 	for(unsigned int i = 0; i < count; ++i) {
 		params.append(QString(p[i]));
 	}
-	printf("SPECIAL CALLBACK! Event: %d from origin: %s\n", event, origin);
 	Irc::Buffer *b = new Irc::Buffer(server->server());
 	server->slotNumericMessageReceived(QString(origin), event, params, b);
 }
@@ -266,8 +265,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 
 	std::string event(e);
 	Irc::Buffer *b = new Irc::Buffer(server->server());
-
-	printf("CALLBACK! Event: %s from origin: %s\n", e, o);
 
 	// for now, keep these QStrings:
 	QString origin(o);
