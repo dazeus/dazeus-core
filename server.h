@@ -24,6 +24,7 @@ class Server;
 
 QDebug operator<<(QDebug, const Server &);
 QDebug operator<<(QDebug, const Server *);
+QDebug operator<<(QDebug, const Irc::Buffer *);
 
 namespace Irc {
 	struct Buffer {

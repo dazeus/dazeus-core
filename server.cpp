@@ -32,6 +32,18 @@ QDebug operator<<(QDebug dbg, const Server *s)
 	return dbg.maybeSpace();
 }
 
+QDebug operator<<(QDebug dbg, const Irc::Buffer *b)
+{
+	dbg.nospace() << "Irc::Buffer[";
+	if( b == 0 ) {
+		dbg.nospace() << "0";
+	} else {
+		dbg.nospace() << b->receiver_;
+	}
+	dbg.nospace() << "]";
+	return dbg.maybeSpace();
+}
+
 Server::Server()
 : QObject()
 , config_( 0 )
