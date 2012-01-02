@@ -371,8 +371,12 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		assert(count == 1);
 		server->slotCtcpReplyReceived(origin, QString(params[0]), b);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
-		assert(count == 1);
-		server->slotCtcpActionReceived(origin, QString(params[0]), b);
+		assert(count == 1 || count == 2);
+		QString message;
+		if(count == 2)
+			message = QString(params[1]);
+		b->setReceiver(QString(params[0]));
+		server->slotCtcpActionReceived(origin, message, b);
 	} else if(event == "UNKNOWN") {
 		QStringList params;
 		for(unsigned int i = 0; i < count; ++i) {
