@@ -370,7 +370,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	} else if(event == "CTCP_REP") {
 		assert(count == 1);
 		server->slotCtcpReplyReceived(origin, QString(params[0]), b);
-	} else if(event == "CTCP_ACTION") {
+	} else if(event == "CTCP_ACTION" || event == "ACTION") {
 		assert(count == 1);
 		server->slotCtcpActionReceived(origin, QString(params[0]), b);
 	} else if(event == "UNKNOWN") {
@@ -380,7 +380,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		}
 		server->slotUnknownMessageReceived(origin, params, b);
 	} else {
-		std::cerr << "Unknown event received from libircclient: " << event << std::cout;
+		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
 		assert(false);
 	}
 }
