@@ -166,8 +166,12 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
 			dev->write(QString("NAK '" + network + "'\n").toLatin1());
 			return;
 		} else {
-			// TODO FIXME
-			dev->write("TODO\n");
+			const QList<QString> &channels = net->joinedChannels();
+			dev->write(QString("ACK " + QString::number(channels.size()) + "\n").toLatin1());
+			Q_FOREACH(const QString &chan, channels) {
+				dev->write(chan.toLatin1());
+			}
+			return;
 		}
 	} else if(line.startsWith("!msg ")) {
 		int space1 = line.indexOf(' ', 5);
@@ -216,8 +220,14 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
 
 		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
-				n->say(channel, message);
-				dev->write("ACK\n");
+				if(n->joinedChannels().contains(channel.toLower())) {
+					qWarning() << "Request for communication to network " << network
+					           << " channel " << channel << ", but not in that channel dropping";
+					n->say(channel, message);
+					dev->write("ACK\n");
+				} else {
+					dev->write(QString("NAKC '" + channel + "'\n").toLatin1());
+				}
 				return;
 			}
 		}
