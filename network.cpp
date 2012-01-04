@@ -199,32 +199,26 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 
 void Network::joinedChannel(const QString &user, Irc::Buffer *b)
 {
-	qDebug() << "Joined channel:" << user;
 	User u(user, this);
-	if(u.isMe() && !joinedChannels_.contains(b->receiver())) {
-		joinedChannels_.append(b->receiver());
+	if(u.isMe() && !joinedChannels_.contains(b->receiver().toLower())) {
+		joinedChannels_.append(b->receiver().toLower());
 	}
-	qDebug() << joinedChannels_;
 }
 
 void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
 {
-	qDebug() << "Parted channel:" << user;
 	User u(user, this);
 	if(u.isMe()) {
-		joinedChannels_.removeAll(b->receiver());
+		joinedChannels_.removeAll(b->receiver().toLower());
 	}
-	qDebug() << joinedChannels_;
 }
 
 void Network::kickedChannel(const QString&, const QString &user, const QString&, Irc::Buffer *b)
 {
-	qDebug() << "Kicked from channel: " << user;
 	User u(user, this);
 	if(u.isMe()) {
-		joinedChannels_.removeAll(b->receiver());
+		joinedChannels_.removeAll(b->receiver().toLower());
 	}
-	qDebug() << joinedChannels_;
 }
 
 void Network::onFailedConnection()
