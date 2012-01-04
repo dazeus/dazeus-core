@@ -54,6 +54,7 @@ class Network : public QObject
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
     QString                     networkName() const;
+    const QList<QString>       &joinedChannels() const { return joinedChannels_; }
 
   public slots:
     void connectToNetwork( bool reconnect = false );
@@ -104,10 +105,14 @@ class Network : public QObject
     static QHash<QString,Network*> networks_;
     QHash<const ServerConfig*,int> undesirables_;
     User                 *me_;
+    QList<QString>        joinedChannels_;
 
   private slots:
     void onFailedConnection();
     void serverIsActuallyOkay();
+    void joinedChannel(const QString &user, Irc::Buffer *b);
+    void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);
+    void partedChannel(const QString &user, const QString &, Irc::Buffer *b);
 
 };
 

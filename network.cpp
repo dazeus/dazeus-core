@@ -148,6 +148,7 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 {
   if( !reconnect && activeServer_ )
     return;
+  Q_ASSERT(joinedChannels_.isEmpty());
 
   if( activeServer_ )
   {
@@ -187,9 +188,44 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(          welcomed() ),
            this,          SLOT(serverIsActuallyOkay() ) );
+  connect( activeServer_, SIGNAL(            joined(const QString&, Irc::Buffer*) ),
+           this,          SLOT(       joinedChannel(const QString&, Irc::Buffer*) ) );
+  connect( activeServer_, SIGNAL(            parted(const QString&, const QString&, Irc::Buffer*) ),
+           this,          SLOT(       partedChannel(const QString&, const QString&, Irc::Buffer*) ) );
+  connect( activeServer_, SIGNAL(            kicked(const QString&, const QString&, const QString&, Irc::Buffer*) ),
+           this,          SLOT(       kickedChannel(const QString&, const QString&, const QString&, Irc::Buffer*) ) );
   activeServer_->connectToServer();
 }
 
+void Network::joinedChannel(const QString &user, Irc::Buffer *b)
+{
+	qDebug() << "Joined channel:" << user;
+	User u(user, this);
+	if(u.isMe() && !joinedChannels_.contains(b->receiver())) {
+		joinedChannels_.append(b->receiver());
+	}
+	qDebug() << joinedChannels_;
+}
+
+void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
+{
+	qDebug() << "Parted channel:" << user;
+	User u(user, this);
+	if(u.isMe()) {
+		joinedChannels_.removeAll(b->receiver());
+	}
+	qDebug() << joinedChannels_;
+}
+
+void Network::kickedChannel(const QString&, const QString &user, const QString&, Irc::Buffer *b)
+{
+	qDebug() << "Kicked from channel: " << user;
+	User u(user, this);
+	if(u.isMe()) {
+		joinedChannels_.removeAll(b->receiver());
+	}
+	qDebug() << joinedChannels_;
+}
 
 void Network::onFailedConnection()
 {
@@ -202,6 +238,7 @@ void Network::onFailedConnection()
   disconnect( activeServer_, 0, 0, 0 );
   activeServer_ = 0;
 
+  joinedChannels_.clear();
   connectToNetwork();
 }
 
@@ -228,6 +265,7 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
   activeServer_->disconnectFromServer( reason );
   activeServer_->deleteLater();
   activeServer_ = 0;
+  joinedChannels_.clear();
 }
 
 
