@@ -90,7 +90,7 @@ sub told {
 			$opts{forward} = 1;
 		}
 
-		my $result = $self->teachFactoid($factoid, $value, %opts, $who, $channel);
+		my $result = $self->teachFactoid($factoid, $value, $who, $channel, %opts);
 		if ($result == 0) {
 			if ($command eq "reply") {
 				return "Alright, I will reply to " . $factoid . ".";
@@ -206,7 +206,7 @@ sub getFactoid {
 }
 
 sub teachFactoid {
-	my ($self, $factoid, $value, %opts, $who, $channel) = @_;
+	my ($self, $factoid, $value, $who, $channel, %opts) = @_;
 
 	# Check whether we already know this one.
 	if (defined($self->get("factoid_" . lc($factoid)))) {
