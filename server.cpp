@@ -364,7 +364,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		QString receiver(params[0]);
 		QString channel(params[1]);
 		server->slotInvited(origin, receiver, channel, b);
-	} else if(event == "CTCP_REQ") {
+	} else if(event == "CTCP_REQ" || event == "CTCP") {
 		assert(count == 1);
 		server->slotCtcpRequestReceived(origin, QString(params[0]), b);
 	} else if(event == "CTCP_REP") {
