@@ -313,7 +313,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		b->setReceiver(QString(params[0]));
 		server->slotParted(origin, message, b);
 	} else if(event == "MODE") {
-		assert(count >= 1 && count <= 3);
+		assert(count >= 1);
 		QString mode;
 		if(count == 1) {
 			mode = QString(params[0]);
@@ -321,10 +321,10 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 			mode = QString(params[1]);
 			b->setReceiver(QString(params[0]));
 		}
-		QString args;
-		if(count == 3)
-			args = QString(params[2]);
-		server->slotModeChanged(origin, mode, args, b);
+		QStringList args;
+		for(unsigned int i = 2; i < count; ++i)
+			args.append(QString(params[i]));
+		server->slotModeChanged(origin, mode, args.join(" "), b);
 	} else if(event == "UMODE") {
 		assert(count == 1);
 		server->slotModeChanged(origin, params[0], QString(), b);
