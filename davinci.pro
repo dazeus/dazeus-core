@@ -33,8 +33,8 @@ QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
 QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
       plugins/perl/embedperl.o plugins/perl/xsinit.c plugins/perl/xsinit.o \
       plugins/perl/embedperl.a
-LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl -lircclient
-QMAKE_CXXFLAGS += "-I/usr/include/libircclient"
+LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl -lircclient -ljson
+QMAKE_CXXFLAGS += "-I/usr/include/libircclient -I/usr/include/libjson"
 unix {
   !macx {
     LIBS += -Wl,--export-dynamic -lcrypt -ldl
