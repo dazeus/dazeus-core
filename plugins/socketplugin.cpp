@@ -147,6 +147,24 @@ void SocketPlugin::poll() {
 	}
 }
 
+void SocketPlugin::welcomed( Network &net ) {
+	foreach(QIODevice *i, sockets_.keys()) {
+		SocketInfo &info = sockets_[i];
+		if(info.isSubscribed("WELCOMED")) {
+			info.dispatch(i, "WELCOMED", QStringList() << net.networkName());
+		}
+	}
+}
+
+void SocketPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {
+	foreach(QIODevice *i, sockets_.keys()) {
+		SocketInfo &info = sockets_[i];
+		if(info.isSubscribed("JOINED")) {
+			info.dispatch(i, "JOINED", QStringList() << net.networkName() << who << channel->receiver());
+		}
+	}
+}
+
 void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
 	if(!dev->isOpen()) return;
 	const QList<Network*> &networks = manager()->bot()->networks();
