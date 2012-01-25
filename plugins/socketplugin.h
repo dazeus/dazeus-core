@@ -17,6 +17,12 @@ class SocketPlugin : public Plugin
 {
   Q_OBJECT
 
+  struct SocketInfo {
+    public: SocketInfo(QString t = QString()) { type = t; }
+    QString type;
+    QList<QString> subscriptions;
+  };
+
   public:
             SocketPlugin(PluginManager *man);
   virtual  ~SocketPlugin();
@@ -32,8 +38,8 @@ class SocketPlugin : public Plugin
   private:
     QList<QTcpServer*> tcpServers_;
     QList<QLocalServer*> localServers_;
-    QList<QIODevice*> sockets_;
-    void handle(QIODevice *dev, const QByteArray &line);
+    QMap<QIODevice*,SocketInfo> sockets_;
+    void handle(QIODevice *dev, const QByteArray &line, SocketInfo &info);
 };
 
 #endif

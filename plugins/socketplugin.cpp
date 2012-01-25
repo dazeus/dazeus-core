@@ -24,7 +24,7 @@ SocketPlugin::SocketPlugin( PluginManager *man )
 {}
 
 SocketPlugin::~SocketPlugin() {
-	qDeleteAll(sockets_);
+	qDeleteAll(sockets_.keys());
 	qDeleteAll(tcpServers_);
 }
 
@@ -104,7 +104,7 @@ void SocketPlugin::newTcpConnection() {
 			QTcpSocket *sock = s->nextPendingConnection();
 			sock->setParent(this);
 			connect(sock, SIGNAL(readyRead()), this, SLOT(poll()));
-			sockets_.append(sock);
+			sockets_.insert(sock, SocketInfo("tcp"));
 		}
 	}
 }
@@ -121,30 +121,33 @@ void SocketPlugin::newLocalConnection() {
 			QLocalSocket *sock = s->nextPendingConnection();
 			sock->setParent(this);
 			connect(sock, SIGNAL(readyRead()), this, SLOT(poll()));
-			sockets_.append(sock);
+			sockets_.insert(sock, SocketInfo("unix"));
 		}
 	}
 }
 
 void SocketPlugin::poll() {
-	QList<int> toRemove_;
-	for(int i = 0; i < sockets_.length(); ++i) {
-		QIODevice *dev = sockets_[i];
+	QList<QIODevice*> toRemove_;
+	QList<QIODevice*> socks = sockets_.keys();
+	for(int i = 0; i < socks.size(); ++i) {
+		QIODevice *dev = socks[i];
+		SocketInfo info = sockets_[dev];
 		if(!dev->isOpen()) {
-			toRemove_.append(i);
+			toRemove_.append(dev);
 			continue;
 		}
 		while(dev->isOpen() && dev->canReadLine()) {
 			QByteArray line = dev->readLine().trimmed();
-			handle(dev, line);
+			handle(dev, line, info);
 		}
+		sockets_[dev] = info;
 	}
-	foreach(int i, toRemove_) {
-		sockets_.removeAt(i);
+	foreach(QIODevice* i, toRemove_) {
+		sockets_.remove(i);
 	}
 }
 
-void SocketPlugin::handle(QIODevice *dev, const QByteArray &line) {
+void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
 	if(!dev->isOpen()) return;
 	const QList<Network*> &networks = manager()->bot()->networks();
 	if(line.startsWith("?networks")) {
