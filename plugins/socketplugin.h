@@ -13,6 +13,7 @@
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QLocalServer>
 
+#include <sstream>
 #include <libjson.h>
 
 class SocketPlugin : public Plugin
@@ -21,23 +22,34 @@ class SocketPlugin : public Plugin
 
   struct SocketInfo {
    public:
-    SocketInfo(QString t = QString()) { type = t; }
+    SocketInfo(QString t = QString()) : type(t), waitingSize(0) {}
     bool isSubscribed(QString t) const {
       return subscriptions.contains(t);
     }
     void dispatch(QIODevice *d, QString event, QStringList parameters) {
       Q_ASSERT(!event.contains(' '));
-      JSONNode n(JSON_NODE);
-      n.push_back(JSONNode("event", libjson::to_json_string(event.toLatin1().constData())));
+
       JSONNode params(JSON_ARRAY);
       params.set_name("params");
       foreach(const QString &p, parameters) {
         params.push_back(JSONNode("", libjson::to_json_string(p.toLatin1().constData())));
       }
-      d->write(libjson::to_std_string(n.write()).c_str());
+
+      JSONNode n(JSON_NODE);
+      n.push_back(JSONNode("event", libjson::to_json_string(event.toLatin1().constData())));
+      n.push_back(params);
+
+      std::string jsonMsg = libjson::to_std_string(n.write());
+      std::string message;
+      std::stringstream mstr;
+      mstr << jsonMsg.length();
+      mstr << jsonMsg;
+      mstr >> message;
+      d->write(message.c_str(), message.length());
     }
     QString type;
     QList<QString> subscriptions;
+    int waitingSize;
   };
 
   public:

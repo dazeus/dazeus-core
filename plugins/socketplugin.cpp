@@ -136,9 +136,37 @@ void SocketPlugin::poll() {
 			toRemove_.append(dev);
 			continue;
 		}
-		while(dev->isOpen() && dev->canReadLine()) {
-			QByteArray line = dev->readLine().trimmed();
-			handle(dev, line, info);
+		while(dev->isOpen() && dev->bytesAvailable()) {
+			if(info.waitingSize == 0) {
+				// Read the byte size, everything until the start of the JSON message
+				char size[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+				dev->peek(size, sizeof(size));
+				for(unsigned i = 0; i < sizeof(size); ++i) {
+					if(size[i] == '{') {
+						// Start of the JSON character, we can start reading the full response
+						dev->read(i);
+						for(unsigned j = 0; j < i; ++j) {
+							// Ignore any other character than numbers (i.e. newlines)
+							if(size[j] >= 0x30 && size[j] <= 0x39) {
+								info.waitingSize *= 10;
+								info.waitingSize += size[j] - 0x30;
+							}
+						}
+					}
+				}
+				Q_ASSERT(info.waitingSize >= 0);
+				if(info.waitingSize == 0)
+					break;
+				continue;
+			} else if(info.waitingSize > dev->bytesAvailable()) {
+				break;
+			}
+			QByteArray json = dev->read(info.waitingSize);
+			if(json.length() != info.waitingSize) {
+				qDebug() << "Failed to read from socket; breaking";
+			}
+			handle(dev, json, info);
+			info.waitingSize = 0;
 		}
 		sockets_[dev] = info;
 	}
