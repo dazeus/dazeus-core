@@ -1,0 +1,96 @@
+========================
+DaZeus 2 Plugin Protocol
+========================
+
+=== Introduction ===
+
+The DaZeus 2 plugin protocol links the core bot with the installed plugins, and
+is used to communicate events and their responses. Also, it exposes DaZeus' own
+configuration and database APIs, so plugins can easily attach without requiring
+configuration of their own.
+
+Bindings for this protocol will be available for Perl. Other bindings may also
+become available on a by-need basis. Patches are welcome for newly implemented
+bindings.
+
+The protocol was designed as a hand-off between human and machine readability.
+It is largely based on the JSON standard (http://www.json.org/), with some
+additions to allow atomic reads. At the moment, communication is supported over
+UNIX and TCP sockets.
+
+Note: The protocol, and this document explaining it, are experimental. This
+means they may change at any time, until the final release.
+
+=== Overview ===
+
+Messages in the protocol look like this:
+  [size in ASCII][JSON data of given size]
+
+For example, a simple message might look like this:
+  18{"get":"networks"}
+
+Here, the 18 is sent over the network as ASCII bytes, i.e. 0x31 0x38. Reading a
+size stops at the first '{'. In order to improve human readability, a \n or \r
+occuring anywhere outside of this atomic block is ignored. For example, the
+above message is equal to this:
+  \n\r18{"get":"networks"}\n\r
+
+Any other bytes before the JSON, other than \n, \r and ASCII digits, are not
+allowed. The sender must not send them, the receiver must ignore them or abort
+the session.
+
+The bot will respond to incoming messages in the order the messages were sent,
+with the exception that if the plugin is subscribed to events, those events
+may be sent in the middle of a list of responses. For example, communication
+like this is possible:
+  Plugin: [Request 1]
+  Plugin: [Request 2]
+  Bot: [Response 1]
+  Bot: [Event]
+  Bot: [Response 2]
+
+All JSON data must be objects. Requests will have a "get" or "do" field (both
+are aliases) and may have a "params" field; responses will have a "got"
+or "did" field, a "success" field, and other fields depending on the request.
+If the "success" field value is false, there will be an "error" field with a
+human readable error string.
+
+Events will have an "event" field and some "params", that depend on the event.
+
+=== Requests ===
+
+There are five requests:
+
+* Get all known networks,
+* Get all joined channels on a known network,
+* Say something on channel X of network Y,
+* Subscribe to events, and
+* Unsubscribe to events.
+
+The "get all known networks" request looks like {"get":"networks"}. The
+response will have the list of networks in the "networks" field.
+
+The "get all joined channels" request will look like {"get":"channels",
+"params":["the network"]}. If the network is joined, the response will have
+a "channels" field with an array value.
+
+The "say something" request will look like:
+  {"do":"message", "params":["network","channel","message"]}
+
+The "subscribe to events" request will look like:
+  {"do":"subscribe", "params":["JOINED","MOTD"]}
+To unsubscribe, change "subscribe" into "unsubscribe". See the next section for
+more information.
+
+=== Events ===
+
+After subscribing, events can be received anytime outside another existing
+response. The following events exist:
+
+  WELCOMED, CONNECTED, DISCONNECTED, JOINED, PARTED, MOTD, QUIT, NICK, MODE,
+  TOPIC, INVITE, KICK, MESSAGE, NOTICE, CTCPREQ, CTCPREPL, ACTION, NUMERIC,
+  UNKNOWN
+
+All events will have have an "event" field set to one of the above strings, and
+a "params" field that will contain an array with parameters depending on the
+event. Note that the above list is bound to change as the protocol changes.
