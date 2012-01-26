@@ -24,7 +24,16 @@ class SocketPlugin : public Plugin
    public:
     SocketInfo(QString t = QString()) : type(t), waitingSize(0) {}
     bool isSubscribed(QString t) const {
-      return subscriptions.contains(t);
+      return subscriptions.contains(t.toUpper());
+    }
+    bool unsubscribe(QString t) {
+      return subscriptions.removeOne(t.toUpper());
+    }
+    bool subscribe(QString t) {
+      if(isSubscribed(t))
+        return false;
+      subscriptions.append(t.toUpper());
+      return true;
     }
     void dispatch(QIODevice *d, QString event, QStringList parameters) {
       Q_ASSERT(!event.contains(' '));
@@ -47,7 +56,7 @@ class SocketPlugin : public Plugin
       d->write(mstr.str().c_str(), mstr.str().length());
     }
     QString type;
-    QList<QString> subscriptions;
+    QStringList subscriptions;
     int waitingSize;
   };
 

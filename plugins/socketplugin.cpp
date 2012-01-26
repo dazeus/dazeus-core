@@ -296,6 +296,24 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
 		response.push_back(JSONNode("success", false));
 		response.push_back(JSONNode("error", "Not on that network"));
+	} else if(action == "subscribe") {
+		response.push_back(JSONNode("do", "subscribe"));
+		response.push_back(JSONNode("success", true));
+		int added = 0;
+		foreach(const QString &event, params) {
+			if(info.subscribe(event))
+				++added;
+		}
+		response.push_back(JSONNode("added", added));
+	} else if(action == "unsubscribe") {
+		response.push_back(JSONNode("do", "unsubscribe"));
+		response.push_back(JSONNode("success", true));
+		int removed = 0;
+		foreach(const QString &event, params) {
+			if(info.unsubscribe(event))
+				++removed;
+		}
+		response.push_back(JSONNode("removed", removed));
 	} else {
 		response.push_back(JSONNode("success", false));
 		response.push_back(JSONNode("error", "Did not understand request"));
