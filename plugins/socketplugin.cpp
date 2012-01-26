@@ -341,6 +341,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		} else {
 			response.push_back(JSONNode("success", true));
 			JSONNode chans(JSON_ARRAY);
+			chans.set_name("channels");
 			const QList<QString> &channels = net->joinedChannels();
 			Q_FOREACH(const QString &chan, channels) {
 				chans.push_back(JSONNode("", libjson::to_json_string(chan.toStdString())));
