@@ -63,11 +63,45 @@ class SocketPlugin : public Plugin
   public:
             SocketPlugin(PluginManager *man);
   virtual  ~SocketPlugin();
+    void dispatch(const QString &event, const QStringList &parameters);
 
   public slots:
     virtual void init();
     virtual void welcomed( Network &net );
+    virtual void connected( Network &net, const Server &serv );
+    virtual void disconnected( Network &net );
     virtual void joined( Network &net, const QString &who, Irc::Buffer *channel );
+    virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
+                         Irc::Buffer *channel );
+    virtual void motdReceived( Network &net, const QString &motd, Irc::Buffer *buffer );
+    virtual void quit(   Network &net, const QString &origin, const QString &message,
+                     Irc::Buffer *buffer );
+    virtual void nickChanged( Network &net, const QString &origin, const QString &nick,
+                          Irc::Buffer *buffer );
+    virtual void modeChanged( Network &net, const QString &origin, const QString &mode,
+                          const QString &args, Irc::Buffer *buffer );
+    virtual void topicChanged( Network &net, const QString &origin, const QString &topic,
+                           Irc::Buffer *buffer );
+    virtual void invited( Network &net, const QString &origin, const QString &receiver,
+                      const QString &channel, Irc::Buffer *buffer );
+    virtual void kicked( Network &net, const QString &origin, const QString &nick,
+                     const QString &message, Irc::Buffer *buffer );
+    virtual void messageReceived( Network &net, const QString &origin, const QString &message,
+                              Irc::Buffer *buffer );
+    virtual void noticeReceived( Network &net, const QString &origin, const QString &notice,
+                             Irc::Buffer *buffer );
+    virtual void ctcpRequestReceived(Network &net, const QString &origin, const QString &request,
+                                 Irc::Buffer *buffer );
+    virtual void ctcpReplyReceived( Network &net, const QString &origin, const QString &reply,
+                                Irc::Buffer *buffer );
+    virtual void ctcpActionReceived( Network &net, const QString &origin, const QString &action,
+                                 Irc::Buffer *buffer );
+    virtual void numericMessageReceived( Network &net, const QString &origin, uint code,
+                                     const QStringList &params,
+                                     Irc::Buffer *buffer );
+    virtual void unknownMessageReceived( Network &net, const QString &origin,
+                                       const QStringList &params,
+                                       Irc::Buffer *buffer );
 
   private slots:
     void newTcpConnection();

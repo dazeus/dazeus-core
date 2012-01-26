@@ -176,22 +176,105 @@ void SocketPlugin::poll() {
 	}
 }
 
-void SocketPlugin::welcomed( Network &net ) {
+void SocketPlugin::dispatch(const QString &event, const QStringList &parameters) {
 	foreach(QIODevice *i, sockets_.keys()) {
 		SocketInfo &info = sockets_[i];
-		if(info.isSubscribed("WELCOMED")) {
-			info.dispatch(i, "WELCOMED", QStringList() << net.networkName());
+		if(info.isSubscribed(event)) {
+			info.dispatch(i, event, parameters);
 		}
 	}
 }
 
+void SocketPlugin::welcomed( Network &net ) {
+	dispatch("WELCOMED", QStringList() << net.networkName());
+}
+
+void SocketPlugin::connected( Network &net, const Server & ) {
+	dispatch("CONNECTED", QStringList() << net.networkName());
+}
+
+void SocketPlugin::disconnected( Network &net ) {
+	dispatch("DISCONNECTED", QStringList() << net.networkName());
+}
+
 void SocketPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {
-	foreach(QIODevice *i, sockets_.keys()) {
-		SocketInfo &info = sockets_[i];
-		if(info.isSubscribed("JOINED")) {
-			info.dispatch(i, "JOINED", QStringList() << net.networkName() << who << channel->receiver());
-		}
-	}
+	dispatch("JOINED", QStringList() << net.networkName() << who << channel->receiver());
+}
+
+void SocketPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
+                         Irc::Buffer *channel ) {
+	dispatch("PARTED", QStringList() << net.networkName() << who << channel->receiver() << leaveMessage);
+}
+
+void SocketPlugin::motdReceived( Network &net, const QString &motd, Irc::Buffer *buffer ) {
+	dispatch("MOTD", QStringList() << net.networkName() << motd << buffer->receiver());
+}
+
+void SocketPlugin::quit(   Network &net, const QString &origin, const QString &message,
+                     Irc::Buffer *buffer ) {
+	dispatch("QUIT", QStringList() << net.networkName() << origin << buffer->receiver() << message);
+}
+
+void SocketPlugin::nickChanged( Network &net, const QString &origin, const QString &nick,
+                          Irc::Buffer *buffer ) {
+	dispatch("NICK", QStringList() << net.networkName() << origin << buffer->receiver() << nick);
+}
+
+void SocketPlugin::modeChanged( Network &net, const QString &origin, const QString &mode,
+                          const QString &args, Irc::Buffer *buffer ) {
+	dispatch("MODE", QStringList() << net.networkName() << origin << buffer->receiver() << mode << args);
+}
+
+void SocketPlugin::topicChanged( Network &net, const QString &origin, const QString &topic,
+                           Irc::Buffer *buffer ) {
+	dispatch("TOPIC", QStringList() << net.networkName() << origin << buffer->receiver() << topic);
+}
+
+void SocketPlugin::invited( Network &net, const QString &origin, const QString &receiver,
+                      const QString &channel, Irc::Buffer *buffer ) {
+	dispatch("INVITE", QStringList() << net.networkName() << origin << buffer->receiver() << receiver << channel);
+}
+
+void SocketPlugin::kicked( Network &net, const QString &origin, const QString &nick,
+                     const QString &message, Irc::Buffer *buffer ) {
+	dispatch("KICK", QStringList() << net.networkName() << origin << buffer->receiver() << nick << message);
+}
+
+void SocketPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
+                              Irc::Buffer *buffer ) {
+	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message);
+}
+
+void SocketPlugin::noticeReceived( Network &net, const QString &origin, const QString &notice,
+                             Irc::Buffer *buffer ) {
+	dispatch("NOTICE", QStringList() << net.networkName() << origin << buffer->receiver() << notice);
+}
+
+void SocketPlugin::ctcpRequestReceived(Network &net, const QString &origin, const QString &request,
+                                 Irc::Buffer *buffer ) {
+	dispatch("CTCPREQ", QStringList() << net.networkName() << origin << buffer->receiver() << request);
+}
+
+void SocketPlugin::ctcpReplyReceived( Network &net, const QString &origin, const QString &reply,
+                                Irc::Buffer *buffer ) {
+	dispatch("CTCPREPL", QStringList() << net.networkName() << origin << buffer->receiver() << reply);
+}
+
+void SocketPlugin::ctcpActionReceived( Network &net, const QString &origin, const QString &action,
+                                 Irc::Buffer *buffer ) {
+	dispatch("ACTION", QStringList() << net.networkName() << origin << buffer->receiver() << action);
+}
+
+void SocketPlugin::numericMessageReceived( Network &net, const QString &origin, uint code,
+                                     const QStringList &params,
+                                     Irc::Buffer *buffer ) {
+	dispatch("NUMERIC", QStringList() << net.networkName() << origin << buffer->receiver() << QString::number(code) << params);
+}
+
+void SocketPlugin::unknownMessageReceived( Network &net, const QString &origin,
+                                       const QStringList &params,
+                                       Irc::Buffer *buffer ) {
+	dispatch("UNKNOWN", QStringList() << net.networkName() << origin << buffer->receiver() << params);
 }
 
 void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
