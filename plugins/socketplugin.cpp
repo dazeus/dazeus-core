@@ -14,6 +14,7 @@
 #include <QtNetwork/QLocalSocket>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include <libjson.h>
 
 #include "socketplugin.h"
 #include "pluginmanager.h"
@@ -196,15 +197,49 @@ void SocketPlugin::joined( Network &net, const QString &who, Irc::Buffer *channe
 void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
 	if(!dev->isOpen()) return;
 	const QList<Network*> &networks = manager()->bot()->networks();
-	if(line.startsWith("?networks")) {
+
+	JSONNode n;
+	try {
+		n = libjson::parse(line.constData());
+	} catch(std::invalid_argument &exception) {
+		qWarning() << "Got incorrect JSON, ignoring";
+		return;
+	}
+	QStringList params;
+	JSONNode::const_iterator i = n.begin();
+	QString action;
+	while(i != n.end()) {
+		if(i->name() == "params") {
+			if(i->type() != JSON_ARRAY) {
+				qWarning() << "Got params, but not of array type";
+				continue;
+			}
+			JSONNode::const_iterator j = i->begin();
+			while(j != i->end()) {
+				std::string s = libjson::to_std_string(j->as_string());
+				params << QString::fromUtf8(s.c_str(), s.length());
+				j++;
+			}
+		}
+		if(i->name() == "get") {
+			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
+		} else if(i->name() == "do") {
+			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
+		}
+		i++;
+	}
+	if(action == "networks") {
 		QString response;
 		foreach(const Network *n, networks) {
 			response += n->networkName() + " ";
 		}
 		response = response.left(response.length() - 1);
 		dev->write(QString(response + "\n").toLatin1());
-	} else if(line.startsWith("?channels ")) {
-		QString network = line.mid(10);
+	} else if(action == "channels") {
+		QString network = "";
+		if(params.size() > 0) {
+			network = params[0];
+		}
 		const Network *net = 0;
 		foreach(const Network *n, networks) {
 			if(n->networkName() == network) {
@@ -222,56 +257,20 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			}
 			return;
 		}
-	} else if(line.startsWith("!msg ")) {
-		int space1 = line.indexOf(' ', 5);
-		int space2 = line.indexOf(' ', space1 + 1);
-		if(space1 == -1 || space2 == -1) {
-			dev->write("Usage: !msg <net> <chan> <len>\\n<payload, utf8 encoded>\n");
+	} else if(action == "message") {
+		if(params.size() < 3) {
+			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
 		}
-		QString network = line.mid(5, space1 - 5);
-		QString channel = line.mid(space1 + 1, space2 - space1 - 1);
-		QString len     = line.mid(space2 + 1);
-
-		unsigned int length = len.toUInt();
-		if(length == 0 || length > 512) {
-			qWarning() << "Invalid length " << length << " in SocketPlugin";
-			dev->write("NAK, invalid length\n");
-			dev->close();
-			return;
-		}
-
-		char *rawMessage = new char[length];
-		unsigned int lengthRead = 0;
-		int tries = 5;
-		while(lengthRead < length && tries >= 0) {
-			dev->waitForReadyRead(100);
-			int lengthRest = length - lengthRead;
-			char *messagePart = new char[lengthRest];
-			long partRead = dev->read(messagePart, lengthRest);
-			if(partRead >= 0) {
-				memcpy(rawMessage + lengthRead, messagePart, partRead);
-				lengthRead += partRead;
-			}
-			delete [] messagePart;
-			tries--;
-		}
-
-		if(lengthRead < length) {
-			qWarning() << "Didn't write data: reading took too long.";
-			qWarning() << "Wanted " << length << "bytes, got " << lengthRead;
-			dev->close(); // unread data still coming, ignore it
-			return;
-		}
-
-		QString message = QString::fromUtf8(rawMessage, lengthRead);
-		delete [] rawMessage;
+		QString network = params[0];
+		QString channel = params[1];
+		QString message = params[2];
 
 		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
 				if(n->joinedChannels().contains(channel.toLower())) {
 					qWarning() << "Request for communication to network " << network
-					           << " channel " << channel << ", but not in that channel dropping";
+					           << " channel " << channel << ", but not in that channel; dropping";
 					n->say(channel, message);
 					dev->write("ACK\n");
 				} else {
