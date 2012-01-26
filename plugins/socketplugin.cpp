@@ -228,18 +228,24 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		}
 		i++;
 	}
+
+	JSONNode response(JSON_NODE);
 	if(action == "networks") {
-		QString response;
+		response.push_back(JSONNode("got", "networks"));
+		response.push_back(JSONNode("success", true));
+		JSONNode nets(JSON_ARRAY);
+		nets.set_name("networks");
 		foreach(const Network *n, networks) {
-			response += n->networkName() + " ";
+			nets.push_back(JSONNode("", libjson::to_json_string(n->networkName().toStdString())));
 		}
-		response = response.left(response.length() - 1);
-		dev->write(QString(response + "\n").toLatin1());
+		response.push_back(nets);
 	} else if(action == "channels") {
+		response.push_back(JSONNode("got", "channels"));
 		QString network = "";
 		if(params.size() > 0) {
 			network = params[0];
 		}
+		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
 		const Network *net = 0;
 		foreach(const Network *n, networks) {
 			if(n->networkName() == network) {
@@ -247,17 +253,19 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			}
 		}
 		if(net == 0) {
-			dev->write(QString("NAK '" + network + "'\n").toLatin1());
-			return;
+			response.push_back(JSONNode("success", false));
+			response.push_back(JSONNode("error", "Not on that network"));
 		} else {
+			response.push_back(JSONNode("success", true));
+			JSONNode chans(JSON_ARRAY);
 			const QList<QString> &channels = net->joinedChannels();
-			dev->write(QString("ACK " + QString::number(channels.size()) + "\n").toLatin1());
 			Q_FOREACH(const QString &chan, channels) {
-				dev->write(chan.toLatin1());
+				chans.push_back(JSONNode("", libjson::to_json_string(chan.toStdString())));
 			}
-			return;
+			response.push_back(chans);
 		}
 	} else if(action == "message") {
+		response.push_back(JSONNode("do", "message"));
 		if(params.size() < 3) {
 			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
@@ -265,24 +273,38 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		QString network = params[0];
 		QString channel = params[1];
 		QString message = params[2];
+		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
+		response.push_back(JSONNode("channel", libjson::to_json_string(channel.toStdString())));
+		response.push_back(JSONNode("message", libjson::to_json_string(message.toStdString())));
 
+		bool netfound = false;
 		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
+				netfound = true;
 				if(n->joinedChannels().contains(channel.toLower())) {
+					response.push_back(JSONNode("success", true));
+					n->say(channel, message);
+				} else {
 					qWarning() << "Request for communication to network " << network
 					           << " channel " << channel << ", but not in that channel; dropping";
-					n->say(channel, message);
-					dev->write("ACK\n");
-				} else {
-					dev->write(QString("NAKC '" + channel + "'\n").toLatin1());
+					response.push_back(JSONNode("success", false));
+					response.push_back(JSONNode("error", "Not in that chanel"));
 				}
-				return;
+				break;
 			}
 		}
 		qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
-		dev->write(QString("NAK '" + network + "'\n").toLatin1());
+		response.push_back(JSONNode("success", false));
+		response.push_back(JSONNode("error", "Not on that network"));
 	} else {
-		dev->write("This is DaZeus 2.0 SocketPlugin. Usage:\n");
-		dev->write("?networks, ?channels <net>, !msg <net> <chan> <len>\n");
+		response.push_back(JSONNode("success", false));
+		response.push_back(JSONNode("error", "Did not understand request"));
 	}
+
+	std::string jsonMsg = libjson::to_std_string(response.write());
+	std::stringstream mstr;
+	mstr << jsonMsg.length();
+	mstr << jsonMsg;
+	mstr << "\n";
+	dev->write(mstr.str().c_str(), mstr.str().length());
 }

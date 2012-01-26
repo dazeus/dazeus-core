@@ -40,12 +40,11 @@ class SocketPlugin : public Plugin
       n.push_back(params);
 
       std::string jsonMsg = libjson::to_std_string(n.write());
-      std::string message;
       std::stringstream mstr;
       mstr << jsonMsg.length();
       mstr << jsonMsg;
-      mstr >> message;
-      d->write(message.c_str(), message.length());
+      mstr << "\n";
+      d->write(mstr.str().c_str(), mstr.str().length());
     }
     QString type;
     QList<QString> subscriptions;
