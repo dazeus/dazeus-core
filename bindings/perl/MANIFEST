@@ -3,3 +3,4 @@ MANIFEST
 README
 t/DaZeus.t
 lib/DaZeus.pm
+examples/monitor.pl

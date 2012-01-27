@@ -225,7 +225,7 @@ __END__
 
 =head1 NAME
 
-DaZeus - Perl binding for DaZeus IRC bot communication
+DaZeus - Perl bindings for DaZeus IRC bot communication
 
 =head1 SYNOPSIS
 
