@@ -157,10 +157,10 @@ sub _readPacket {
 			delete $self->{sock};
 			die $!;
 		}
-		if($event_part eq "\r\n") {
+		if($event_part =~ /^[\r\n]+$/) {
 			# This seems to be necessary on my Linux machine; it refuses
 			# to read further than these newline bytes...
-			$self->{sock}->recv($event_part, 2);
+			$self->{sock}->recv($event_part, length $event_part);
 		}
 		# Has enough data been read?
 		if(length($event_part) == $size && index($event_part, '{') > 0) {
