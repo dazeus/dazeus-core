@@ -378,11 +378,18 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		b->setReceiver(QString(params[0]));
 		server->slotCtcpActionReceived(origin, message, b);
 	} else if(event == "UNKNOWN") {
-		QStringList params;
+		QStringList args;
 		for(unsigned int i = 0; i < count; ++i) {
-			params.append(QString(params[i]));
+			args.append(QString(params[i]));
 		}
-		server->slotUnknownMessageReceived(origin, params, b);
+		server->slotUnknownMessageReceived(origin, args, b);
+	} else if(event == "ERROR") {
+		QStringList args;
+		for(unsigned int i = 0; i < count; ++i) {
+			args.append(QString(params[i]));
+		}
+		qWarning() << "Error received from libircclient: " << args;
+		qWarning() << "Origin: " << origin;
 	} else {
 		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
 		assert(false);
