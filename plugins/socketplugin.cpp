@@ -349,7 +349,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(chans);
 		}
 	} else if(action == "message" || action == "action") {
-		response.push_back(JSONNode("do", libjson::to_json_string(action.toStdString())));
+		response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
 		if(params.size() < 3) {
 			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
@@ -387,7 +387,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("error", "Not on that network"));
 		}
 	} else if(action == "subscribe") {
-		response.push_back(JSONNode("do", "subscribe"));
+		response.push_back(JSONNode("did", "subscribe"));
 		response.push_back(JSONNode("success", true));
 		int added = 0;
 		foreach(const QString &event, params) {
@@ -396,7 +396,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		}
 		response.push_back(JSONNode("added", added));
 	} else if(action == "unsubscribe") {
-		response.push_back(JSONNode("do", "unsubscribe"));
+		response.push_back(JSONNode("did", "unsubscribe"));
 		response.push_back(JSONNode("success", true));
 		int removed = 0;
 		foreach(const QString &event, params) {
