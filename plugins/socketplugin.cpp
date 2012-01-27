@@ -377,9 +377,11 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				break;
 			}
 		}
-		qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
-		response.push_back(JSONNode("success", false));
-		response.push_back(JSONNode("error", "Not on that network"));
+		if(!netfound) {
+			qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
+			response.push_back(JSONNode("success", false));
+			response.push_back(JSONNode("error", "Not on that network"));
+		}
 	} else if(action == "subscribe") {
 		response.push_back(JSONNode("do", "subscribe"));
 		response.push_back(JSONNode("success", true));
