@@ -39,34 +39,33 @@ public:
 	void quit() { QThread::quit(); }
 
 	void quit( const QString &reason ) {
-		irc_cmd_quit(irc_, reason.toLatin1());
+		irc_cmd_quit(irc_, reason.toUtf8());
 	}
 
 	void whois( const QString &destination ) {
-		qDebug() << "Asking for whois on " << destination;
-		irc_cmd_whois(irc_, destination.toLatin1());
+		irc_cmd_whois(irc_, destination.toUtf8());
 	}
 
 	void ctcpAction( const QString &destination, const QString &message ) {
-		irc_cmd_me(irc_, destination.toLatin1(), message.toLatin1());
+		irc_cmd_me(irc_, destination.toUtf8(), message.toUtf8());
 	}
 
 	void ctcpRequest( const QString &destination, const QString &message ) {
-		irc_cmd_ctcp_request(irc_, destination.toLatin1(), message.toLatin1());
+		irc_cmd_ctcp_request(irc_, destination.toUtf8(), message.toUtf8());
 	}
 
 	void join( const QString &channel, const QString &key = QString() ) {
-		irc_cmd_join(irc_, channel.toLatin1(), key.toLatin1());
+		irc_cmd_join(irc_, channel.toUtf8(), key.toUtf8());
 	}
 
 	void part( const QString &channel, const QString &reason = QString() ) {
-		irc_cmd_part(irc_, channel.toLatin1());
+		irc_cmd_part(irc_, channel.toUtf8());
 	}
 
 	void message( const QString &destination, const QString &message ) {
 		QStringList lines = message.split(QRegExp(QLatin1String("[\\r\\n]+")), QString::SkipEmptyParts);
 		foreach(const QString& line, lines)
-			irc_cmd_msg(irc_, destination.toLatin1(), line.toLatin1());
+			irc_cmd_msg(irc_, destination.toUtf8(), line.toUtf8());
 	}
 
 	Server *s_;
