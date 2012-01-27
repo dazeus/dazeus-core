@@ -26,6 +26,7 @@ if($pid == 0) {
 	my $child_dazeus = DaZeus->connect($otherside);
 	my $foo_sub = 0;
 	my $bar_sub = 0;
+	eval {
 	while(my $packet = $child_dazeus->_readPacket(5)) {
 		my $what = $packet->{'get'} || $packet->{'do'};
 		my @params = @{$packet->{'params'}} if($packet->{'params'});
@@ -60,6 +61,7 @@ if($pid == 0) {
 			}
 		}
 	}
+	};
 	exit;
 }
 ####
@@ -98,4 +100,5 @@ is_deeply($dazeus->handleEvent(), {event => "BAR", params => []}, "Event 2 recei
 ok(!$eventhandled, "Event handled not called twice");
 
 diag "Waiting for child to quit...\n";
+close $dazeus->{sock};
 waitpid($pid, 0);
