@@ -348,8 +348,8 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			}
 			response.push_back(chans);
 		}
-	} else if(action == "message") {
-		response.push_back(JSONNode("do", "message"));
+	} else if(action == "message" || action == "action") {
+		response.push_back(JSONNode("do", libjson::to_json_string(action.toStdString())));
 		if(params.size() < 3) {
 			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
@@ -367,7 +367,11 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				netfound = true;
 				if(n->joinedChannels().contains(channel.toLower())) {
 					response.push_back(JSONNode("success", true));
-					n->say(channel, message);
+					if(action == "message") {
+						n->say(channel, message);
+					} else {
+						n->action(channel, message);
+					}
 				} else {
 					qWarning() << "Request for communication to network " << network
 					           << " channel " << channel << ", but not in that channel; dropping";
