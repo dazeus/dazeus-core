@@ -58,7 +58,7 @@ sub _connect {
 			Peer => $file,
 			Type => SOCK_STREAM,
 			Blocking => 0,
-		) or die $!;
+		) or die "Error opening UNIX socket $file: $!\n";
 	} else {
 		die "Didn't understand format of socketfile: " . $self->{socketfile} . " -- does it begin with unix: or tcp:?\n";
 	}
