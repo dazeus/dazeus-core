@@ -265,10 +265,10 @@ void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *or
 	assert(server->getIrc() == s);
 	QStringList params;
 	for(unsigned int i = 0; i < count; ++i) {
-		params.append(QString(p[i]));
+		params.append(QString::fromUtf8(p[i]));
 	}
 	Irc::Buffer *b = new Irc::Buffer(server->server());
-	server->slotNumericMessageReceived(QString(origin), event, params, b);
+	server->slotNumericMessageReceived(QString::fromUtf8(origin), event, params, b);
 }
 
 void irc_callback(irc_session_t *s, const char *e, const char *o, const char **params, unsigned int count) {
@@ -279,7 +279,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	Irc::Buffer *b = new Irc::Buffer(server->server());
 
 	// for now, keep these QStrings:
-	QString origin(o);
+	QString origin = QString::fromUtf8(o);
 	int exclamMark = origin.indexOf('!');
 	if(exclamMark != -1) {
 		origin = origin.left(exclamMark);
@@ -294,36 +294,36 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		// ignore
 	} else if(event == "NICK") {
 		assert(count == 1);
-		server->slotNickChanged(origin, QString(params[0]), b);
+		server->slotNickChanged(origin, QString::fromUtf8(params[0]), b);
 	} else if(event == "QUIT") {
 		assert(count == 0 || count == 1);
 		QString message;
 		if(count == 1)
-			message = QString(params[0]);
+			message = QString::fromUtf8(params[0]);
 		server->slotQuit(origin, message, b);
 	} else if(event == "JOIN") {
 		assert(count == 1);
-		b->setReceiver(QString(params[0]));
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotJoined(origin, b);
 	} else if(event == "PART") {
 		assert(count == 1 || count == 2);
 		QString message;
 		if(count == 2)
-			message = QString(params[1]);
-		b->setReceiver(QString(params[0]));
+			message = QString::fromUtf8(params[1]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotParted(origin, message, b);
 	} else if(event == "MODE") {
 		assert(count >= 1);
 		QString mode;
 		if(count == 1) {
-			mode = QString(params[0]);
+			mode = QString::fromUtf8(params[0]);
 		} else {
-			mode = QString(params[1]);
-			b->setReceiver(QString(params[0]));
+			mode = QString::fromUtf8(params[1]);
+			b->setReceiver(QString::fromUtf8(params[0]));
 		}
 		QStringList args;
 		for(unsigned int i = 2; i < count; ++i)
-			args.append(QString(params[i]));
+			args.append(QString::fromUtf8(params[i]));
 		server->slotModeChanged(origin, mode, args.join(" "), b);
 	} else if(event == "UMODE") {
 		assert(count == 1);
@@ -332,61 +332,61 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		assert(count == 1 || count == 2);
 		QString topic;
 		if(count == 2)
-			topic = QString(params[1]);
-		b->setReceiver(QString(params[0]));
+			topic = QString::fromUtf8(params[1]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotTopicChanged(origin, topic, b);
 	} else if(event == "KICK") {
 		assert(count > 1 && count <= 3);
 		QString nick;
 		QString message;
 		if(count >= 2)
-			nick = QString(params[1]);
+			nick = QString::fromUtf8(params[1]);
 		if(count == 3)
-			message = QString(params[2]);
-		b->setReceiver(QString(params[0]));
+			message = QString::fromUtf8(params[2]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotKicked(origin, nick, message, b);
 	} else if(event == "CHANNEL" || event == "PRIVMSG") {
 		assert(count == 1 || count == 2);
 		QString message;
 		if(count == 2)
-			message = QString(params[1]);
-		b->setReceiver(QString(params[0]));
+			message = QString::fromUtf8(params[1]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotMessageReceived(origin, message, b);
 	} else if(event == "NOTICE" || event == "CHANNEL_NOTICE") {
 		assert(count == 1 || count == 2);
 		QString message;
 		if(count == 2)
-			message = QString(params[1]);
-		b->setReceiver(QString(params[0]));
+			message = QString::fromUtf8(params[1]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotNoticeReceived(origin, message, b);
 	} else if(event == "INVITE") {
 		assert(count == 2);
-		QString receiver(params[0]);
-		QString channel(params[1]);
+		QString receiver = QString::fromUtf8(params[0]);
+		QString channel  = QString::fromUtf8(params[1]);
 		server->slotInvited(origin, receiver, channel, b);
 	} else if(event == "CTCP_REQ" || event == "CTCP") {
 		assert(count == 1);
-		server->slotCtcpRequestReceived(origin, QString(params[0]), b);
+		server->slotCtcpRequestReceived(origin, QString::fromUtf8(params[0]), b);
 	} else if(event == "CTCP_REP") {
 		assert(count == 1);
-		server->slotCtcpReplyReceived(origin, QString(params[0]), b);
+		server->slotCtcpReplyReceived(origin, QString::fromUtf8(params[0]), b);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
 		assert(count == 1 || count == 2);
 		QString message;
 		if(count == 2)
-			message = QString(params[1]);
-		b->setReceiver(QString(params[0]));
+			message = QString::fromUtf8(params[1]);
+		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotCtcpActionReceived(origin, message, b);
 	} else if(event == "UNKNOWN") {
 		QStringList args;
 		for(unsigned int i = 0; i < count; ++i) {
-			args.append(QString(params[i]));
+			args.append(QString::fromUtf8(params[i]));
 		}
 		server->slotUnknownMessageReceived(origin, args, b);
 	} else if(event == "ERROR") {
 		QStringList args;
 		for(unsigned int i = 0; i < count; ++i) {
-			args.append(QString(params[i]));
+			args.append(QString::fromUtf8(params[i]));
 		}
 		qWarning() << "Error received from libircclient: " << args;
 		qWarning() << "Origin: " << origin;
