@@ -323,6 +323,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 	}
 
 	JSONNode response(JSON_NODE);
+	// REQUEST WITHOUT A NETWORK
 	if(action == "networks") {
 		response.push_back(JSONNode("got", "networks"));
 		response.push_back(JSONNode("success", true));
@@ -332,15 +333,21 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			nets.push_back(JSONNode("", libjson::to_json_string(n->networkName().toStdString())));
 		}
 		response.push_back(nets);
-	} else if(action == "channels") {
-		response.push_back(JSONNode("got", "channels"));
+	// REQUESTS ON A NETWORK
+	} else if(action == "channels" || action == "whois" || action == "join" || action == "part"
+	       || action == "nick") {
+		if(action == "channels" || action == "nick") {
+			response.push_back(JSONNode("got", libjson::to_json_string(action.toStdString())));
+		} else {
+			response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
+		}
 		QString network = "";
 		if(params.size() > 0) {
 			network = params[0];
 		}
 		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
-		const Network *net = 0;
-		foreach(const Network *n, networks) {
+		Network *net = 0;
+		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
 				net = n; break;
 			}
@@ -349,15 +356,41 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Not on that network"));
 		} else {
-			response.push_back(JSONNode("success", true));
-			JSONNode chans(JSON_ARRAY);
-			chans.set_name("channels");
-			const QList<QString> &channels = net->joinedChannels();
-			Q_FOREACH(const QString &chan, channels) {
-				chans.push_back(JSONNode("", libjson::to_json_string(chan.toStdString())));
+			if(action == "channels") {
+				response.push_back(JSONNode("success", true));
+				JSONNode chans(JSON_ARRAY);
+				chans.set_name("channels");
+				const QList<QString> &channels = net->joinedChannels();
+				Q_FOREACH(const QString &chan, channels) {
+					chans.push_back(JSONNode("", libjson::to_json_string(chan.toStdString())));
+				}
+				response.push_back(chans);
+			} else if(action == "whois" || action == "join" || action == "part") {
+				if(params.size() < 2) {
+					response.push_back(JSONNode("success", false));
+					response.push_back(JSONNode("error", "Missing parameters"));
+				} else {
+					response.push_back(JSONNode("success", true));
+					if(action == "whois") {
+						net->sendWhois(params[1]);
+					} else if(action == "join") {
+						net->joinChannel(params[1]);
+					} else if(action == "part") {
+						net->leaveChannel(params[1]);
+					} else {
+						Q_ASSERT(false);
+						return;
+					}
+				}
+			} else if(action == "nick") {
+				response.push_back(JSONNode("success", true));
+				response.push_back(JSONNode("nick", libjson::to_json_string(net->user()->nick().toStdString())));
+			} else {
+				Q_ASSERT(false);
+				return;
 			}
-			response.push_back(chans);
 		}
+	// REQUESTS ON A CHANNEL
 	} else if(action == "message" || action == "action") {
 		response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
 		if(params.size() < 3) {
@@ -396,6 +429,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Not on that network"));
 		}
+	// REQUESTS ON DAZEUS ITSELF
 	} else if(action == "subscribe") {
 		response.push_back(JSONNode("did", "subscribe"));
 		response.push_back(JSONNode("success", true));
@@ -415,6 +449,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		}
 		response.push_back(JSONNode("removed", removed));
 	} else if(action == "property") {
+		// TODO: set our context!
 		response.push_back(JSONNode("did", "property"));
 		if(params.size() < 2) {
 			response.push_back(JSONNode("success", false));
@@ -429,7 +464,8 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				set(stringToScope(params[2]), params[1], params[3]);
+				//set(stringToScope(params[2]), params[1], params[3]);
+				set(GlobalScope, params[1], params[3]);
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "unset") {
@@ -437,7 +473,8 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				set(stringToScope(params[2]), params[1], QVariant());
+				//set(stringToScope(params[2]), params[1], QVariant());
+				set(GlobalScope, params[1], QVariant());
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
