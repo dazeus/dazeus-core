@@ -102,6 +102,114 @@ sub message {
 	}
 }
 
+sub action {
+	my ($self, $network, $channel, $message) = @_;
+	$self->_send({do => "action", params => [$network, $channel, $message]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub sendWhois {
+	my ($self, $network, $nick) = @_;
+	$self->_send({do => "whois", params => [$network, $nick]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub join {
+	my ($self, $network, $channel) = @_;
+	$self->_send({do => "join", params => [$network, $channel]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub part {
+	my ($self, $network, $channel) = @_;
+	$self->_send({do => "part", params => [$network, $channel]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub getNick {
+	my ($self, $network) = @_;
+	$self->_send({get => "nick", params => [$network]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return $response->{'nick'};
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub getProperty {
+	my ($self, $name) = @_;
+	$self->_send({do => "property", params => ["get", $name]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return $response->{'value'};
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub setProperty {
+	my ($self, $name, $value) = @_;
+	$self->_send({do => "property", params => ["set", $name, "global", $value]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub unsetProperty {
+	my ($self, $name) = @_;
+	$self->_send({do => "property", params => ["unset", $name]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
+sub getPropertyKeys {
+	my ($self, $name, $value) = @_;
+	$self->_send({do => "property", params => ["keys", $name, $value]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return $response->{keys};
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
 sub subscribe {
 	my ($self, @events) = @_;
 	if(ref($events[$#events]) eq "CODE") {
@@ -291,6 +399,43 @@ bot does not know about the network, this method calls die().
 
 Says $message on given channel and network. If the channel is not joined on the
 network, this method calls die().
+
+=head2 action($network, $channel, $message)
+
+Send a CTCP ACTION (/me) on a given channel and network.
+
+=head2 sendWhois($network, $nick)
+
+Send a WHOIS for the given nick to the network. The reply will come back via
+numeric events; this method returns 1 on success.
+
+=head2 join($network, $channel)
+
+Joins given channel on given network.
+
+=head2 part($network, $channel)
+
+Leaves given channel on given network.
+
+=head2 getNick($network)
+
+Returns our own nickname on given network.
+
+=head2 setProperty($name, $value)
+
+Sets the given property $name to $value. (TODO: explain this)
+
+=head2 getProperty($name)
+
+Returns the value of property $name.
+
+=head2 unsetProperty($name)
+
+Unsets the given property $name.
+
+=head2 getPropertyKeys($name)
+
+Returns all property keys beginning with '$name'.
 
 =head2 subscribe(@events, [$handler])
 
