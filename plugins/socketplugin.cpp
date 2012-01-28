@@ -484,7 +484,9 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
+			setContext(QString());
 			QStringList qKeys = keys(params[1]);
+			clearContext();
 			JSONNode keys(JSON_ARRAY);
 			keys.set_name("keys");
 			foreach(const QString &k, qKeys) {
