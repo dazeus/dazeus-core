@@ -455,7 +455,9 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else if(params[0] == "get") {
+			setContext(QString());
 			QVariant value = get(params[1]);
+			clearContext();
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1].toStdString())));
 			response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
@@ -464,8 +466,10 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
+				setContext(QString());
 				//set(stringToScope(params[2]), params[1], params[3]);
 				set(GlobalScope, params[1], params[3]);
+				clearContext();
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "unset") {
@@ -473,8 +477,10 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
+				setContext(QString());
 				//set(stringToScope(params[2]), params[1], QVariant());
 				set(GlobalScope, params[1], QVariant());
+				clearContext();
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
