@@ -59,28 +59,40 @@ Events will have an "event" field and some "params", that depend on the event.
 
 === Requests ===
 
-There are five requests:
+There are three types of requests:
 
-* Get all known networks,
-* Get all joined channels on a known network,
-* Say something on channel X of network Y,
-* Subscribe to events, and
-* Unsubscribe to events.
+* Get some information, like known networks or joined channels,
+* Do something on IRC, such as saying something or leaving a channel,
+* Accessing DaZeus internals, such as events or the database.
 
 The "get all known networks" request looks like {"get":"networks"}. The
-response will have the list of networks in the "networks" field.
+response will have the list of networks in the "networks" field. The "get all
+joined channels" request will look like {"get":"channels", "params":["the
+network"]}. If the network is joined, the response will have a "channels" field
+with an array value. There is a similar "nick" command which retrieves our own
+nickname on a given network.
 
-The "get all joined channels" request will look like {"get":"channels",
-"params":["the network"]}. If the network is joined, the response will have
-a "channels" field with an array value.
-
-The "say something" request will look like:
+A message request will look like:
   {"do":"message", "params":["network","channel","message"]}
+For a CTCP ACTION (/me), use "action" instead of the first "message":
+  {"do":"action", "params":["network","channel","message"]}
+For joining a channel: (same for "part"ing a channel)
+  {"do":"join", "params":["network","channel"]}
+For doing a WHOIS request: (the results come in through NUMERIC events)
+  {"do":"whois", "params":["network","nick"]}
 
 The "subscribe to events" request will look like:
   {"do":"subscribe", "params":["JOINED","MOTD"]}
 To unsubscribe, change "subscribe" into "unsubscribe". See the next section for
 more information.
+
+For all database actions, the action keyword is "property", and the specific
+action is in the first parameter. For example, to retrieve the 'count'
+property, the 'counter' example Perl script sends:
+  {"do":"property", "params":["get","examples.counter.count"]}
+To set the value:
+  {"do":"property", "params":["set","scope","examples.counter.count","2"]}
+See the section on properties below for more information.
 
 === Events ===
 
@@ -94,3 +106,29 @@ response. The following events exist:
 All events will have have an "event" field set to one of the above strings, and
 a "params" field that will contain an array with parameters depending on the
 event. Note that the above list is bound to change as the protocol changes.
+
+=== Properties ===
+
+Properties can be sent and retrieved over the DaZeus 2 plugin protocol and act
+as a database for zero-configuration plugins. Using the "property set" command
+a property can be stored:
+  {"do":"property", "params":["set","scope","examples.counter.count","2"]}
+
+Here, scope is one of "global", "network", "receiver" and "sender" -- but
+currently only "global" is supported, so the value of this argument is ignored
+and should be set to "global" to prevent future surprises.
+
+After this, the property can be retrieved using "property get":
+  {"do":"property", "params":["get","examples.counter.count"]}
+
+This will result in the following response, after the previous two commands:
+  {"did":"property", "variable":"examples.counter.count", "value":"2"}
+
+Next to these commands, "property unset" is available which looks like this:
+  {"do":"property", "params":["unset","examples.counter.count", "scope"]}
+
+Last but not least there is the "property keys" command, which returns a list
+of keys in a given namespace:
+  {"do":"property", "params":["keys","examples.counter"]}
+Which could respond:
+  {"did":"property", "keys":["count"]}
