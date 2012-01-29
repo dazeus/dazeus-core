@@ -171,9 +171,20 @@ sub getNick {
 	}
 }
 
+sub _addScope {
+	my ($network, $receiver, $sender) = @_;
+	return () if(!$network);
+	my $scope = [$network];
+	if($receiver) {
+		push @$scope, $receiver;
+		push @$scope, $sender if $sender;
+	}
+	return scope => \@$scope;
+}
+
 sub getProperty {
-	my ($self, $name) = @_;
-	$self->_send({do => "property", params => ["get", $name]});
+	my ($self, $name, @scope) = @_;
+	$self->_send({do => "property", params => ["get", $name], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
 		my $value = $response->{'value'};
@@ -186,9 +197,9 @@ sub getProperty {
 }
 
 sub setProperty {
-	my ($self, $name, $value) = @_;
+	my ($self, $name, $value, @scope) = @_;
 	$value = encode_base64(freeze($value)) if ref($value);
-	$self->_send({do => "property", params => ["set", $name, "global", $value]});
+	$self->_send({do => "property", params => ["set", $name, $value], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
 		return 1;
@@ -199,8 +210,8 @@ sub setProperty {
 }
 
 sub unsetProperty {
-	my ($self, $name) = @_;
-	$self->_send({do => "property", params => ["unset", $name, "global"]});
+	my ($self, $name, @scope) = @_;
+	$self->_send({do => "property", params => ["unset", $name], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
 		return 1;
@@ -211,8 +222,8 @@ sub unsetProperty {
 }
 
 sub getPropertyKeys {
-	my ($self, $name, $value) = @_;
-	$self->_send({do => "property", params => ["keys", $name, $value]});
+	my ($self, $name, $value, @scope) = @_;
+	$self->_send({do => "property", params => ["keys", $name, $value], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
 		return $response->{keys};
@@ -454,21 +465,25 @@ Leaves given channel on given network.
 
 Returns our own nickname on given network.
 
-=head2 setProperty($name, $value)
+=head2 setProperty($name, $value, [$network, $receiver, $sender]]])
 
-Sets the given property $name to $value. (TODO: explain this)
+Sets the given property $name to $value in the internal DaZeus database. The
+three optional variables are for setting the variable scope.
 
-=head2 getProperty($name)
+=head2 getProperty($name, [$network, [$receiver, [$sender]]])
 
-Returns the value of property $name.
+Returns the value of property $name. The three optional variables are for
+setting the variable scope.
 
-=head2 unsetProperty($name)
+=head2 unsetProperty($name, [$network, [$receiver, [$sender]]])
 
-Unsets the given property $name.
+Unsets the given property $name. The three optional variables are for setting
+the variable scope.
 
-=head2 getPropertyKeys($name)
+=head2 getPropertyKeys($name, [$network, [$receiver, [$sender]]])
 
-Returns all property keys beginning with '$name'.
+Returns all property keys beginning with '$name'. The three optional variables
+are for setting the variable scope.
 
 =head2 subscribe(@events, [$handler])
 
