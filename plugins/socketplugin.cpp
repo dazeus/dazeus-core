@@ -469,7 +469,9 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			clearContext();
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1].toStdString())));
-			response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
+			if(!value.isNull()) {
+				response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
+			}
 		} else if(params[0] == "set") {
 			if(params.size() < 4) {
 				response.push_back(JSONNode("success", false));
