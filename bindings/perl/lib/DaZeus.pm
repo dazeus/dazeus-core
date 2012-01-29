@@ -3,6 +3,7 @@ package DaZeus;
 use strict;
 use warnings;
 use JSON;
+use POSIX qw(:errno_h);
 
 my ($HAS_INET, $HAS_UNIX);
 BEGIN {
@@ -260,17 +261,32 @@ sub handleEvent {
 sub _readPacket {
 	use bytes;
 	my ($self, $timeout) = @_;
+	my $once = $timeout == 0 if(defined $timeout);
 	my $stop_time = time() + $timeout if(defined $timeout);
 	my $event_part;
-	my $size = 10;
+	my $last_event_part;
+	my $size = 3;
 	# A size of 20 bytes is too large, something must be happening
-	while($size < 20 && (!defined($stop_time) || time() < $stop_time)) {
+	while($size < 20 && ($once || !defined($stop_time) || time() < $stop_time)) {
 		undef $event_part;
 		if(!defined($self->{sock}->recv($event_part, $size, MSG_PEEK))) {
+			if($! == EAGAIN) {
+				# Nothing to read, that's ok
+				if(defined $timeout && $timeout == 0) {
+					return;
+				}
+				# TODO: how to set a timeout parameter on sockets after creation?
+				next;
+			}
 			# Error in peek
 			delete $self->{sock};
 			die $!;
 		}
+		# TODO: change this to "if there are no more bytes available", more accurate
+		if($last_event_part && $last_event_part eq $event_part) {
+			$once = 0;
+		}
+		$last_event_part = $event_part;
 		if($event_part =~ /^[\r\n]+$/) {
 			# This seems to be necessary on my Linux machine; it refuses
 			# to read further than these newline bytes...
