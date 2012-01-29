@@ -20,16 +20,6 @@
 #include "pluginmanager.h"
 #include "davinci.h"
 
-SocketPlugin::VariableScope stringToScope(const QString &scope) {
-	if(scope == "network")
-		return SocketPlugin::NetworkScope;
-	if(scope == "receiver")
-		return SocketPlugin::ReceiverScope;
-	if(scope == "sender")
-		return SocketPlugin::SenderScope;
-	return SocketPlugin::GlobalScope;
-}
-
 SocketPlugin::SocketPlugin( PluginManager *man )
 : Plugin( "SocketPlugin", man )
 {}
@@ -308,6 +298,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		return;
 	}
 	QStringList params;
+	QStringList scope;
 	JSONNode::const_iterator i = n.begin();
 	QString action;
 	while(i != n.end()) {
@@ -322,8 +313,18 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				params << QString::fromUtf8(s.c_str(), s.length());
 				j++;
 			}
-		}
-		if(i->name() == "get") {
+		} else if(i->name() == "scope") {
+			if(i->type() != JSON_ARRAY) {
+				qWarning() << "Got scope, but not of array type";
+				continue;
+			}
+			JSONNode::const_iterator j = i->begin();
+			while(j != i->end()) {
+				std::string s = libjson::to_std_string(j->as_string());
+				scope << QString::fromUtf8(s.c_str(), s.length());
+				j++;
+			}
+		} else if(i->name() == "get") {
 			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
 		} else if(i->name() == "do") {
 			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
@@ -458,46 +459,51 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 		}
 		response.push_back(JSONNode("removed", removed));
 	} else if(action == "property") {
-		// TODO: set our context!
 		response.push_back(JSONNode("did", "property"));
+
+		VariableScope vScope;
+		if(scope.size() == 0) {
+			vScope = GlobalScope;
+			setContext(QString());
+		} else if(scope.size() == 1) {
+			vScope = NetworkScope;
+			setContext(scope[0]);
+		} else if(scope.size() == 2) {
+			vScope = ReceiverScope;
+			setContext(scope[0], scope[1]);
+		} else {
+			vScope = SenderScope;
+			setContext(scope[0], scope[1], scope[2]);
+		}
+
 		if(params.size() < 2) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else if(params[0] == "get") {
-			setContext(QString());
 			QVariant value = get(params[1]);
-			clearContext();
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1].toStdString())));
 			if(!value.isNull()) {
 				response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
 			}
 		} else if(params[0] == "set") {
-			if(params.size() < 4) {
-				response.push_back(JSONNode("success", false));
-				response.push_back(JSONNode("error", "Missing parameters"));
-			} else {
-				setContext(QString());
-				//set(stringToScope(params[2]), params[1], params[3]);
-				set(GlobalScope, params[1], params[3]);
-				clearContext();
-				response.push_back(JSONNode("success", true));
-			}
-		} else if(params[0] == "unset") {
 			if(params.size() < 3) {
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				setContext(QString());
-				//set(stringToScope(params[2]), params[1], QVariant());
-				set(GlobalScope, params[1], QVariant());
-				clearContext();
+				set(vScope, params[1], params[2]);
+				response.push_back(JSONNode("success", true));
+			}
+		} else if(params[0] == "unset") {
+			if(params.size() < 2) {
+				response.push_back(JSONNode("success", false));
+				response.push_back(JSONNode("error", "Missing parameters"));
+			} else {
+				set(vScope, params[1], QVariant());
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
-			setContext(QString());
 			QStringList qKeys = keys(params[1]);
-			clearContext();
 			JSONNode keys(JSON_ARRAY);
 			keys.set_name("keys");
 			foreach(const QString &k, qKeys) {
@@ -505,7 +511,11 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			}
 			response.push_back(keys);
 			response.push_back(JSONNode("success", true));
+		} else {
+			response.push_back(JSONNode("success", false));
+			response.push_back(JSONNode("error", "Did not understand request"));
 		}
+		clearContext();
 	} else {
 		response.push_back(JSONNode("success", false));
 		response.push_back(JSONNode("error", "Did not understand request"));
