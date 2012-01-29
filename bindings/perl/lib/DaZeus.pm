@@ -30,6 +30,12 @@ sub connect {
 	return $self->_connect();
 }
 
+sub socket {
+	my ($self) = @_;
+	$self->_connect();
+	return $self->{sock};
+}
+
 sub _connect {
 	my ($self) = @_;
 	if($self->{sock}) {
@@ -385,6 +391,12 @@ it can be distinguished from the rest of the address; in "tcp:2001:db8::1:1234"
 
 If you give an object through $socket, the module will attempt to use it
 directly as the target socket.
+
+=head2 socket()
+
+Returns the socket internally used for communication. It should act as an
+IO::Socket. You can use this method in select() loops, but make sure not to
+read or write from it.
 
 =head2 networks()
 
