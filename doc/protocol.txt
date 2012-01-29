@@ -11,7 +11,9 @@ configuration of their own.
 
 Bindings for this protocol will be available for Perl. Other bindings may also
 become available on a by-need basis. Patches are welcome for newly implemented
-bindings.
+bindings. To experiment with the protocol without the use of special libraries,
+the 'socat' tool can be used as follows, where "dazeus.sock" is the UNIX sock:
+  socat UNIX-CONNECT:dazeus.sock READLINE
 
 The protocol was designed as a hand-off between human and machine readability.
 It is largely based on the JSON standard (http://www.json.org/), with some
@@ -91,7 +93,7 @@ action is in the first parameter. For example, to retrieve the 'count'
 property, the 'counter' example Perl script sends:
   {"do":"property", "params":["get","examples.counter.count"]}
 To set the value:
-  {"do":"property", "params":["set","scope","examples.counter.count","2"]}
+  {"do":"property", "params":["set","examples.counter.count","2"]}
 See the section on properties below for more information.
 
 === Events ===
@@ -112,11 +114,7 @@ event. Note that the above list is bound to change as the protocol changes.
 Properties can be sent and retrieved over the DaZeus 2 plugin protocol and act
 as a database for zero-configuration plugins. Using the "property set" command
 a property can be stored:
-  {"do":"property", "params":["set","scope","examples.counter.count","2"]}
-
-Here, scope is one of "global", "network", "receiver" and "sender" -- but
-currently only "global" is supported, so the value of this argument is ignored
-and should be set to "global" to prevent future surprises.
+  {"do":"property", "params":["set","examples.counter.count","2"]}
 
 After this, the property can be retrieved using "property get":
   {"do":"property", "params":["get","examples.counter.count"]}
@@ -125,10 +123,52 @@ This will result in the following response, after the previous two commands:
   {"did":"property", "variable":"examples.counter.count", "value":"2"}
 
 Next to these commands, "property unset" is available which looks like this:
-  {"do":"property", "params":["unset","examples.counter.count", "scope"]}
+  {"do":"property", "params":["unset","examples.counter.count"]}
 
 Last but not least there is the "property keys" command, which returns a list
 of keys in a given namespace:
   {"do":"property", "params":["keys","examples.counter"]}
 Which could respond:
   {"did":"property", "keys":["count"]}
+
+For added functionality, you can look into variable scopes. Using the commands
+above, variables will be stored and returned "as is" (global scope). But,
+suppose you want to have a variable especially for a specific IRC channel, or
+even a specific user. You could use various different names per variable, but
+scoping allows you to let DaZeus do the work for you.
+
+There are four scopes, in order of specificity: Global scope, network scope,
+receiver scope and sender scope. When returning the variable, the `closest'
+variable is returned. For example, if a variable is set on global scope, and
+overridden on a network scope, variable requests with the same network will
+return the network scope value; all other requests will return the global
+scope value.
+
+Scope is given through the "scope" array field on "property" requests. Some
+examples follow:
+> {"do":"property", "params":["set","examples.scope.foo", "bar"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["oftc"], "params":["set","examples.scope.foo",
+>  "baz"]}
+< {"did":"property", "success":true}
+
+> {"do":"property", "scope":["q"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo",
+   "value":"bar"}
+> {"do":"property", "scope":["oftc"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo",
+<  "value":"baz"}
+
+> {"do":"property", "scope":["oftc"], "params":["unset","examples.scope.foo"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["oftc"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo",
+<  "value":"bar"}
+> {"do":"property", "params":["unset","examples.scope.foo"]}
+< {"did":"property", "success":true}
+
+> {"do":"property", "scope":["oftc"], "params":["set","examples.scope.foo",
+>  "baz"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["q"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo"}
