@@ -200,7 +200,7 @@ sub setProperty {
 
 sub unsetProperty {
 	my ($self, $name) = @_;
-	$self->_send({do => "property", params => ["unset", $name]});
+	$self->_send({do => "property", params => ["unset", $name, "global"]});
 	my $response = $self->_read();
 	if($response->{success}) {
 		return 1;
