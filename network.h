@@ -88,6 +88,8 @@ class Network : public QObject
     void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
     void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
     void unknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *buffer );
+    void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
+    void namesReceived(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
 
   private:
     void connectToServer( ServerConfig *conf, bool reconnect );

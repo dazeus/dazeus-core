@@ -93,6 +93,10 @@ class Plugin : public QObject
     virtual void unknownMessageReceived( Network &net, const QString &origin,
                                        const QStringList &params,
                                        Irc::Buffer *buffer );
+    virtual void whoisReceived( Network &net, const QString &origin, const QString &nick,
+                                     bool identified, Irc::Buffer *buffer );
+    virtual void namesReceived( Network &net, const QString &origin, const QString &channel,
+                                     const QStringList &params, Irc::Buffer *buffer );
 
   protected slots:
     virtual QHash<QString, VariableScope> variables();

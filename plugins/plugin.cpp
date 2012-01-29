@@ -96,3 +96,7 @@ void Plugin::numericMessageReceived( Network&, const QString&, uint,
 void Plugin::unknownMessageReceived( Network&, const QString&,
                                      const QStringList&,
                                      Irc::Buffer* ) {}
+void Plugin::whoisReceived( Network&, const QString &origin, const QString &nick,
+                                 bool identified, Irc::Buffer *buffer ) {}
+void Plugin::namesReceived( Network&, const QString &origin, const QString &channel,
+                                 const QStringList &params, Irc::Buffer *buffer ) {}

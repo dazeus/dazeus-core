@@ -353,3 +353,29 @@ void PluginManager::unknownMessageReceived( const QString &origin,
   clearContext();
 }
 
+void PluginManager::whoisReceived( const QString &origin, const QString &nick,
+                                 bool identified, Irc::Buffer *buffer )
+{
+  Network *n = Network::fromBuffer( buffer );
+  Q_ASSERT( n != 0 );
+  setContext( n->config()->name );
+  foreach( Plugin *p, plugins_ )
+  {
+    p->whoisReceived( *n, origin, nick, identified, buffer );
+  }
+  clearContext();
+}
+
+void PluginManager::namesReceived( const QString &origin, const QString &channel,
+                                 const QStringList &params, Irc::Buffer *buffer )
+{
+  Network *n = Network::fromBuffer( buffer );
+  Q_ASSERT( n != 0 );
+  setContext( n->config()->name );
+  foreach( Plugin *p, plugins_ )
+  {
+    p->namesReceived( *n, origin, channel, params, buffer );
+  }
+  clearContext();
+}
+

@@ -90,6 +90,10 @@ Server::Server()
 	connect( thread_, SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
+	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)));
+	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
 	connect( thread_, SIGNAL(connected()),
 	         this,    SIGNAL(connected()),
 	         Qt::BlockingQueuedConnection );
@@ -237,11 +241,38 @@ SERVER_SLOT_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
 #undef SERVER_SLOT_RELAY_2STR
 #undef SERVER_SLOT_RELAY_3STR
 
-void ServerThread::slotNumericMessageReceived( const QString &str, uint code,
-	const QStringList &list, Irc::Buffer *buf )
+void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
+	const QStringList &args, Irc::Buffer *buf )
 {
 	Q_ASSERT( buf != 0 );
-	emit numericMessageReceived( str, code, list, buf );
+	// Also emit some other interesting signals
+	if(code == 311) {
+		in_whois_for_ = args[1];
+		Q_ASSERT( !whois_identified_ );
+	}
+	// TODO: should use CAP IDENTIFY_MSG for this:
+	else if(code == 307 || code == 330) // 330 means "logged in as", but doesn't check whether nick is grouped
+	{
+		whois_identified_ = true;
+	}
+	else if(code == 318)
+	{
+		emit whoisReceived( origin, in_whois_for_, whois_identified_, buf );
+		whois_identified_ = false;
+		in_whois_for_.clear();
+	}
+	// part of NAMES
+	else if(code == 353)
+	{
+		QStringList names = args.last().split(' ', QString::SkipEmptyParts);
+		in_names_.append(names);
+	}
+	else if(code == 366)
+	{
+		emit namesReceived( origin, args.at(1), in_names_, buf );
+		in_names_.clear();
+	}
+	emit numericMessageReceived( origin, code, args, buf );
 }
 
 void ServerThread::slotUnknownMessageReceived( const QString &str, const QStringList &list, Irc::Buffer *buf )
