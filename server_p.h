@@ -22,7 +22,7 @@ class ServerThread : public QThread
 Q_OBJECT
 
 public:
-	ServerThread(Server *s) : QThread(), s_(s), config_(0), irc_(0) {}
+	ServerThread(Server *s) : QThread(), s_(s), config_(0), irc_(0), whois_identified_(false) {}
 	~ServerThread() { irc_destroy_session(irc_); }
 
 	Server *server() {
@@ -71,6 +71,9 @@ public:
 	Server *s_;
 	const ServerConfig *config_;
 	irc_session_t *irc_;
+	QString in_whois_for_;
+	bool whois_identified_;
+	QStringList in_names_;
 
 signals:
 	void connected();
@@ -94,6 +97,8 @@ signals:
 	void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
 	void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
 	void unknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *buffer );
+	void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
+	void namesReceived(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
 
 public:
 	void slotMotdReceived( const QString &motd, Irc::Buffer *b );

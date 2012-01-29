@@ -178,6 +178,8 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   RELAY_SIGN( ctcpActionReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( numericMessageReceived( const QString&, uint, const QStringList&, Irc::Buffer* ) );
   RELAY_SIGN( unknownMessageReceived( const QString&, const QStringList&, Irc::Buffer* ) );
+  RELAY_SIGN( whoisReceived( const QString&, const QString&, bool, Irc::Buffer* ) );
+  RELAY_SIGN( namesReceived( const QString&, const QString&, const QStringList&, Irc::Buffer* ) );
   #undef RELAY_SIGN
 
   connect( activeServer_, SIGNAL(      disconnected() ),

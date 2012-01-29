@@ -287,6 +287,15 @@ void SocketPlugin::unknownMessageReceived( Network &net, const QString &origin,
 	dispatch("UNKNOWN", QStringList() << net.networkName() << origin << buffer->receiver() << params);
 }
 
+void SocketPlugin::whoisReceived( Network &net, const QString &origin, const QString &nick,
+                                 bool identified, Irc::Buffer *buffer ) {
+	dispatch("WHOIS", QStringList() << net.networkName() << origin << nick << (identified ? "true" : "false"));
+}
+void SocketPlugin::namesReceived( Network &net, const QString &origin, const QString &channel,
+                                 const QStringList &params, Irc::Buffer *buffer ) {
+	dispatch("NAMES", QStringList() << net.networkName() << origin << channel << params);
+}
+
 void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
 	if(!dev->isOpen()) return;
 	const QList<Network*> &networks = manager()->bot()->networks();
