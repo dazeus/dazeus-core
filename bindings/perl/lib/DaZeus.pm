@@ -177,7 +177,7 @@ sub getProperty {
 	my $response = $self->_read();
 	if($response->{success}) {
 		my $value = $response->{'value'};
-		$value = eval { thaw(decode_base64($value)) } || $value;
+		$value = eval { thaw(decode_base64($value)) } || $value if defined $value;
 		return $value;
 	} else {
 		$response->{error} ||= "Request failed, no error";
