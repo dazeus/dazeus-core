@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use JSON;
 use POSIX qw(:errno_h);
+use Storable qw(thaw freeze);
+use MIME::Base64 qw(encode_base64 decode_base64);
 
 my ($HAS_INET, $HAS_UNIX);
 BEGIN {
@@ -174,7 +176,9 @@ sub getProperty {
 	$self->_send({do => "property", params => ["get", $name]});
 	my $response = $self->_read();
 	if($response->{success}) {
-		return $response->{'value'};
+		my $value = $response->{'value'};
+		$value = eval { thaw(decode_base64($value)) } || $value;
+		return $value;
 	} else {
 		$response->{error} ||= "Request failed, no error";
 		die $response->{error};
@@ -183,6 +187,7 @@ sub getProperty {
 
 sub setProperty {
 	my ($self, $name, $value) = @_;
+	$value = encode_base64(freeze($value)) if ref($value);
 	$self->_send({do => "property", params => ["set", $name, "global", $value]});
 	my $response = $self->_read();
 	if($response->{success}) {
