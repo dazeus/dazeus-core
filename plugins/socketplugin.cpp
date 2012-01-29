@@ -398,26 +398,26 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			return;
 		}
 		QString network = params[0];
-		QString channel = params[1];
+		QString receiver = params[1];
 		QString message = params[2];
 		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
-		response.push_back(JSONNode("channel", libjson::to_json_string(channel.toStdString())));
+		response.push_back(JSONNode("receiver", libjson::to_json_string(receiver.toStdString())));
 		response.push_back(JSONNode("message", libjson::to_json_string(message.toStdString())));
 
 		bool netfound = false;
 		foreach(Network *n, networks) {
 			if(n->networkName() == network) {
 				netfound = true;
-				if(n->joinedChannels().contains(channel.toLower())) {
+				if(receiver.left(1) != "#" || n->joinedChannels().contains(receiver.toLower())) {
 					response.push_back(JSONNode("success", true));
 					if(action == "message") {
-						n->say(channel, message);
+						n->say(receiver, message);
 					} else {
-						n->action(channel, message);
+						n->action(receiver, message);
 					}
 				} else {
 					qWarning() << "Request for communication to network " << network
-					           << " channel " << channel << ", but not in that channel; dropping";
+					           << " receiver " << receiver << ", but not in that channel; dropping";
 					response.push_back(JSONNode("success", false));
 					response.push_back(JSONNode("error", "Not in that chanel"));
 				}
