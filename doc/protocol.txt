@@ -101,7 +101,7 @@ response. The following events exist:
 
   WELCOMED, CONNECTED, DISCONNECTED, JOINED, PARTED, MOTD, QUIT, NICK, MODE,
   TOPIC, INVITE, KICK, MESSAGE, NOTICE, CTCPREQ, CTCPREPL, ACTION, NUMERIC,
-  UNKNOWN
+  UNKNOWN, WHOIS, NAMES
 
 All events will have have an "event" field set to one of the above strings, and
 a "params" field that will contain an array with parameters depending on the
