@@ -401,18 +401,25 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			}
 		}
 	// REQUESTS ON A CHANNEL
-	} else if(action == "message" || action == "action") {
+	} else if(action == "message" || action == "action" || action == "names") {
 		response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
-		if(params.size() < 3) {
+		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
 			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
 		}
 		QString network = params[0];
 		QString receiver = params[1];
-		QString message = params[2];
+		QString message;
+		if(action != "names") {
+			message = params[2];
+		}
 		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
-		response.push_back(JSONNode("receiver", libjson::to_json_string(receiver.toStdString())));
-		response.push_back(JSONNode("message", libjson::to_json_string(message.toStdString())));
+		if(action == "names") {
+			response.push_back(JSONNode("channel", libjson::to_json_string(receiver.toStdString())));
+		} else {
+			response.push_back(JSONNode("receiver", libjson::to_json_string(receiver.toStdString())));
+			response.push_back(JSONNode("message", libjson::to_json_string(message.toStdString())));
+		}
 
 		bool netfound = false;
 		foreach(Network *n, networks) {
@@ -420,7 +427,9 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				netfound = true;
 				if(receiver.left(1) != "#" || n->joinedChannels().contains(receiver.toLower())) {
 					response.push_back(JSONNode("success", true));
-					if(action == "message") {
+					if(action == "names") {
+						n->names(receiver);
+					} else if(action == "message") {
 						n->say(receiver, message);
 					} else {
 						n->action(receiver, message);

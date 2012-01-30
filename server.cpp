@@ -185,6 +185,9 @@ void Server::whois( const QString &destination ) {
 void Server::ctcpAction( const QString &destination, const QString &message ) {
 	thread_->ctcpAction(destination, message);
 }
+void Server::names( const QString &channel ) {
+	thread_->names(channel);
+}
 void Server::ctcpRequest( const QString &destination, const QString &message ) {
 	thread_->ctcpRequest(destination, message);
 }
