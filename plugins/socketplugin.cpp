@@ -525,6 +525,21 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("error", "Did not understand request"));
 		}
 		clearContext();
+	} else if(action == "config") {
+		if(params.size() < 1) {
+			response.push_back(JSONNode("success", false));
+			response.push_back(JSONNode("error", "Missing parameters"));
+		} else {
+			QStringList parts = params[0].split('.');
+			QString group = parts.takeFirst();
+			QString name = parts.join(".");
+			QVariant conf = getConfig(name, group);
+			response.push_back(JSONNode("success", true));
+			response.push_back(JSONNode("variable", libjson::to_json_string(params[0].toStdString())));
+			if(!conf.isNull()) {
+				response.push_back(JSONNode("value", libjson::to_json_string(conf.toString().toStdString())));
+			}
+		}
 	} else {
 		response.push_back(JSONNode("success", false));
 		response.push_back(JSONNode("error", "Did not understand request"));
