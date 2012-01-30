@@ -78,6 +78,13 @@ void Network::action( QString destination, QString message )
   return activeServer_->ctcpAction( destination, message );
 }
 
+void Network::names( QString channel )
+{
+  if( !activeServer_ )
+    return;
+  return activeServer_->names( channel );
+}
+
 /**
  * @brief Chooses one server or the other based on the priority and failure
  *        rate.

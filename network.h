@@ -63,6 +63,7 @@ class Network : public QObject
     void leaveChannel( QString channel );
     void say( QString destination, QString message );
     void action( QString destination, QString message );
+    void names( QString channel );
     void ctcp( QString destination, QString message );
     void sendWhois( QString destination );
     void flagUndesirableServer( const ServerConfig *sc );

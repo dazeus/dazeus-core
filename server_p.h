@@ -68,6 +68,10 @@ public:
 			irc_cmd_msg(irc_, destination.toUtf8(), line.toUtf8());
 	}
 
+	void names( const QString &channel ) {
+		irc_cmd_names(irc_, channel.toUtf8());
+	}
+
 	Server *s_;
 	const ServerConfig *config_;
 	irc_session_t *irc_;

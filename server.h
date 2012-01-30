@@ -67,6 +67,7 @@ public slots:
 	void join( const QString &channel, const QString &key = QString() );
 	void part( const QString &channel, const QString &reason = QString() );
 	void message( const QString &destination, const QString &message );
+	void names( const QString &channel );
 
 signals:
 	void connected();
