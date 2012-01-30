@@ -194,6 +194,18 @@ sub _addScope {
 	return scope => \@$scope;
 }
 
+sub getConfig {
+	my ($self, $name) = @_;
+	$self->_send({get => "config", params => [$name]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return $response->{value};
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
 sub getProperty {
 	my ($self, $name, @scope) = @_;
 	$self->_send({do => "property", params => ["get", $name], _addScope(@scope)});
@@ -501,6 +513,11 @@ the variable scope.
 
 Returns all property keys beginning with '$name'. The three optional variables
 are for setting the variable scope.
+
+=head2 getConfig($name)
+
+Get the configuration parameter called '$name', and return it. Returns undef
+if there was no such configuration item.
 
 =head2 subscribe(@events, [$handler])
 
