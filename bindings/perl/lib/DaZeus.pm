@@ -123,6 +123,18 @@ sub action {
 	}
 }
 
+sub sendNames {
+	my ($self, $network, $channel) = @_;
+	$self->_send({do => "names", params => [$network, $channel]});
+	my $response = $self->_read();
+	if($response->{success}) {
+		return 1;
+	} else {
+		$response->{error} ||= "Request failed, no error";
+		die $response->{error};
+	}
+}
+
 sub sendWhois {
 	my ($self, $network, $nick) = @_;
 	$self->_send({do => "whois", params => [$network, $nick]});
@@ -447,6 +459,11 @@ network, this method calls die().
 =head2 action($network, $channel, $message)
 
 Send a CTCP ACTION (/me) on a given channel and network.
+
+=head2 sendNames($network, $channel)
+
+Given a network and channel name, ask for a list of names. The results will
+come in through the NAMES event.
 
 =head2 sendWhois($network, $nick)
 
