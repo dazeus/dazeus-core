@@ -217,7 +217,7 @@ void SocketPlugin::quit(   Network &net, const QString &origin, const QString &m
 
 void SocketPlugin::nickChanged( Network &net, const QString &origin, const QString &nick,
                           Irc::Buffer *buffer ) {
-	dispatch("NICK", QStringList() << net.networkName() << origin << buffer->receiver() << nick);
+	dispatch("NICK", QStringList() << net.networkName() << origin << nick);
 }
 
 void SocketPlugin::modeChanged( Network &net, const QString &origin, const QString &mode,
