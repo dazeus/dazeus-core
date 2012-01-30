@@ -104,7 +104,7 @@ class Plugin : public QObject
     void     set( VariableScope s, const QString &name, const QVariant &value );
     QVariant get( const QString &name, VariableScope *s = NULL ) const;
     QStringList keys( const QString &ns ) const;
-    QVariant getConfig( const QString &name ) const;
+    QVariant getConfig( const QString &name, const QString &group = QString()) const;
     PluginManager *manager() const;
     void    setContext(QString network, QString receiver = QString(), QString sender = QString());
     void    clearContext();

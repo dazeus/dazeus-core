@@ -35,9 +35,12 @@ QStringList Plugin::keys( const QString &ns ) const
   return manager_->keys(ns);
 }
 
-QVariant Plugin::getConfig( const QString &variable ) const
+QVariant Plugin::getConfig( const QString &name, const QString &group ) const
 {
-  return manager_->getConfig(name_, variable);
+  QString g = group;
+  if(group.isEmpty())
+    g = name_;
+  return manager_->getConfig(g, name);
 }
 
 
