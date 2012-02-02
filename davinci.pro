@@ -25,18 +25,5 @@ HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
 SOURCES += plugins/statistics.cpp plugins/karmaplugin.cpp plugins/socketplugin.cpp
 HEADERS += plugins/statistics.h plugins/karmaplugin.h plugins/socketplugin.h
 
-# perl plugin
-SOURCES += plugins/perlplugin.cpp
-HEADERS += plugins/perlplugin.h
-# perl implementation
-QMAKE_PRE_LINK = "cd plugins/perl; sh make.sh;"
-QMAKE_CLEAN += plugins/perl/DaZeus2.c plugins/perl/DaZeus2.o \
-      plugins/perl/embedperl.o plugins/perl/xsinit.c plugins/perl/xsinit.o \
-      plugins/perl/embedperl.a
-LIBS += plugins/perl/embedperl.a -Lplugins/perl -lperl -lircclient -ljson
+LIBS += -lircclient -ljson
 QMAKE_CXXFLAGS += "-I/usr/include/libircclient -I/usr/include/libjson"
-unix {
-  !macx {
-    LIBS += -Wl,--export-dynamic -lcrypt -ldl
-  }
-}
