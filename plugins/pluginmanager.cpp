@@ -32,7 +32,7 @@ QDebug operator<<(QDebug dbg, const Context *c)
  *
  * Does nothing.
  */
-PluginManager::PluginManager( Database *db, DaVinci *bot )
+PluginManager::PluginManager( Database *db, DaZeus *bot )
 : QObject()
 , config_( 0 )
 , database_( db )
@@ -207,7 +207,7 @@ void PluginManager::setContext(QString network, QString receiver, QString sender
 /**
  * @brief welcomed() handler.
  *
- * This method is called when DaVinci finishes a handshake with the IRC server.
+ * This method is called when DaZeus finishes a handshake with the IRC server.
  */
 void PluginManager::welcomed( Network &n )
 {
@@ -222,7 +222,7 @@ void PluginManager::welcomed( Network &n )
 /**
  * @brief connected() handler.
  *
- * This method is called when DaVinci connects to an IRC server, before authorization.
+ * This method is called when DaZeus connects to an IRC server, before authorization.
  */
 void PluginManager::connected( Network &n, const Server &s )
 {
@@ -247,7 +247,7 @@ Database *PluginManager::database() const
 /**
  * @brief disconnected() handler.
  *
- * This method is called when the connection is broken between DaVinci and an IRC server.
+ * This method is called when the connection is broken between DaZeus and an IRC server.
  */
 void PluginManager::disconnected( Network &n )
 {

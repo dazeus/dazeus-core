@@ -18,7 +18,6 @@
 
 #include "socketplugin.h"
 #include "pluginmanager.h"
-#include "davinci.h"
 
 SocketPlugin::SocketPlugin( PluginManager *man )
 : Plugin( "SocketPlugin", man )

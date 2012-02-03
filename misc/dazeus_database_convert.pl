@@ -115,7 +115,7 @@ foreach my $NAMESPACE (keys %$NS_VAR_TO_VAL)
       "INSERT INTO $SAVE_TO (variable,value,network,receiver,sender)"
         ." VALUES (?, ?, ?, NULL, NULL)"
     );
-    $sth->execute( "perl.$NAMESPACE.$VARIABLE", davinci_freeze($value),
+    $sth->execute( "perl.$NAMESPACE.$VARIABLE", dazeus_freeze($value),
                    $NETWORKNAME ) or die($!);
     $rowschanged += $sth->rows;
     $sth->finish();
@@ -126,7 +126,7 @@ print "Done. Changed $rowschanged rows in the new database.\n";
 exit;
 
 ## HELPER METHODS;
-sub davinci_freeze {
+sub dazeus_freeze {
   my ($value) = @_;
   return ( ref($value) ? encode_base64(freeze($value)) : $value );
 }
