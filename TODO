@@ -1,12 +1,8 @@
 Reconnecting to a network if the connection failed
 Rewrite of the Perl 'core' modules (DazAuth, DazChannel, DazLoader) in C++ (with interfaces to the Perl modules)
 Python plugin support, along with dynamic loading of Python plugins
-
-bindings/perl --> lib/perl/
-src/*         --> bin/dazeus
-
-#define DAZEUS_CONFIG "./dazeus.conf"
--c "/var/dazeus/dazeus.conf"
-
--d "/var/dazeus/plugins"
--s "unix:/var/dazeus/dazeus.sock" -s "tcp:localhost:1234"
+Add command-line option parsing:
+	-c "/var/dazeus/dazeus.conf"
+	-d "/var/dazeus/plugins"
+	-s "unix:/var/dazeus/dazeus.sock"
+	-s "tcp:localhost:1234"
