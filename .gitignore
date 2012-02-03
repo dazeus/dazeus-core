@@ -1,4 +1,3 @@
-*.o
-moc_*.cpp
-davinci
 Makefile
+build
+bin
