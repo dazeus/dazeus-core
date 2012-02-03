@@ -16,14 +16,19 @@ TEMPLATE = app
 MOC_DIR = build
 OBJECTS_DIR = build
 
-SOURCES += main.cpp
-SOURCES += dazeus.cpp network.cpp config.cpp user.cpp server.cpp database.cpp
-HEADERS += dazeus.h network.h config.h user.h server.h server_p.h database.h
+SOURCES += src/main.cpp src/dazeus.cpp src/network.cpp src/config.cpp
+SOURCES += src/user.cpp src/server.cpp src/database.cpp
+HEADERS += src/dazeus.h src/network.h src/config.h src/user.h src/server.h
+HEADERS += src/server_p.h src/database.h
 # plugins
-SOURCES += plugins/pluginmanager.cpp plugins/testplugin.cpp plugins/plugin.cpp
-HEADERS += plugins/pluginmanager.h plugins/testplugin.h plugins/plugin.h
-SOURCES += plugins/statistics.cpp plugins/karmaplugin.cpp plugins/socketplugin.cpp
-HEADERS += plugins/statistics.h plugins/karmaplugin.h plugins/socketplugin.h
+SOURCES += src/plugins/pluginmanager.cpp src/plugins/testplugin.cpp
+SOURCES += src/plugins/plugin.cpp src/plugins/statistics.cpp
+SOURCES += src/plugins/karmaplugin.cpp src/plugins/socketplugin.cpp
+HEADERS += src/plugins/pluginmanager.h src/plugins/testplugin.h
+HEADERS += src/plugins/plugin.h src/plugins/statistics.h
+HEADERS += src/plugins/karmaplugin.h src/plugins/socketplugin.h
+
+INCLUDEPATH += src
 
 LIBS += -lircclient -ljson
 QMAKE_CXXFLAGS += "-I/usr/include/libircclient -I/usr/include/libjson"
