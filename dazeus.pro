@@ -7,7 +7,7 @@
 QT       += network sql
 QT       -= gui
 
-TARGET    = data/dazeus
+TARGET    = bin/dazeus
 CONFIG   += console
 CONFIG   -= app_bundle
 VERSION   = 1.9.1
