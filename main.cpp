@@ -5,8 +5,8 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
-#include "davinci.h"
-#include "davinciglobal.h"
+#include "dazeus.h"
+#include "dazeusglobal.h"
 
 #include <libircclient.h>
 
@@ -14,13 +14,13 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    qDebug() << "DaVinci version: " << DAVINCI_VERSION_STR;
+    qDebug() << "DaZeus version: " << DAZEUS_VERSION_STR;
     unsigned int high, low;
     irc_get_version(&high, &low);
     fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
 
     // TODO parse command-line options
-    DaVinci d( QLatin1String("./davinci.conf") );
+    DaZeus d( QLatin1String("./dazeus.conf") );
 
     // find and initialise plugins
     d.initPlugins();

@@ -3,8 +3,8 @@
  * See LICENSE for license.
  */
 
-#ifndef DAVINCI_H
-#define DAVINCI_H
+#ifndef DAZEUS_H
+#define DAZEUS_H
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -17,13 +17,13 @@ class PluginManager;
 class Network;
 class Database;
 
-class DaVinci : public QObject
+class DaZeus : public QObject
 {
   Q_OBJECT
 
   public:
-             DaVinci( QString configFileName = QString() );
-            ~DaVinci();
+             DaZeus( QString configFileName = QString() );
+            ~DaZeus();
     void     setConfigFileName( QString fileName );
     QString  configFileName() const;
     bool     configLoaded() const;

@@ -5,7 +5,7 @@
 
 #include <QtCore/QTimer>
 
-#include "davinci.h"
+#include "dazeus.h"
 #include "database.h"
 #include "network.h"
 #include "config.h"
@@ -19,7 +19,7 @@
  * Initialises the object, and loads configuration if a path was given.
  * @param configFileName optional path to the configuration file.
  */
-DaVinci::DaVinci( QString configFileName )
+DaZeus::DaZeus( QString configFileName )
 : QObject()
 , config_( 0 )
 , configFileName_( configFileName )
@@ -34,7 +34,7 @@ DaVinci::DaVinci( QString configFileName )
 /**
  * @brief Destructor.
  */
-DaVinci::~DaVinci()
+DaZeus::~DaZeus()
 {
   foreach( Network *n, networks_ )
   {
@@ -54,10 +54,10 @@ DaVinci::~DaVinci()
  * Warning: This method is usually called outside the event loop, just after
  * initialisation.
  */
-void DaVinci::autoConnect()
+void DaZeus::autoConnect()
 {
 #ifdef DEBUG
-  qDebug() << "DaVinci::autoConnect() called: looking for networks to connect to";
+  qDebug() << "DaZeus::autoConnect() called: looking for networks to connect to";
 #endif
   foreach( Network *n, networks_ )
   {
@@ -81,7 +81,7 @@ void DaVinci::autoConnect()
 /**
  * @brief Returns whether the configuration is loaded.
  */
-bool DaVinci::configLoaded() const
+bool DaZeus::configLoaded() const
 {
   return config_ != 0;
 }
@@ -92,7 +92,7 @@ bool DaVinci::configLoaded() const
  *
  * Does nothing if already connected.
  */
-bool DaVinci::connectDatabase()
+bool DaZeus::connectDatabase()
 {
   const DatabaseConfig *dbc = config_->databaseConfig();
   database_ = Database::fromConfig(dbc);
@@ -116,7 +116,7 @@ bool DaVinci::connectDatabase()
 /**
  * @brief Return the database.
  */
-Database *DaVinci::database() const
+Database *DaZeus::database() const
 {
   return database_;
 }
@@ -126,7 +126,7 @@ Database *DaVinci::database() const
  *
  * Give a signal through to the plugin manager.
  */
-void DaVinci::welcomed()
+void DaZeus::welcomed()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
@@ -140,7 +140,7 @@ void DaVinci::welcomed()
  *
  * Give a signal through to the plugin manager.
  */
-void DaVinci::connected()
+void DaZeus::connected()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
@@ -156,7 +156,7 @@ void DaVinci::connected()
  *
  * Give a signal through to the plugin manager.
  */
-void DaVinci::disconnected()
+void DaZeus::disconnected()
 {
   Network *n = qobject_cast<Network*>(sender());
   Q_ASSERT( n != 0 );
@@ -168,7 +168,7 @@ void DaVinci::disconnected()
 /**
  * @brief Initialises plugins from the configuration file.
  */
-bool DaVinci::initPlugins()
+bool DaZeus::initPlugins()
 {
   if( pluginManager_->isInitialized() )
     return true;
@@ -190,7 +190,7 @@ bool DaVinci::initPlugins()
  * Note: this method is automatically called when setConfigFileName is called,
  * and by the constructor.
  */
-bool DaVinci::loadConfig()
+bool DaZeus::loadConfig()
 {
   // Clean up this object.
   resetConfig();
@@ -282,7 +282,7 @@ bool DaVinci::loadConfig()
  * This method will not clear the configFileName_. It is always called when
  * loadConfig() is called.
  */
-void DaVinci::resetConfig()
+void DaZeus::resetConfig()
 {
   //delete config_;
   //config_ = 0;
