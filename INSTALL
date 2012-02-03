@@ -8,3 +8,7 @@ To compile DaZeus, run qmake and make in the main directory:
 
 This creates a 'dazeus' binary in the 'bin' directory that you can run. If
 you intend to run DaZeus 2.0 elsewhere, you can manually copy the binary there.
+
+If your dependencies are in nonstandard locations, you can alter the value of
+the compilation or linker flags as follows:
+  qmake -after QMAKE_CXXFLAGS+="-I/usr/local/include"
