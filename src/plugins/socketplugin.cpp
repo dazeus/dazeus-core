@@ -241,6 +241,56 @@ void SocketPlugin::kicked( Network &net, const QString &origin, const QString &n
 
 void SocketPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
                               Irc::Buffer *buffer ) {
+	QString payload;
+	QString highlightChar = getConfig("highlightCharacter", "general").toString();
+	if(highlightChar.isNull())
+		highlightChar = "}";
+
+	if( message.startsWith(net.user()->nick() + ":", Qt::CaseInsensitive)
+	 || message.startsWith(net.user()->nick() + ",", Qt::CaseInsensitive)) {
+		payload = message.mid(net.user()->nick().length() + 1).trimmed();
+	} else if(message.startsWith(highlightChar, Qt::CaseInsensitive)) {
+		payload = message.mid(highlightChar.length()).trimmed();
+	}
+
+	if(!payload.isEmpty()) {
+		// parse arguments from this string
+		bool inQuoteArg = false;
+		bool inEscape = false;
+		bool hasCommand = false;
+		QStringList args;
+		QString stringBuilder;
+		QString fullArgs;
+		// loop through characters
+		for(int i = 0; i < payload.length(); ++i) {
+			if(hasCommand)
+				fullArgs.append(payload.at(i));
+
+			if(inEscape) {
+				inEscape = false;
+				stringBuilder.append(payload.at(i));
+			} else if(payload.at(i) == '\\') {
+				inEscape = true;
+			} else if(!inQuoteArg && payload.at(i) == ' ') {
+				// finish this word
+				args.append(stringBuilder);
+				stringBuilder.clear();
+				hasCommand = true;
+			} else if(payload.at(i) == '"') {
+				inQuoteArg = !inQuoteArg;
+			} else {
+				stringBuilder.append(payload.at(i));
+			}
+		}
+		if(!stringBuilder.isEmpty())
+			args.append(stringBuilder);
+
+		if(args.length() > 0) {
+			const QString &command = args.takeFirst();
+
+			dispatch("COMMAND", QStringList() << net.networkName() << origin << buffer->receiver() << command << fullArgs.trimmed() << args);
+		}
+	}
 	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message);
 }
 
