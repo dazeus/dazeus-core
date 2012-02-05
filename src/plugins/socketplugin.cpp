@@ -184,6 +184,20 @@ void SocketPlugin::dispatch(const QString &event, const QStringList &parameters)
 	}
 }
 
+void SocketPlugin::flushCommandQueue(const QString &nick) {
+	int i;
+	for(i = commandQueue_.length() - 1; i >= 0; --i) {
+		Command *cmd = commandQueue_.at(i);
+		if(cmd->origin.toLower() == nick.toLower() || cmd->network.isIdentified(cmd->origin)) {
+			commandQueue_.takeAt(i);
+			dispatch("COMMAND", QStringList() << cmd->network.networkName()
+			    << cmd->origin << cmd->channel << cmd->command << cmd->fullArgs
+			    << cmd->args);
+			delete cmd;
+		}
+	}
+}
+
 void SocketPlugin::welcomed( Network &net ) {
 	dispatch("WELCOMED", QStringList() << net.networkName());
 }
@@ -288,7 +302,19 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 		if(args.length() > 0) {
 			const QString &command = args.takeFirst();
 
-			dispatch("COMMAND", QStringList() << net.networkName() << origin << buffer->receiver() << command << fullArgs.trimmed() << args);
+			Command *cmd = new Command(net);
+			cmd->origin = origin;
+			cmd->channel = buffer->receiver();
+			cmd->command = command;
+			cmd->fullArgs = fullArgs.trimmed();
+			cmd->args = args;
+			commandQueue_.append(cmd);
+			// We need to check for identified state before we can send it
+			if(net.isIdentified(origin)) {
+				flushCommandQueue();
+			} else {
+				net.sendWhois(origin);
+			}
 		}
 	}
 	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message);
@@ -329,6 +355,8 @@ void SocketPlugin::unknownMessageReceived( Network &net, const QString &origin,
 void SocketPlugin::whoisReceived( Network &net, const QString &origin, const QString &nick,
                                  bool identified, Irc::Buffer *buffer ) {
 	dispatch("WHOIS", QStringList() << net.networkName() << origin << nick << (identified ? "true" : "false"));
+	if(identified)
+		flushCommandQueue(nick);
 }
 void SocketPlugin::namesReceived( Network &net, const QString &origin, const QString &channel,
                                  const QStringList &params, Irc::Buffer *buffer ) {
