@@ -155,7 +155,8 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 {
   if( !reconnect && activeServer_ )
     return;
-  Q_ASSERT(joinedChannels_.isEmpty());
+  Q_ASSERT(knownUsers_.isEmpty());
+  Q_ASSERT(identifiedUsers_.isEmpty());
 
   if( activeServer_ )
   {
@@ -203,22 +204,64 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(       partedChannel(const QString&, const QString&, Irc::Buffer*) ) );
   connect( activeServer_, SIGNAL(            kicked(const QString&, const QString&, const QString&, Irc::Buffer*) ),
            this,          SLOT(       kickedChannel(const QString&, const QString&, const QString&, Irc::Buffer*) ) );
+  // XXX HACK to make sure slotWhoisReceived and slotNamesReceived are excuted first
+  connect( activeServer_,SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer* ) ),
+           this,          SLOT(   slotWhoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ) );
+  connect( activeServer_,SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ),
+           this,          SLOT(   slotNamesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ) );
+  connect( activeServer_, SIGNAL(              quit(const QString&, const QString&, Irc::Buffer*)),
+           this,          SLOT(            slotQuit(const QString&, const QString&, Irc::Buffer*)));
+  connect( activeServer_, SIGNAL(       nickChanged(const QString&, const QString&, Irc::Buffer*)),
+           this,          SLOT(     slotNickChanged(const QString&, const QString&, Irc::Buffer*)));
   activeServer_->connectToServer();
 }
 
 void Network::joinedChannel(const QString &user, Irc::Buffer *b)
 {
 	User u(user, this);
-	if(u.isMe() && !joinedChannels_.contains(b->receiver().toLower())) {
-		joinedChannels_.append(b->receiver().toLower());
+	if(u.isMe() && !knownUsers_.keys().contains(b->receiver().toLower())) {
+		knownUsers_.insert(b->receiver().toLower(), QList<QString>());
 	}
+	if(!knownUsers_[b->receiver().toLower()].contains(user.toLower()))
+		knownUsers_[b->receiver().toLower()].append(user.toLower());
 }
 
 void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
 {
 	User u(user, this);
 	if(u.isMe()) {
-		joinedChannels_.removeAll(b->receiver().toLower());
+		knownUsers_.remove(b->receiver().toLower());
+	} else {
+		knownUsers_[b->receiver().toLower()].removeAll(user.toLower());
+	}
+	if(!isKnownUser(u.nick())) {
+		identifiedUsers_.removeAll(u.nick().toLower());
+	}
+}
+
+void Network::slotQuit(const QString &origin, const QString&, Irc::Buffer *b)
+{
+	foreach(const QString &channel, knownUsers_.keys()) {
+		knownUsers_[channel.toLower()].removeAll(origin.toLower());
+	}
+	if(!isKnownUser(origin)) {
+		identifiedUsers_.removeAll(origin.toLower());
+	}
+}
+
+void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer* )
+{
+	identifiedUsers_.removeAll(origin.toLower());
+	identifiedUsers_.removeAll(nick.toLower());
+	User u(origin, this);
+	if(u.isMe()) {
+		user()->setNick(nick);
+	}
+	foreach(const QString &channel, knownUsers_.keys()) {
+		QStringList &users = knownUsers_[channel];
+		if(users.removeAll(origin.toLower())) {
+			users.append(nick.toLower());
+		}
 	}
 }
 
@@ -226,7 +269,12 @@ void Network::kickedChannel(const QString&, const QString &user, const QString&,
 {
 	User u(user, this);
 	if(u.isMe()) {
-		joinedChannels_.removeAll(b->receiver().toLower());
+		knownUsers_.remove(b->receiver().toLower());
+	} else {
+		knownUsers_[b->receiver().toLower()].removeAll(u.nick().toLower());
+	}
+	if(!isKnownUser(u.nick())) {
+		identifiedUsers_.removeAll(u.nick().toLower());
 	}
 }
 
@@ -236,12 +284,14 @@ void Network::onFailedConnection()
 
   qDebug() << "Connection failed on " << this;
 
+  identifiedUsers_.clear();
+  knownUsers_.clear();
+
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
   disconnect( activeServer_, 0, 0, 0 );
   activeServer_ = 0;
 
-  joinedChannels_.clear();
   connectToNetwork();
 }
 
@@ -262,13 +312,15 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
   if( activeServer_ == 0 )
     return;
 
+  identifiedUsers_.clear();
+  knownUsers_.clear();
+
   // Disconnect the activeServer first, so its disconnected() signal will not
   // trigger the reconnection in this class
   disconnect( activeServer_, 0, 0, 0 );
   activeServer_->disconnectFromServer( reason );
   activeServer_->deleteLater();
   activeServer_ = 0;
-  joinedChannels_.clear();
 }
 
 
@@ -390,4 +442,36 @@ void Network::serverIsActuallyOkay()
 void Network::serverIsActuallyOkay( const ServerConfig *sc )
 {
   undesirables_.remove(sc);
+}
+
+bool Network::isIdentified(const QString &user) const {
+	return identifiedUsers_.contains(user.toLower());
+}
+
+bool Network::isKnownUser(const QString &user) const {
+	foreach(const QString &chan, knownUsers_.keys()) {
+		if(knownUsers_[chan.toLower()].contains(user.toLower())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// This function must be executed _before_ the whoisReceived signal is emitted around the application
+void Network::slotWhoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buf) {
+	if(!identified) {
+		identifiedUsers_.removeAll(nick.toLower());
+	} else if(identified && !identifiedUsers_.contains(nick.toLower()) && isKnownUser(nick)) {
+		identifiedUsers_.append(nick.toLower());
+	}
+}
+
+void Network::slotNamesReceived(const QString&, const QString &channel, const QStringList &names, Irc::Buffer *buf ) {
+	Q_ASSERT(knownUsers_.keys().contains(channel.toLower()));
+	QStringList &users = knownUsers_[channel.toLower()];
+	foreach(QString n, names) {
+		n.remove(QRegExp("^[@~+%!]+"));
+		if(!users.contains(n.toLower()))
+			users.append(n.toLower());
+	}
 }
