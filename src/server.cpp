@@ -92,8 +92,12 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
 	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)));
+	connect( thread_, SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)),
+	         this,    SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)));
 	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
+	connect( thread_, SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
 	connect( thread_, SIGNAL(connected()),
 	         this,    SIGNAL(connected()),
 	         Qt::BlockingQueuedConnection );
@@ -260,6 +264,8 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 318)
 	{
+		// XXX HACK
+		emit whoisReceivedHiPrio( origin, in_whois_for_, whois_identified_, buf );
 		emit whoisReceived( origin, in_whois_for_, whois_identified_, buf );
 		whois_identified_ = false;
 		in_whois_for_.clear();
@@ -272,6 +278,8 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 366)
 	{
+		// XXX HACK
+		emit namesReceivedHiPrio( origin, args.at(1), in_names_, buf );
 		emit namesReceived( origin, args.at(1), in_names_, buf );
 		in_names_.clear();
 	}

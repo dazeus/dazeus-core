@@ -9,6 +9,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QList>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QtCore/QHash>
 
 #include "user.h"
@@ -54,7 +55,9 @@ class Network : public QObject
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
     QString                     networkName() const;
-    const QList<QString>       &joinedChannels() const { return joinedChannels_; }
+    QList<QString>              joinedChannels() const { return knownUsers_.keys(); }
+    bool                        isIdentified(const QString &user) const;
+    bool                        isKnownUser(const QString &user) const;
 
   public slots:
     void connectToNetwork( bool reconnect = false );
@@ -101,14 +104,15 @@ class Network : public QObject
       const QObject *receiver, const char *method,
       Qt::ConnectionType type = Qt::AutoConnection )
     { return QObject::connect( sender, signal, receiver, method, type ); }
- 
+
                           Network( const QString &name );
     Server               *activeServer_;
     const NetworkConfig  *config_;
     static QHash<QString,Network*> networks_;
     QHash<const ServerConfig*,int> undesirables_;
     User                 *me_;
-    QList<QString>        joinedChannels_;
+    QList<QString>        identifiedUsers_;
+    QMap<QString,QStringList> knownUsers_;
 
   private slots:
     void onFailedConnection();
@@ -116,7 +120,10 @@ class Network : public QObject
     void joinedChannel(const QString &user, Irc::Buffer *b);
     void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);
     void partedChannel(const QString &user, const QString &, Irc::Buffer *b);
-
+    void slotQuit(const QString &origin, const QString&, Irc::Buffer*);
+    void slotWhoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buf);
+    void slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer *buffer );
+    void slotNamesReceived(const QString&, const QString&, const QStringList &names, Irc::Buffer *buf );
 };
 
 #endif
