@@ -20,6 +20,16 @@ class SocketPlugin : public Plugin
 {
   Q_OBJECT
 
+  struct Command {
+    Network &network;
+    QString origin;
+    QString channel;
+    QString command;
+    QString fullArgs;
+    QStringList args;
+    Command(Network &n) : network(n) {}
+  };
+
   struct SocketInfo {
    public:
     SocketInfo(QString t = QString()) : type(t), waitingSize(0) {}
@@ -115,8 +125,10 @@ class SocketPlugin : public Plugin
   private:
     QList<QTcpServer*> tcpServers_;
     QList<QLocalServer*> localServers_;
+    QList<Command*> commandQueue_;
     QMap<QIODevice*,SocketInfo> sockets_;
     void handle(QIODevice *dev, const QByteArray &line, SocketInfo &info);
+    void flushCommandQueue(const QString &nick = QString());
 };
 
 #endif
