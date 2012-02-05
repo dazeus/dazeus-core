@@ -317,12 +317,12 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 			}
 		}
 	}
-	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message);
+	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message << (net.isIdentified(origin) ? "true" : "false"));
 }
 
 void SocketPlugin::noticeReceived( Network &net, const QString &origin, const QString &notice,
                              Irc::Buffer *buffer ) {
-	dispatch("NOTICE", QStringList() << net.networkName() << origin << buffer->receiver() << notice);
+	dispatch("NOTICE", QStringList() << net.networkName() << origin << buffer->receiver() << notice << (net.isIdentified(origin) ? "true" : "false"));
 }
 
 void SocketPlugin::ctcpRequestReceived(Network &net, const QString &origin, const QString &request,
