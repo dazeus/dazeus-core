@@ -184,17 +184,60 @@ void SocketPlugin::dispatch(const QString &event, const QStringList &parameters)
 	}
 }
 
-void SocketPlugin::flushCommandQueue(const QString &nick) {
+void SocketPlugin::flushCommandQueue(const QString &nick, bool identified) {
 	int i;
 	for(i = commandQueue_.length() - 1; i >= 0; --i) {
 		Command *cmd = commandQueue_.at(i);
-		if(cmd->origin.toLower() == nick.toLower() || cmd->network.isIdentified(cmd->origin)) {
-			commandQueue_.takeAt(i);
-			dispatch("COMMAND", QStringList() << cmd->network.networkName()
-			    << cmd->origin << cmd->channel << cmd->command << cmd->fullArgs
-			    << cmd->args);
-			delete cmd;
+		// If there is at least one plugin that does sender checking,
+		// and the sender is not already known as identified, a whois
+		// check is necessary to send it to those plugins.
+		// If the whois check was done and it failed (nick is set and
+		// identified is false), send it to all other relevant plugins
+		// anyway.
+		// Check if we have all needed information
+		bool whoisRequired = false;
+		foreach(QIODevice *i, sockets_.keys()) {
+			SocketInfo &info = sockets_[i];
+			if(info.commandMightNeedWhois(cmd->command)
+			&& !cmd->network.isIdentified(cmd->origin)) {
+				whoisRequired = true;
+			}
 		}
+
+		// If the whois check was not done yet, do it now, handle this
+		// command when the identified command comes in
+		if(whoisRequired && nick != cmd->origin) {
+			if(!cmd->whoisSent) {
+				cmd->network.sendWhois(cmd->origin);
+				cmd->whoisSent = true;
+			}
+			continue;
+		}
+
+		// We either don't require whois for this command, or the
+		// whois status of the sender is known at this point (either
+		// saved in the network, or in the 'identified' variable).
+		Q_ASSERT(!whoisRequired || cmd->network.isIdentified(cmd->origin)
+		       || nick == cmd->origin);
+
+		QStringList parameters;
+		parameters << cmd->network.networkName() << cmd->origin
+		           << cmd->channel << cmd->command << cmd->fullArgs
+		           << cmd->args;
+
+		foreach(QIODevice *i, sockets_.keys()) {
+			SocketInfo &info = sockets_[i];
+			if(!info.isSubscribedToCommand(cmd->command, cmd->channel, cmd->origin,
+				cmd->network.isIdentified(cmd->origin) || identified, cmd->network)) {
+				continue;
+			}
+
+			// Receiver, sender, network matched; dispatch command to this plugin
+			info.dispatch(i, "COMMAND", parameters);
+		}
+
+		commandQueue_.takeAt(i);
+		delete cmd;
 	}
 }
 
@@ -279,7 +322,6 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 		for(int i = 0; i < payload.length(); ++i) {
 			if(hasCommand)
 				fullArgs.append(payload.at(i));
-
 			if(inEscape) {
 				inEscape = false;
 				stringBuilder.append(payload.at(i));
@@ -309,12 +351,7 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 			cmd->fullArgs = fullArgs.trimmed();
 			cmd->args = args;
 			commandQueue_.append(cmd);
-			// We need to check for identified state before we can send it
-			if(net.isIdentified(origin)) {
-				flushCommandQueue();
-			} else {
-				net.sendWhois(origin);
-			}
+			flushCommandQueue();
 		}
 	}
 	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message << (net.isIdentified(origin) ? "true" : "false"));
@@ -355,8 +392,7 @@ void SocketPlugin::unknownMessageReceived( Network &net, const QString &origin,
 void SocketPlugin::whoisReceived( Network &net, const QString &origin, const QString &nick,
                                  bool identified, Irc::Buffer *buffer ) {
 	dispatch("WHOIS", QStringList() << net.networkName() << origin << nick << (identified ? "true" : "false"));
-	if(identified)
-		flushCommandQueue(nick);
+	flushCommandQueue(nick, identified);
 }
 void SocketPlugin::namesReceived( Network &net, const QString &origin, const QString &channel,
                                  const QStringList &params, Irc::Buffer *buffer ) {
@@ -544,6 +580,45 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				++removed;
 		}
 		response.push_back(JSONNode("removed", removed));
+	} else if(action == "command") {
+		response.push_back(JSONNode("did", "command"));
+		// {"do":"command", "params":["cmdname"]}
+		// {"do":"command", "params":["cmdname", "network"]}
+		// {"do":"command", "params":["cmdname", "network", true, "sender"]}
+		// {"do":"command", "params":["cmdname", "network", false, "receiver"]}
+		if(params.size() == 0) {
+			response.push_back(JSONNode("success", false));
+			response.push_back(JSONNode("error", "Missing parameters"));
+		} else {
+			QString commandName = params.takeFirst();
+			RequirementInfo *req = 0;
+			Network *net = 0;
+			if(params.size() > 0) {
+				foreach(Network *n, networks) {
+					if(n->networkName() == params.at(0)) {
+						net = n; break;
+					}
+				}
+			}
+			if(params.size() == 0) {
+				// Add it as a global command
+				req = new RequirementInfo();
+			} else if(params.size() == 1) {
+				// Network requirement
+				req = new RequirementInfo(net);
+			} else if(params.size() == 3) {
+				// Network and sender/receiver requirement
+				bool isSender = params.at(1) == "true";
+				req = new RequirementInfo(net, params.at(2), isSender);
+			} else {
+				response.push_back(JSONNode("success", false));
+				response.push_back(JSONNode("error", "Wrong number of parameters"));
+			}
+			if(req != NULL) {
+				info.subscribeToCommand(commandName, req);
+				response.push_back(JSONNode("success", true));
+			}
+		}
 	} else if(action == "property") {
 		response.push_back(JSONNode("did", "property"));
 
