@@ -8,6 +8,8 @@
 #include "config.h"
 #include "user.h"
 
+// #define DEBUG
+
 QHash<QString, Network*> Network::networks_;
 
 QDebug operator<<(QDebug dbg, const Network &n)
@@ -224,6 +226,10 @@ void Network::joinedChannel(const QString &user, Irc::Buffer *b)
 	}
 	if(!knownUsers_[b->receiver().toLower()].contains(user.toLower()))
 		knownUsers_[b->receiver().toLower()].append(user.toLower());
+#ifdef DEBUG
+	qDebug() << "User " << user << " joined channel " << b->receiver();
+	qDebug() << "knownUsers is now: " << knownUsers_;
+#endif
 }
 
 void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
@@ -237,6 +243,11 @@ void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b
 	if(!isKnownUser(u.nick())) {
 		identifiedUsers_.removeAll(u.nick().toLower());
 	}
+#ifdef DEBUG
+	qDebug() << "User " << user << " left channel " << b->receiver();
+	qDebug() << "knownUsers is now: " << knownUsers_;
+	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
+#endif
 }
 
 void Network::slotQuit(const QString &origin, const QString&, Irc::Buffer *b)
@@ -247,6 +258,11 @@ void Network::slotQuit(const QString &origin, const QString&, Irc::Buffer *b)
 	if(!isKnownUser(origin)) {
 		identifiedUsers_.removeAll(origin.toLower());
 	}
+#ifdef DEBUG
+	qDebug() << "User " << origin << " quit IRC.";
+	qDebug() << "knownUsers is now: " << knownUsers_;
+	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
+#endif
 }
 
 void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer* )
@@ -263,6 +279,11 @@ void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::
 			users.append(nick.toLower());
 		}
 	}
+#ifdef DEBUG
+	qDebug() << "User " << origin << " changed nicks to " << nick;
+	qDebug() << "knownUsers is now: " << knownUsers_;
+	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
+#endif
 }
 
 void Network::kickedChannel(const QString&, const QString &user, const QString&, Irc::Buffer *b)
@@ -276,6 +297,11 @@ void Network::kickedChannel(const QString&, const QString &user, const QString&,
 	if(!isKnownUser(u.nick())) {
 		identifiedUsers_.removeAll(u.nick().toLower());
 	}
+#ifdef DEBUG
+	qDebug() << "User " << user << " was kicked from " << b->receiver();
+	qDebug() << "knownUsers is now: " << knownUsers_;
+	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
+#endif
 }
 
 void Network::onFailedConnection()
@@ -464,6 +490,10 @@ void Network::slotWhoisReceived(const QString &origin, const QString &nick, bool
 	} else if(identified && !identifiedUsers_.contains(nick.toLower()) && isKnownUser(nick)) {
 		identifiedUsers_.append(nick.toLower());
 	}
+#ifdef DEBUG
+	qDebug() << "Whois received for"<< nick <<"; identifiedUsers_ is now:";
+	qDebug() << identifiedUsers_;
+#endif
 }
 
 void Network::slotNamesReceived(const QString&, const QString &channel, const QStringList &names, Irc::Buffer *buf ) {
@@ -474,4 +504,8 @@ void Network::slotNamesReceived(const QString&, const QString &channel, const QS
 		if(!users.contains(n.toLower()))
 			users.append(n.toLower());
 	}
+#ifdef DEBUG
+	qDebug() << "Names received for"<<channel<<"; knownUsers_ is now:";
+	qDebug() << knownUsers_;
+#endif
 }
