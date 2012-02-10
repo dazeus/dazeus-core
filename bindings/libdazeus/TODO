@@ -1,0 +1,10 @@
+Absent in these bindings:
+	Sending a CTCP ACTION
+	Asking for channel NAMES
+	Asking for user WHOIS
+	Sending a JOIN
+	Sending a PART
+	Sending a GETNICK
+	Getting configuration variables
+	Getting property keys
+	Unsubscribing from events
