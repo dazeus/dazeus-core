@@ -128,6 +128,11 @@ char *libdazeus_get_property(dazeus*, const char *variable, dazeus_scope*);
  */
 int libdazeus_set_property(dazeus*, const char *variable, const char *value, dazeus_scope*);
 
+/**
+ * Forget a variable in the DaZeus 2 database.
+ */
+int libdazeus_unset_property(dazeus*, const char *variable, dazeus_scope*);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

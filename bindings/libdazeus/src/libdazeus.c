@@ -602,3 +602,41 @@ int libdazeus_set_property(dazeus *d, const char *variable, const char *value, d
 	return 1;
 }
 
+/**
+ * Forget a variable in the DaZeus 2 database.
+ */
+int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
+{
+	// {'do':'property','params':['unset','variable',...scope...]}
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("do", "property");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	JSONNODE *p1       = json_new_a("", "unset");
+	JSONNODE *p2       = json_new_a("", variable);
+	json_set_name(params, "params");
+	json_push_back(params, p1);
+	json_push_back(params, p2);
+	if(!_add_scope(d, s, params)) {
+		json_free(fulljson);
+		json_free(request);
+		json_free(params);
+		return 0;
+	}
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return 0;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return 0;
+	}
+
+	json_free(response);
+	return 1;
+}
