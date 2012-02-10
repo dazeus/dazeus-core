@@ -13,7 +13,6 @@
 #include "network.h"
 
 class Config;
-class PluginManager;
 class PluginComm;
 class Network;
 class Database;
@@ -47,7 +46,6 @@ class DaZeus : public QObject
   private:
     Config          *config_;
     QString          configFileName_;
-    PluginManager   *pluginManager_;
     PluginComm      *plugins_;
     Database        *database_;
     QList<Network*>  networks_;

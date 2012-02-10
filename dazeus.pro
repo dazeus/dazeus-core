@@ -20,11 +20,6 @@ SOURCES += src/main.cpp src/dazeus.cpp src/network.cpp src/config.cpp
 SOURCES += src/user.cpp src/server.cpp src/database.cpp src/plugincomm.cpp
 HEADERS += src/dazeus.h src/network.h src/config.h src/user.h src/server.h
 HEADERS += src/server_p.h src/database.h src/plugincomm.h
-# plugins
-SOURCES += src/plugins/pluginmanager.cpp
-SOURCES += src/plugins/plugin.cpp
-HEADERS += src/plugins/pluginmanager.h
-HEADERS += src/plugins/plugin.h
 
 INCLUDEPATH += src
 

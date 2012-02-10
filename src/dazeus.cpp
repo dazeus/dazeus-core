@@ -10,7 +10,6 @@
 #include "network.h"
 #include "config.h"
 #include "plugincomm.h"
-#include "plugins/pluginmanager.h"
 
 // #define DEBUG
 #define VERBOSE
@@ -25,7 +24,6 @@ DaZeus::DaZeus( QString configFileName )
 : QObject()
 , config_( 0 )
 , configFileName_( configFileName )
-, pluginManager_( 0 )
 , plugins_( 0 )
 , database_( 0 )
 {
@@ -61,7 +59,6 @@ DaZeus::~DaZeus()
   networks_.clear();
 
   resetConfig();
-  delete pluginManager_;
   delete plugins_;
 }
 
@@ -151,7 +148,6 @@ void DaZeus::welcomed()
   qDebug() << "Welcomed to network: " << n;
 #endif
   Q_ASSERT( n != 0 );
-  pluginManager_->welcomed( *n );
   plugins_->welcomed( *n );
 }
 
@@ -171,7 +167,6 @@ void DaZeus::connected()
   Q_ASSERT( n != 0 );
   const Server *s = n->activeServer();
   Q_ASSERT( s != 0 );
-  pluginManager_->connected( *n, *s );
   plugins_->connected( *n, *s );
 }
 
@@ -189,7 +184,6 @@ void DaZeus::disconnected()
   qDebug() << "Disconnected from network: " << n;
 #endif
   Q_ASSERT( n != 0 );
-  pluginManager_->disconnected( *n );
   plugins_->disconnected( *n );
 }
 
@@ -200,15 +194,6 @@ void DaZeus::disconnected()
  */
 bool DaZeus::initPlugins()
 {
-  if( pluginManager_->isInitialized() )
-    return true;
-
-  pluginManager_->setConfig( config_ );
-  if( !pluginManager_->initialize() ) {
-    delete pluginManager_;
-    return false;
-  }
-
   plugins_->init();
 
   return true;
@@ -242,7 +227,6 @@ bool DaZeus::loadConfig()
   if(!connectDatabase())
     return false;
 
-  pluginManager_ = new PluginManager( database_, this );
   plugins_ = new PluginComm( database_, config_, this );
 
   foreach( NetworkConfig *netconf, networks )
@@ -261,8 +245,6 @@ bool DaZeus::loadConfig()
              this, SLOT(       welcomed() ) );
 
 #define RELAY_NET_SIGN(sign) \
-    connect( net,            SIGNAL( sign ),   \
-             pluginManager_, SLOT(   sign ) ); \
     connect( net,            SIGNAL( sign ),   \
              plugins_,    SLOT(   sign ) );
 

@@ -17,7 +17,6 @@
 #include <libjson.h>
 
 #include "plugincomm.h"
-#include "plugins/plugin.h"
 #include "network.h"
 #include "config.h"
 #include "server.h"
