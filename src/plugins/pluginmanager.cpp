@@ -5,7 +5,6 @@
 
 #include <config.h>
 #include "pluginmanager.h"
-#include "testplugin.h"
 #include "statistics.h"
 #include "socketplugin.h"
 #include "database.h"
@@ -111,7 +110,6 @@ bool PluginManager::initialize()
   Q_ASSERT( config_ != 0 );
   setContext(QString());
 
-  plugins_.append(new TestPlugin(this));
   plugins_.append(new Statistics(this));
   plugins_.append(new SocketPlugin(this));
 

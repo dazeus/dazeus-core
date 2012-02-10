@@ -21,12 +21,10 @@ SOURCES += src/user.cpp src/server.cpp src/database.cpp
 HEADERS += src/dazeus.h src/network.h src/config.h src/user.h src/server.h
 HEADERS += src/server_p.h src/database.h
 # plugins
-SOURCES += src/plugins/pluginmanager.cpp src/plugins/testplugin.cpp
+SOURCES += src/plugins/pluginmanager.cpp src/plugins/socketplugin.cpp
 SOURCES += src/plugins/plugin.cpp src/plugins/statistics.cpp
-SOURCES += src/plugins/socketplugin.cpp
-HEADERS += src/plugins/pluginmanager.h src/plugins/testplugin.h
+HEADERS += src/plugins/pluginmanager.h src/plugins/socketplugin.h
 HEADERS += src/plugins/plugin.h src/plugins/statistics.h
-HEADERS += src/plugins/socketplugin.h
 
 INCLUDEPATH += src
 
