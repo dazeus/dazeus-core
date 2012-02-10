@@ -4,7 +4,7 @@
 
 TEMPLATE = lib
 VERSION = 1.9.1
-CONFIG = dll qt
+CONFIG = static qt
 TARGET = dazeus-qt
 DEPENDPATH += .
 INCLUDEPATH += . ../libdazeus/include
