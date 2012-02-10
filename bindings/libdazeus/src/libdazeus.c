@@ -286,9 +286,9 @@ void libdazeus_close(dazeus *d)
 /**
  * Returns a linked list of networks on this DaZeus instance, or NULL if
  * an error occured. Remember to free the returned structure with
- * libdazeus_networks_free().
+ * libdazeus_stringlist_free().
  */
-dazeus_network *libdazeus_networks(dazeus *d)
+dazeus_stringlist *libdazeus_networks(dazeus *d)
 {
 	// {'get':'networks'}
 	JSONNODE *fulljson = json_new(JSON_NODE);
@@ -327,14 +327,14 @@ dazeus_network *libdazeus_networks(dazeus *d)
 
 	JSONNODE *networks = json_pop_back(response, "networks");
 	JSONNODE_ITERATOR it = json_begin(networks);
-	dazeus_network *first = 0;
-	dazeus_network *cur = first;
+	dazeus_stringlist *first = 0;
+	dazeus_stringlist *cur = first;
 	while(it != json_end(networks)) {
 		JSONNODE *network = *it;
 
-		dazeus_network *new = malloc(sizeof(dazeus_network));
+		dazeus_stringlist *new = malloc(sizeof(dazeus_stringlist));
 		json_char *netname = json_as_string(network);
-		new->network_name = malloc(strlen(netname) + 1);
+		new->value = malloc(strlen(netname) + 1);
 		strcpy(new->network_name, netname);
 		json_free(netname);
 		new->next = 0;
@@ -354,13 +354,13 @@ dazeus_network *libdazeus_networks(dazeus *d)
 }
 
 /**
- * Clean up memory allocated by libdazeus_networks().
+ * Clean up memory allocated by earlier stringlist functions.
  */
-void libdazeus_networks_free(dazeus_network *n)
+void libdazeus_stringlist_free(dazeus_stringlist *n)
 {
 	while(n != 0) {
-		dazeus_network *next = n->next;
-		free(n->network_name);
+		dazeus_stringlist *next = n->next;
+		free(n->value);
 		free(n);
 		n = next;
 	}

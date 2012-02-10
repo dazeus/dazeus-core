@@ -47,11 +47,11 @@ typedef struct dazeus_struct
 	unsigned int readahead_size;
 } dazeus;
 
-typedef struct dazeus_network_struct
+typedef struct dazeus_stringlist_struct
 {
-	const char *network_name;
-	struct dazeus_network_struct *next;
-} dazeus_network;
+	const char *value;
+	struct dazeus_stringlist_struct *next;
+} dazeus_stringlist;
 
 /**
  * Create a new libdazeus instance.
@@ -80,12 +80,12 @@ void libdazeus_close(dazeus*);
  * an error occured. Remember to free the returned structure with
  * libdazeus_networks_free().
  */
-dazeus_network *libdazeus_networks(dazeus*);
+dazeus_stringlist *libdazeus_networks(dazeus*);
 
 /**
- * Clean up memory allocated by libdazeus_networks().
+ * Clean up memory allocated by earlier stringlist functions.
  */
-void libdazeus_networks_free(dazeus_network*);
+void libdazeus_stringlist_free(dazeus_stringlist*);
 
 #ifdef __cplusplus
 }
