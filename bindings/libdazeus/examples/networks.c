@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 	}
 	dazeus_stringlist *net = libdazeus_networks(d);
 	if(net == NULL) {
-		fprintf(stderr, "Failed reading DaZeus networks: %s\n", d->error);
+		fprintf(stderr, "Failed reading DaZeus networks: %s\n", libdazeus_error(d));
 		libdazeus_close(d);
 		return 4;
 	}
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 		printf("Network %d: %s\n", ++i, neti->value);
 		dazeus_stringlist *channels = libdazeus_channels(d, neti->value);
 		if(channels == NULL) {
-			fprintf(stderr, "Failed reading DaZeus channels for %s: %s\n", neti->value, d->error);
+			fprintf(stderr, "Failed reading DaZeus channels for %s: %s\n", neti->value, libdazeus_error(d));
 			libdazeus_close(d);
 			return 5;
 		}
