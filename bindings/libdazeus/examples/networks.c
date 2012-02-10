@@ -23,10 +23,12 @@ int main(int argc, char *argv[]) {
 		return 4;
 	}
 	int i = 0;
-	while(net != 0) {
-		printf("Network %d: %s\n", ++i, net->network_name);
-		net = net->next;
+	dazeus_network *neti = net;
+	while(neti != 0) {
+		printf("Network %d: %s\n", ++i, neti->network_name);
+		neti = neti->next;
 	}
+	libdazeus_networks_free(net);
 	libdazeus_close(d);
 	return 0;
 }
