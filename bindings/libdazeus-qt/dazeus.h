@@ -33,6 +33,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtCore/QSocketNotifier>
 
 #define LIBDAZEUS_QT_VERSION_STR "2.0-beta1"
 #define LIBDAZEUS_QT_VERSION 0x010901
@@ -54,8 +55,6 @@ public:
 		SenderScope = 0x07,
 	};
 
-	// dazeus_stringlist -> QStringList
-	// dazeus_event->_next -> internal
 	struct Event {
 		QString event;
 		QStringList parameters;
@@ -100,10 +99,22 @@ public:
 
 	bool subscribe(const QString &event);
 	bool subscribe(const QStringList &event);
-	Event *handleEvent();
+	/**
+	 * Wait 'timeout' seconds for one next event. Subscribe to the
+	 * newEvent() signal to catch it. If 'timeout' is -1, wait forever.
+	 * If 'timeout' is 0, check if there is one, and return immediately.
+	 */
+	void handleEvent(int timeout);
+
+signals:
+	void newEvent(DaZeus::Event *);
 
 private:
 	dazeus *d_;
+	QSocketNotifier *n_;
+
+private slots:
+	void activated();
 };
 
 #endif

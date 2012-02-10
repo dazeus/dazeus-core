@@ -74,9 +74,10 @@ QString DaZeus::Scope::sender() const {
 
 //////DAZEUS///////
 
-DaZeus::DaZeus() : d_(libdazeus_create()) {}
+DaZeus::DaZeus() : d_(libdazeus_create()), n_(0) {}
 DaZeus::~DaZeus() {
 	libdazeus_close(d_);
+	delete n_;
 }
 
 QString DaZeus::error() const {
@@ -84,7 +85,16 @@ QString DaZeus::error() const {
 }
 
 bool DaZeus::open(const QString &socketfile) {
-	return 1 == libdazeus_open(d_, socketfile.toUtf8());
+	int retval = libdazeus_open(d_, socketfile.toUtf8());
+	if(retval != 1)
+		return false;
+	int fd = libdazeus_get_socket(d_);
+
+	delete n_;
+	n_ = new QSocketNotifier(fd, QSocketNotifier::Read);
+	connect(n_,   SIGNAL(activated(int)),
+	        this,   SLOT(activated()));
+	return true;
 }
 
 QStringList DaZeus::networks() {
@@ -146,13 +156,17 @@ bool DaZeus::subscribe(const QStringList &events) {
 	return success;
 }
 
-DaZeus::Event *DaZeus::handleEvent() {
-	dazeus_event *de = libdazeus_handle_event(d_);
+void DaZeus::activated() {
+	handleEvent(0);
+}
+
+void DaZeus::handleEvent(int timeout) {
+	dazeus_event *de = libdazeus_handle_event(d_, timeout);
 	if(de == NULL) {
-		return NULL;
+		return;
 	}
 
-	Event *e = new Event;
+	DaZeus::Event *e = new DaZeus::Event;
 	e->event = QString::fromUtf8(de->event);
 
 	dazeus_stringlist *ei = de->parameters;
@@ -162,5 +176,5 @@ DaZeus::Event *DaZeus::handleEvent() {
 	}
 
 	libdazeus_event_free(de);
-	return e;
+	emit newEvent(e);
 }
