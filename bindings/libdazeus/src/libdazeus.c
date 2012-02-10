@@ -155,10 +155,10 @@ int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
 	struct timeval tv;
 	struct timeval *tvptr = &tv;
 	if(disregard_timeout || timeout == 0) {
-		tvptr = 0;
-	} else if(timeout < 0) {
-		tvptr->tv_sec = 10;
+		tvptr->tv_sec = 0;
 		tvptr->tv_usec = 0;
+	} else if(timeout < 0) {
+		tvptr = 0;
 	} else {
 		tvptr->tv_sec = timeout;
 		tvptr->tv_usec = 0;
