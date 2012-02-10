@@ -138,6 +138,7 @@ int _send(dazeus *d, JSONNODE *node) {
 	// what happens with size if it is wchar?
 	int size = strlen(raw_json);
 	dprintf(d->socket, "%d%s\n", size, raw_json);
+	json_free(raw_json);
 	return size;
 }
 
@@ -277,6 +278,7 @@ int libdazeus_open(dazeus *d, const char *socketfile)
  */
 void libdazeus_close(dazeus *d)
 {
+	close(d->socket);
 	free(d->socketfile);
 	free(d);
 }
@@ -306,15 +308,22 @@ dazeus_network *libdazeus_networks(dazeus *d)
 		json_free(response);
 		d->error = "No 'success' field in response.";
 		return NULL;
-	} else if(strcmp(json_as_string(success), "true") != 0) {
+	}
+	json_char *succval = json_as_string(success);
+	if(strcmp(succval, "true") != 0) {
 		d->error = "Request failed, no error";
 		JSONNODE *error = json_pop_back(response, "error");
 		if(error) {
 			d->error = json_as_string(error);
 		}
+		json_free(succval);
+		json_free(success);
 		json_free(response);
+		json_free(error);
 		return NULL;
 	}
+	json_free(succval);
+	json_free(success);
 
 	JSONNODE *networks = json_pop_back(response, "networks");
 	JSONNODE_ITERATOR it = json_begin(networks);
@@ -323,8 +332,11 @@ dazeus_network *libdazeus_networks(dazeus *d)
 	while(it != json_end(networks)) {
 		JSONNODE *network = *it;
 
-		dazeus_network *new = malloc(sizeof(dazeus_network*));
-		new->network_name = json_as_string(network);
+		dazeus_network *new = malloc(sizeof(dazeus_network));
+		json_char *netname = json_as_string(network);
+		new->network_name = malloc(strlen(netname) + 1);
+		strcpy(new->network_name, netname);
+		json_free(netname);
 		new->next = 0;
 		if(first == 0) {
 			first = new;
@@ -336,6 +348,7 @@ dazeus_network *libdazeus_networks(dazeus *d)
 		it++;
 	}
 
+	json_free(networks);
 	json_free(response);
 	return first;
 }
@@ -347,6 +360,7 @@ void libdazeus_networks_free(dazeus_network *n)
 {
 	while(n != 0) {
 		dazeus_network *next = n->next;
+		free(n->network_name);
 		free(n);
 		n = next;
 	}
