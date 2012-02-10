@@ -287,6 +287,78 @@ dazeus_stringlist *_jsonarray_to_stringlist(JSONNODE *array) {
 	return first;
 }
 
+int _add_scope(dazeus *d, dazeus_scope *s, JSONNODE *params) {
+	assert(json_type(params) == JSON_ARRAY);
+
+	if(s->scope_type == DAZEUS_GLOBAL_SCOPE) {
+		return 1; // don't add anything
+	}
+	if(s->scope_type != DAZEUS_NETWORK_SCOPE
+	&& s->scope_type != DAZEUS_RECEIVER_SCOPE
+	&& s->scope_type != DAZEUS_SENDER_SCOPE) {
+		d->error = "Scope parameter was incorrect";
+		return 0;
+	}
+	assert(s->scope_type & DAZEUS_NETWORK_SCOPE);
+
+	JSONNODE *netp = json_new_a("", s->network);
+	json_push_back(params, netp);
+
+	if(s->scope_type & DAZEUS_RECEIVER_SCOPE) {
+		JSONNODE *recvp = json_new_a("", s->receiver);
+		json_push_back(params, recvp);
+		if(s->scope_type & DAZEUS_SENDER_SCOPE) {
+			JSONNODE *sendp = json_new_a("", s->sender);
+			json_push_back(params, sendp);
+		}
+	} else {
+		assert((s->scope_type & DAZEUS_SENDER_SCOPE) == 0);
+	}
+	return 1;
+}
+
+dazeus_scope *libdazeus_scope_global()
+{
+	dazeus_scope *s = malloc(sizeof(dazeus_scope));
+	s->scope_type = DAZEUS_GLOBAL_SCOPE;
+	s->network = 0;
+	s->receiver = 0;
+	s->sender = 0;
+	return s;
+}
+
+dazeus_scope *libdazeus_scope_network(const char *network)
+{
+	dazeus_scope *s = libdazeus_scope_global();
+	s->scope_type = DAZEUS_NETWORK_SCOPE;
+	s->network = strdup(network);
+	return s;
+}
+
+dazeus_scope *libdazeus_scope_receiver(const char *network, const char *receiver)
+{
+	dazeus_scope *s = libdazeus_scope_network(network);
+	s->scope_type = DAZEUS_RECEIVER_SCOPE;
+	s->receiver = strdup(receiver);
+	return s;
+}
+
+dazeus_scope *libdazeus_scope_sender(const char *network, const char *receiver, const char *sender)
+{
+	dazeus_scope *s = libdazeus_scope_receiver(network, receiver);
+	s->scope_type = DAZEUS_SENDER_SCOPE;
+	s->sender = strdup(receiver);
+	return s;
+}
+
+void libdazeus_scope_free(dazeus_scope *s)
+{
+	free(s->network);
+	free(s->receiver);
+	free(s->sender);
+	free(s);
+}
+
 /**
  * Create a new libdazeus instance.
  */
@@ -438,3 +510,62 @@ void libdazeus_stringlist_free(dazeus_stringlist *n)
 		n = next;
 	}
 }
+
+/**
+ * Retrieve the value of a variable in the DaZeus 2 database. Remember to
+ * free() the returned variable after use.
+ */
+char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
+{
+	// {'do':'property','params':['get','variable']}
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("do", "property");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	JSONNODE *p1       = json_new_a("", "get");
+	JSONNODE *p2       = json_new_a("", variable);
+	json_set_name(params, "params");
+	json_push_back(params, p1);
+	json_push_back(params, p2);
+	if(!_add_scope(d, s, params)) {
+		json_free(fulljson);
+		json_free(request);
+		json_free(params);
+		return NULL;
+	}
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return NULL;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return NULL;
+	}
+
+	JSONNODE *value = json_pop_back(response, "value");
+	char *ret = NULL;
+	if(value) {
+		json_char *str = json_as_string(value);
+		ret = malloc(strlen(str) + 1);
+		strcpy(ret, str);
+		json_free(str);
+	}
+
+	json_free(value);
+	json_free(response);
+	return ret;
+}
+
+/**
+ * Set the value of a variable in the DaZeus 2 database.
+ */
+int libdazeus_set_property(dazeus *d, const char *variable, const char *value, dazeus_scope *s)
+{
+	return 1;
+}
+

@@ -53,6 +53,29 @@ typedef struct dazeus_stringlist_struct
 	struct dazeus_stringlist_struct *next;
 } dazeus_stringlist;
 
+#define DAZEUS_GLOBAL_SCOPE 0x00
+#define DAZEUS_NETWORK_SCOPE 0x01
+#define DAZEUS_RECEIVER_SCOPE 0x03
+#define DAZEUS_SENDER_SCOPE 0x07
+
+typedef struct dazeus_scope_struct
+{
+	unsigned int scope_type;
+	char *network;
+	char *receiver;
+	char *sender;
+} dazeus_scope;
+
+/**
+ * Variable scope variable constructors. Don't forget to clean them up with
+ * libdazeus_scope_free() too!
+ */
+dazeus_scope *libdazeus_scope_global();
+dazeus_scope *libdazeus_scope_network(const char *network);
+dazeus_scope *libdazeus_scope_receiver(const char *network, const char *receiver);
+dazeus_scope *libdazeus_scope_sender(const char *network, const char *receiver, const char *sender);
+void libdazeus_scope_free(dazeus_scope*);
+
 /**
  * Create a new libdazeus instance.
  */
@@ -93,6 +116,17 @@ void libdazeus_stringlist_free(dazeus_stringlist*);
  * libdazeus_stringlist_free().
  */
 dazeus_stringlist *libdazeus_channels(dazeus*, const char *network);
+
+/**
+ * Retrieve the value of a variable in the DaZeus 2 database. Remember to
+ * free() the returned variable after use.
+ */
+char *libdazeus_get_property(dazeus*, const char *variable, dazeus_scope*);
+
+/**
+ * Set the value of a variable in the DaZeus 2 database.
+ */
+int libdazeus_set_property(dazeus*, const char *variable, const char *value, dazeus_scope*);
 
 #ifdef __cplusplus
 }
