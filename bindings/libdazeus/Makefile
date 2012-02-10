@@ -16,6 +16,7 @@ examples/networks: examples/networks.c include/libdazeus.h lib/libdazeus.a
 .PHONY : clean distclean
 clean:
 	rm -f lib/libdazeus.o
+	rm -rf examples/networks.dSYM
 	make -C contrib/libjson clean
 
 distclean: clean
