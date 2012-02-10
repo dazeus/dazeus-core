@@ -37,6 +37,19 @@ extern "C" {
 #define LIBDAZEUS_VERSION_STR "2.0-beta1"
 #define LIBDAZEUS_VERSION 0x010901
 
+typedef struct dazeus_stringlist_struct
+{
+	char *value;
+	struct dazeus_stringlist_struct *next;
+} dazeus_stringlist;
+
+typedef struct dazeus_event_struct
+{
+	char *event;
+	dazeus_stringlist *parameters;
+	struct dazeus_event_struct *_next;
+} dazeus_event;
+
 #define LIBDAZEUS_READAHEAD_SIZE 512
 typedef struct dazeus_struct
 {
@@ -45,13 +58,9 @@ typedef struct dazeus_struct
 	char *error;
 	char readahead[LIBDAZEUS_READAHEAD_SIZE];
 	unsigned int readahead_size;
+	dazeus_event *event;
+	dazeus_event *lastEvent;
 } dazeus;
-
-typedef struct dazeus_stringlist_struct
-{
-	char *value;
-	struct dazeus_stringlist_struct *next;
-} dazeus_stringlist;
 
 #define DAZEUS_GLOBAL_SCOPE 0x00
 #define DAZEUS_NETWORK_SCOPE 0x01
@@ -132,6 +141,25 @@ int libdazeus_set_property(dazeus*, const char *variable, const char *value, daz
  * Forget a variable in the DaZeus 2 database.
  */
 int libdazeus_unset_property(dazeus*, const char *variable, dazeus_scope*);
+
+/**
+ * Subscribe to a DaZeus 2 Event.
+ */
+int libdazeus_subscribe(dazeus*, const char *event);
+
+/**
+ * Return the next event received (in order of coming in). Don't forget to free
+ * the resulting structure using libdazeus_event_free. Do NOT
+ * libdazeus_stringlist_free its 'parameters' property, though.
+ */
+dazeus_event *libdazeus_handle_event(dazeus*);
+
+/**
+ * Free an event returned by libdazeus_handle_event. This function calls
+ * libdazeus_stringlist_free on the 'parameters' property, so don't do this
+ * yourself.
+ */
+void libdazeus_event_free(dazeus_event*);
 
 #ifdef __cplusplus
 }

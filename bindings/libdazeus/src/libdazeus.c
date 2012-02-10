@@ -237,6 +237,50 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 	return 0;
 }
 
+dazeus_event *_event_from_json(dazeus *d, JSONNODE *event) {
+	JSONNODE_ITERATOR eventIt = json_find(event, "event");
+	if(eventIt == json_end(event)) {
+		d->error = "Couldn't find event name in received event";
+		return NULL;
+	}
+
+	JSONNODE_ITERATOR paramsIt = json_find(event, "params");
+	if(paramsIt == json_end(event)) {
+		d->error = "Couldn't find params in received event";
+		return NULL;
+	}
+
+	dazeus_stringlist *params = 0;
+	dazeus_stringlist *cur = 0;
+	JSONNODE_ITERATOR curParam = json_begin(*paramsIt);
+	while(curParam != json_end(*paramsIt)) {
+		dazeus_stringlist *new = malloc(sizeof(dazeus_stringlist));
+		new->next = 0;
+		json_char *s = json_as_string(*curParam);
+		new->value = strdup(s);
+		json_free(s);
+
+		if(params == 0) {
+			params = cur = new;
+		} else {
+			cur->next = new;
+			cur = new;
+		}
+
+		++curParam;
+	}
+
+	dazeus_event *e = malloc(sizeof(dazeus_event));
+	e->_next = 0;
+	e->parameters = params;
+
+	json_char *ev = json_as_string(*eventIt);
+	e->event = strdup(ev);
+	json_free(ev);
+
+	return e;
+}
+
 // Read incoming JSON requests until a non-event comes in (blocking)
 int _read(dazeus *d, JSONNODE **result) {
 	assert(result != NULL);
@@ -248,9 +292,24 @@ int _read(dazeus *d, JSONNODE **result) {
 			return 0;
 		}
 		if(res != NULL) {
-			// TODO don't assume it's not an event
-			*result = res;
-			return 1;
+			JSONNODE_ITERATOR eventIt = json_find(res, "event");
+			if(eventIt != json_end(res)) {
+				// It's an event, add it to the chain
+				dazeus_event *e = _event_from_json(d, res);
+				if(d->event == 0) {
+					assert(d->lastEvent == 0);
+					d->event = e;
+					d->lastEvent = e;
+				} else {
+					assert(d->lastEvent != 0);
+					d->lastEvent->_next = e;
+					d->lastEvent = e;
+				}
+				json_free(res);
+			} else {
+				*result = res;
+				return 1;
+			}
 		}
 	}
 }
@@ -659,3 +718,85 @@ int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
 	json_free(response);
 	return 1;
 }
+
+/**
+ * Subscribe to a DaZeus 2 Event.
+ */
+int libdazeus_subscribe(dazeus *d, const char *event)
+{
+	// {'do':'subscribe','params':['event']
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("do", "subscribe");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	JSONNODE *p1       = json_new_a("", event);
+	json_set_name(params, "params");
+	json_push_back(params, p1);
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return 0;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return 0;
+	}
+
+	json_free(response);
+	return 1;
+}
+
+/**
+ * Return the next event received (in order of coming in). Don't forget to free
+ * the resulting structure using libdazeus_event_free. Do NOT
+ * libdazeus_stringlist_free its 'parameters' property, though.
+ */
+dazeus_event *libdazeus_handle_event(dazeus *d)
+{
+	if(d->event == 0) {
+		// Wait for a new event to come in
+		assert(d->lastEvent == 0);
+		JSONNODE *res = 0;
+		if(_readPacket(d, -1, &res) <= 0) {
+			// read error
+			return NULL;
+		}
+		if(res == NULL)
+			return NULL;
+		JSONNODE_ITERATOR eventIt = json_find(res, "event");
+		if(eventIt == json_end(res)) {
+			d->error = "Error: Out of bound non-event packet received in handle_event";
+			return NULL;
+		}
+		dazeus_event *e = _event_from_json(d, res);
+		d->event = e;
+		d->lastEvent = e;
+		json_free(res);
+	}
+
+	// return the first one
+	dazeus_event *ret = d->event;
+	d->event = d->event->_next;
+	if(d->event == 0)
+		d->lastEvent = 0;
+	ret->_next = 0;
+	return ret;
+}
+
+/**
+ * Free an event returned by libdazeus_handle_event. This function calls
+ * libdazeus_stringlist_free on the 'parameters' property, so don't do this
+ * yourself.
+ */
+void libdazeus_event_free(dazeus_event *d)
+{
+	assert(d->_next == 0);
+	libdazeus_stringlist_free(d->parameters);
+	free(d->event);
+	free(d);
+}
+
