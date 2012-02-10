@@ -6,7 +6,6 @@
 #include <config.h>
 #include "pluginmanager.h"
 #include "testplugin.h"
-#include "karmaplugin.h"
 #include "statistics.h"
 #include "socketplugin.h"
 #include "database.h"
@@ -114,7 +113,6 @@ bool PluginManager::initialize()
 
   plugins_.append(new TestPlugin(this));
   plugins_.append(new Statistics(this));
-  plugins_.append(new KarmaPlugin(this));
   plugins_.append(new SocketPlugin(this));
 
   initialized_ = true;
