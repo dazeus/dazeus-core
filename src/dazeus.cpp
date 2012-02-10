@@ -29,6 +29,20 @@ DaZeus::DaZeus( QString configFileName )
 {
   if( !configFileName_.isEmpty() )
     loadConfig();
+
+  // Pretty number of initialisations viewer -- and also an immediate database
+  // check.
+  int numInits = database_->property("dazeus.numinits").toInt();
+  ++numInits;
+  database_->setProperty("dazeus.numinits", numInits);
+  const char *suffix = "th";
+  if(numInits%100 == 11 ) ;
+  else if(numInits%100 == 12) ;
+  else if(numInits%100 == 13) ;
+  else if(numInits%10 == 1) suffix = "st";
+  else if(numInits%10 == 2) suffix = "nd";
+  else if(numInits%10 == 3) suffix = "rd";
+  qDebug() << "Initialising DaZeus for the " << numInits << suffix << " time!";
 }
 
 
