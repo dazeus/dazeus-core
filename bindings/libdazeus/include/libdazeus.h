@@ -103,6 +103,14 @@ const char *libdazeus_error(dazeus*);
 int libdazeus_open(dazeus*, const char *socketfile);
 
 /**
+ * Get the internal file descriptor of this dazeus instance. Do not read or
+ * write from/to this socket. This method can be used to add the given file
+ * descriptor to an event loop (i.e. using select()). Returns 0 if no
+ * connection was made, or it has recently failed.
+ */
+int libdazeus_get_socket(dazeus*);
+
+/**
  * Clean up a dazeus instance.
  */
 void libdazeus_close(dazeus*);
