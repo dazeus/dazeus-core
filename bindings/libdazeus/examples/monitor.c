@@ -30,8 +30,9 @@ int main(int argc, char *argv[]) {
 	s("NAMES");
 #undef s
 
-	dazeus_event *e = libdazeus_handle_event(d);
-	while(e != 0) {
+	dazeus_event *e;
+	// Wait indefinitely for an event
+	while((e = libdazeus_handle_event(d, -1))) {
 		printf("Event: %s\n", e->event);
 		printf("Parameters:\n");
 		dazeus_stringlist *params = e->parameters;
@@ -43,7 +44,6 @@ int main(int argc, char *argv[]) {
 		}
 		printf("\n");
 		libdazeus_event_free(e);
-		e = libdazeus_handle_event(d);
 	}
 
 	libdazeus_close(d);
