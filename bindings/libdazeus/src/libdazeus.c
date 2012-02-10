@@ -446,6 +446,8 @@ dazeus *libdazeus_create() {
 	ret->socket = 0;
 	ret->error = 0;
 	ret->readahead_size = 0;
+	ret->event = 0;
+	ret->lastEvent = 0;
 	return ret;
 }
 
