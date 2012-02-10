@@ -127,6 +127,11 @@ void libdazeus_stringlist_free(dazeus_stringlist*);
 dazeus_stringlist *libdazeus_channels(dazeus*, const char *network);
 
 /**
+ * Send a message to an IRC channel or user.
+ */
+int libdazeus_message(dazeus*, const char *network, const char *receiver, const char *message);
+
+/**
  * Retrieve the value of a variable in the DaZeus 2 database. Remember to
  * free() the returned variable after use.
  */

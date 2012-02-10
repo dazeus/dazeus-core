@@ -577,6 +577,41 @@ dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
 }
 
 /**
+ * Send a message to an IRC channel or user.
+ */
+int libdazeus_message(dazeus *d, const char *network, const char *receiver, const char *message)
+{
+	// {'do':'message','params':['network','recv','message']}
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("do", "message");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	JSONNODE *p1       = json_new_a("", network);
+	JSONNODE *p2       = json_new_a("", receiver);
+	JSONNODE *p3       = json_new_a("", message);
+	json_set_name(params, "params");
+	json_push_back(params, p1);
+	json_push_back(params, p2);
+	json_push_back(params, p3);
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return 0;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return 0;
+	}
+
+	json_free(response);
+	return 1;
+}
+
+/**
  * Clean up memory allocated by earlier stringlist functions.
  */
 void libdazeus_stringlist_free(dazeus_stringlist *n)
