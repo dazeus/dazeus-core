@@ -5,7 +5,6 @@
 
 #include <config.h>
 #include "pluginmanager.h"
-#include "socketplugin.h"
 #include "database.h"
 #include "../server.h"
 
@@ -108,8 +107,6 @@ bool PluginManager::initialize()
 {
   Q_ASSERT( config_ != 0 );
   setContext(QString());
-
-  plugins_.append(new SocketPlugin(this));
 
   initialized_ = true;
 

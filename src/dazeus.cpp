@@ -9,6 +9,7 @@
 #include "database.h"
 #include "network.h"
 #include "config.h"
+#include "plugincomm.h"
 #include "plugins/pluginmanager.h"
 
 // #define DEBUG
@@ -25,6 +26,7 @@ DaZeus::DaZeus( QString configFileName )
 , config_( 0 )
 , configFileName_( configFileName )
 , pluginManager_( 0 )
+, plugins_( 0 )
 , database_( 0 )
 {
   if( !configFileName_.isEmpty() )
@@ -60,6 +62,7 @@ DaZeus::~DaZeus()
 
   resetConfig();
   delete pluginManager_;
+  delete plugins_;
 }
 
 
@@ -149,6 +152,7 @@ void DaZeus::welcomed()
 #endif
   Q_ASSERT( n != 0 );
   pluginManager_->welcomed( *n );
+  plugins_->welcomed( *n );
 }
 
 
@@ -168,6 +172,7 @@ void DaZeus::connected()
   const Server *s = n->activeServer();
   Q_ASSERT( s != 0 );
   pluginManager_->connected( *n, *s );
+  plugins_->connected( *n, *s );
 }
 
 
@@ -185,6 +190,7 @@ void DaZeus::disconnected()
 #endif
   Q_ASSERT( n != 0 );
   pluginManager_->disconnected( *n );
+  plugins_->disconnected( *n );
 }
 
 
@@ -202,6 +208,8 @@ bool DaZeus::initPlugins()
     delete pluginManager_;
     return false;
   }
+
+  plugins_->init();
 
   return true;
 }
@@ -235,6 +243,7 @@ bool DaZeus::loadConfig()
     return false;
 
   pluginManager_ = new PluginManager( database_, this );
+  plugins_ = new PluginComm( database_, config_, this );
 
   foreach( NetworkConfig *netconf, networks )
   {
@@ -252,8 +261,10 @@ bool DaZeus::loadConfig()
              this, SLOT(       welcomed() ) );
 
 #define RELAY_NET_SIGN(sign) \
-    connect( net,            SIGNAL( sign ), \
-             pluginManager_, SLOT(   sign ) )
+    connect( net,            SIGNAL( sign ),   \
+             pluginManager_, SLOT(   sign ) ); \
+    connect( net,            SIGNAL( sign ),   \
+             plugins_,    SLOT(   sign ) );
 
     RELAY_NET_SIGN( motdReceived( const QString&, Irc::Buffer* ));
     RELAY_NET_SIGN( joined( const QString&, Irc::Buffer* ) );

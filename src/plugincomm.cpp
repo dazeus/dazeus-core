@@ -16,25 +16,34 @@
 #include <stdint.h>
 #include <libjson.h>
 
-#include "socketplugin.h"
-#include "pluginmanager.h"
+#include "plugincomm.h"
+#include "plugins/plugin.h"
+#include "network.h"
+#include "config.h"
+#include "server.h"
+#include "config.h"
+#include "dazeus.h"
+#include "database.h"
 
-SocketPlugin::SocketPlugin( PluginManager *man )
-: Plugin( "SocketPlugin", man )
+PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
+: QObject()
+, database_(d)
+, config_(c)
+, dazeus_(bot)
 {}
 
-SocketPlugin::~SocketPlugin() {
+PluginComm::~PluginComm() {
 	qDeleteAll(sockets_.keys());
 	qDeleteAll(tcpServers_);
 }
 
-void SocketPlugin::init() {
-	int sockets = getConfig("sockets").toInt();
+void PluginComm::init() {
+	int sockets = config_->pluginConfig("socketplugin").value("sockets").toInt();
 	for(int i = 1; i <= sockets; ++i) {
-		QString socket = getConfig("socket" + QString::number(i)).toString();
+		QString socket = config_->pluginConfig("socketplugin").value("socket" + QString::number(i)).toString();
 		int colon = socket.indexOf(':');
 		if(colon == -1) {
-			qWarning() << "(SocketPlugin) Did not understand socket option " << i << ":" << socket;
+			qWarning() << "(PluginComm) Did not understand socket option " << i << ":" << socket;
 			continue;
 		}
 		QString socketType = socket.left(colon);
@@ -43,7 +52,7 @@ void SocketPlugin::init() {
 			QFile::remove(socket);
 			QLocalServer *server = new QLocalServer();
 			if(!server->listen(socket)) {
-				qWarning() << "(SocketPlugin) Failed to start listening for local connections on "
+				qWarning() << "(PluginComm) Failed to start listening for local connections on "
 				           << socket << ": " << server->errorString();
 				continue;
 			}
@@ -63,7 +72,7 @@ void SocketPlugin::init() {
 			bool ok = false;
 			unsigned int port = tcpPort.toUInt(&ok);
 			if(!ok || port > UINT16_MAX) {
-				qWarning() << "(SocketPlugin) Invalid TCP port number for socket " << i;
+				qWarning() << "(PluginComm) Invalid TCP port number for socket " << i;
 				continue;
 			}
 			QHostAddress host(tcpHost);
@@ -72,7 +81,7 @@ void SocketPlugin::init() {
 			} else if(host.isNull()) {
 				QHostInfo info = QHostInfo::fromName(tcpHost);
 				if(info.error() != QHostInfo::NoError || info.addresses().length() == 0) {
-					qWarning() << "(SocketPlugin) Couldn't resolve TCP host for socket "
+					qWarning() << "(PluginComm) Couldn't resolve TCP host for socket "
 					           << i << ": " << info.errorString();
 					continue;
 				}
@@ -80,19 +89,19 @@ void SocketPlugin::init() {
 			}
 			QTcpServer *server = new QTcpServer();
 			if(!server->listen(host, port)) {
-				qWarning() << "(SocketPlugin) Failed to start listening for TCP connections: " << server->errorString();
+				qWarning() << "(PluginComm) Failed to start listening for TCP connections: " << server->errorString();
 				continue;
 			}
 			connect(server, SIGNAL(newConnection()),
 			        this,   SLOT(newTcpConnection()));
 			tcpServers_.append(server);
 		} else {
-			qWarning() << "(SocketPlugin) Skipping socket " << i << ": unknown type " << socketType;
+			qWarning() << "(PluginComm) Skipping socket " << i << ": unknown type " << socketType;
 		}
 	}
 }
 
-void SocketPlugin::newTcpConnection() {
+void PluginComm::newTcpConnection() {
 	for(int i = 0; i < tcpServers_.length(); ++i) {
 		QTcpServer *s = tcpServers_[i];
 		if(!s->isListening()) {
@@ -109,7 +118,7 @@ void SocketPlugin::newTcpConnection() {
 	}
 }
 
-void SocketPlugin::newLocalConnection() {
+void PluginComm::newLocalConnection() {
 	for(int i = 0; i < localServers_.length(); ++i) {
 		QLocalServer *s = localServers_[i];
 		if(!s->isListening()) {
@@ -126,7 +135,7 @@ void SocketPlugin::newLocalConnection() {
 	}
 }
 
-void SocketPlugin::poll() {
+void PluginComm::poll() {
 	QList<QIODevice*> toRemove_;
 	QList<QIODevice*> socks = sockets_.keys();
 	for(int i = 0; i < socks.size(); ++i) {
@@ -175,7 +184,7 @@ void SocketPlugin::poll() {
 	}
 }
 
-void SocketPlugin::dispatch(const QString &event, const QStringList &parameters) {
+void PluginComm::dispatch(const QString &event, const QStringList &parameters) {
 	foreach(QIODevice *i, sockets_.keys()) {
 		SocketInfo &info = sockets_[i];
 		if(info.isSubscribed(event)) {
@@ -184,7 +193,7 @@ void SocketPlugin::dispatch(const QString &event, const QStringList &parameters)
 	}
 }
 
-void SocketPlugin::flushCommandQueue(const QString &nick, bool identified) {
+void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 	int i;
 	for(i = commandQueue_.length() - 1; i >= 0; --i) {
 		Command *cmd = commandQueue_.at(i);
@@ -241,71 +250,92 @@ void SocketPlugin::flushCommandQueue(const QString &nick, bool identified) {
 	}
 }
 
-void SocketPlugin::welcomed( Network &net ) {
+void PluginComm::welcomed( Network &net ) {
 	dispatch("WELCOMED", QStringList() << net.networkName());
 }
 
-void SocketPlugin::connected( Network &net, const Server & ) {
+void PluginComm::connected( Network &net, const Server & ) {
 	dispatch("CONNECTED", QStringList() << net.networkName());
 }
 
-void SocketPlugin::disconnected( Network &net ) {
+void PluginComm::disconnected( Network &net ) {
 	dispatch("DISCONNECTED", QStringList() << net.networkName());
 }
 
-void SocketPlugin::joined( Network &net, const QString &who, Irc::Buffer *channel ) {
-	dispatch("JOINED", QStringList() << net.networkName() << who << channel->receiver());
+void PluginComm::joined( const QString &who, Irc::Buffer *channel ) {
+	Network *n = Network::fromBuffer(channel);
+	Q_ASSERT(n != 0);
+	dispatch("JOINED", QStringList() << n->networkName() << who << channel->receiver());
 }
 
-void SocketPlugin::parted( Network &net, const QString &who, const QString &leaveMessage,
+void PluginComm::parted( const QString &who, const QString &leaveMessage,
                          Irc::Buffer *channel ) {
-	dispatch("PARTED", QStringList() << net.networkName() << who << channel->receiver() << leaveMessage);
+	Network *n = Network::fromBuffer(channel);
+	Q_ASSERT(n != 0);
+	dispatch("PARTED", QStringList() << n->networkName() << who << channel->receiver() << leaveMessage);
 }
 
-void SocketPlugin::motdReceived( Network &net, const QString &motd, Irc::Buffer *buffer ) {
-	dispatch("MOTD", QStringList() << net.networkName() << motd << buffer->receiver());
+void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
 }
 
-void SocketPlugin::quit(   Network &net, const QString &origin, const QString &message,
+void PluginComm::quit(   const QString &origin, const QString &message,
                      Irc::Buffer *buffer ) {
-	dispatch("QUIT", QStringList() << net.networkName() << origin << buffer->receiver() << message);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("QUIT", QStringList() << n->networkName() << origin << buffer->receiver() << message);
 }
 
-void SocketPlugin::nickChanged( Network &net, const QString &origin, const QString &nick,
+void PluginComm::nickChanged( const QString &origin, const QString &nick,
                           Irc::Buffer *buffer ) {
-	dispatch("NICK", QStringList() << net.networkName() << origin << nick);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("NICK", QStringList() << n->networkName() << origin << nick);
 }
 
-void SocketPlugin::modeChanged( Network &net, const QString &origin, const QString &mode,
+void PluginComm::modeChanged( const QString &origin, const QString &mode,
                           const QString &args, Irc::Buffer *buffer ) {
-	dispatch("MODE", QStringList() << net.networkName() << origin << buffer->receiver() << mode << args);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("MODE", QStringList() << n->networkName() << origin << buffer->receiver() << mode << args);
 }
 
-void SocketPlugin::topicChanged( Network &net, const QString &origin, const QString &topic,
+void PluginComm::topicChanged( const QString &origin, const QString &topic,
                            Irc::Buffer *buffer ) {
-	dispatch("TOPIC", QStringList() << net.networkName() << origin << buffer->receiver() << topic);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("TOPIC", QStringList() << n->networkName() << origin << buffer->receiver() << topic);
 }
 
-void SocketPlugin::invited( Network &net, const QString &origin, const QString &receiver,
+void PluginComm::invited( const QString &origin, const QString &receiver,
                       const QString &channel, Irc::Buffer *buffer ) {
-	dispatch("INVITE", QStringList() << net.networkName() << origin << buffer->receiver() << receiver << channel);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("INVITE", QStringList() << n->networkName() << origin << buffer->receiver() << receiver << channel);
 }
 
-void SocketPlugin::kicked( Network &net, const QString &origin, const QString &nick,
+void PluginComm::kicked( const QString &origin, const QString &nick,
                      const QString &message, Irc::Buffer *buffer ) {
-	dispatch("KICK", QStringList() << net.networkName() << origin << buffer->receiver() << nick << message);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("KICK", QStringList() << n->networkName() << origin << buffer->receiver() << nick << message);
 }
 
-void SocketPlugin::messageReceived( Network &net, const QString &origin, const QString &message,
+void PluginComm::messageReceived( const QString &origin, const QString &message,
                               Irc::Buffer *buffer ) {
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+
 	QString payload;
-	QString highlightChar = getConfig("highlightCharacter", "general").toString();
+	QString highlightChar = config_->pluginConfig("general").value("highlightCharacter").toString();
 	if(highlightChar.isNull())
 		highlightChar = "}";
 
-	if( message.startsWith(net.user()->nick() + ":", Qt::CaseInsensitive)
-	 || message.startsWith(net.user()->nick() + ",", Qt::CaseInsensitive)) {
-		payload = message.mid(net.user()->nick().length() + 1).trimmed();
+	if( message.startsWith(n->user()->nick() + ":", Qt::CaseInsensitive)
+	 || message.startsWith(n->user()->nick() + ",", Qt::CaseInsensitive)) {
+		payload = message.mid(n->user()->nick().length() + 1).trimmed();
 	} else if(message.startsWith(highlightChar, Qt::CaseInsensitive)) {
 		payload = message.mid(highlightChar.length()).trimmed();
 	}
@@ -344,7 +374,7 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 		if(args.length() > 0) {
 			const QString &command = args.takeFirst();
 
-			Command *cmd = new Command(net);
+			Command *cmd = new Command(*n);
 			cmd->origin = origin;
 			cmd->channel = buffer->receiver();
 			cmd->command = command;
@@ -354,54 +384,70 @@ void SocketPlugin::messageReceived( Network &net, const QString &origin, const Q
 			flushCommandQueue();
 		}
 	}
-	dispatch("MESSAGE", QStringList() << net.networkName() << origin << buffer->receiver() << message << (net.isIdentified(origin) ? "true" : "false"));
+	dispatch("MESSAGE", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
-void SocketPlugin::noticeReceived( Network &net, const QString &origin, const QString &notice,
+void PluginComm::noticeReceived( const QString &origin, const QString &notice,
                              Irc::Buffer *buffer ) {
-	dispatch("NOTICE", QStringList() << net.networkName() << origin << buffer->receiver() << notice << (net.isIdentified(origin) ? "true" : "false"));
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("NOTICE", QStringList() << n->networkName() << origin << buffer->receiver() << notice << (n->isIdentified(origin) ? "true" : "false"));
 }
 
-void SocketPlugin::ctcpRequestReceived(Network &net, const QString &origin, const QString &request,
+void PluginComm::ctcpRequestReceived(const QString &origin, const QString &request,
                                  Irc::Buffer *buffer ) {
-	dispatch("CTCPREQ", QStringList() << net.networkName() << origin << buffer->receiver() << request);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("CTCPREQ", QStringList() << n->networkName() << origin << buffer->receiver() << request);
 }
 
-void SocketPlugin::ctcpReplyReceived( Network &net, const QString &origin, const QString &reply,
+void PluginComm::ctcpReplyReceived( const QString &origin, const QString &reply,
                                 Irc::Buffer *buffer ) {
-	dispatch("CTCPREPL", QStringList() << net.networkName() << origin << buffer->receiver() << reply);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("CTCPREPL", QStringList() << n->networkName() << origin << buffer->receiver() << reply);
 }
 
-void SocketPlugin::ctcpActionReceived( Network &net, const QString &origin, const QString &action,
+void PluginComm::ctcpActionReceived( const QString &origin, const QString &action,
                                  Irc::Buffer *buffer ) {
-	dispatch("ACTION", QStringList() << net.networkName() << origin << buffer->receiver() << action);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("ACTION", QStringList() << n->networkName() << origin << buffer->receiver() << action);
 }
 
-void SocketPlugin::numericMessageReceived( Network &net, const QString &origin, uint code,
+void PluginComm::numericMessageReceived( const QString &origin, uint code,
                                      const QStringList &params,
                                      Irc::Buffer *buffer ) {
-	dispatch("NUMERIC", QStringList() << net.networkName() << origin << buffer->receiver() << QString::number(code) << params);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("NUMERIC", QStringList() << n->networkName() << origin << buffer->receiver() << QString::number(code) << params);
 }
 
-void SocketPlugin::unknownMessageReceived( Network &net, const QString &origin,
+void PluginComm::unknownMessageReceived( const QString &origin,
                                        const QStringList &params,
                                        Irc::Buffer *buffer ) {
-	dispatch("UNKNOWN", QStringList() << net.networkName() << origin << buffer->receiver() << params);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << params);
 }
 
-void SocketPlugin::whoisReceived( Network &net, const QString &origin, const QString &nick,
+void PluginComm::whoisReceived( const QString &origin, const QString &nick,
                                  bool identified, Irc::Buffer *buffer ) {
-	dispatch("WHOIS", QStringList() << net.networkName() << origin << nick << (identified ? "true" : "false"));
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("WHOIS", QStringList() << n->networkName() << origin << nick << (identified ? "true" : "false"));
 	flushCommandQueue(nick, identified);
 }
-void SocketPlugin::namesReceived( Network &net, const QString &origin, const QString &channel,
+void PluginComm::namesReceived( const QString &origin, const QString &channel,
                                  const QStringList &params, Irc::Buffer *buffer ) {
-	dispatch("NAMES", QStringList() << net.networkName() << origin << channel << params);
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	dispatch("NAMES", QStringList() << n->networkName() << origin << channel << params);
 }
 
-void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
+void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
 	if(!dev->isOpen()) return;
-	const QList<Network*> &networks = manager()->bot()->networks();
+	const QList<Network*> &networks = dazeus_->networks();
 
 	JSONNode n;
 	try {
@@ -622,26 +668,20 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 	} else if(action == "property") {
 		response.push_back(JSONNode("did", "property"));
 
-		VariableScope vScope;
-		if(scope.size() == 0) {
-			vScope = GlobalScope;
-			setContext(QString());
-		} else if(scope.size() == 1) {
-			vScope = NetworkScope;
-			setContext(scope[0]);
-		} else if(scope.size() == 2) {
-			vScope = ReceiverScope;
-			setContext(scope[0], scope[1]);
-		} else {
-			vScope = SenderScope;
-			setContext(scope[0], scope[1], scope[2]);
+		QString network, receiver, sender;
+		switch(scope.size()) {
+		// fall-throughs
+		case 3: sender   = scope[2];
+		case 2: receiver = scope[1];
+		case 1: network  = scope[0];
+		default: break;
 		}
 
 		if(params.size() < 2) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else if(params[0] == "get") {
-			QVariant value = get(params[1]);
+			QVariant value = database_->property(params[1], network, receiver, sender);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1].toStdString())));
 			if(!value.isNull()) {
@@ -652,7 +692,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				set(vScope, params[1], params[2]);
+				database_->setProperty(params[1], params[2], network, receiver, sender);
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "unset") {
@@ -660,11 +700,11 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				set(vScope, params[1], QVariant());
+				database_->setProperty(params[1], QVariant(), network, receiver, sender);
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
-			QStringList qKeys = keys(params[1]);
+			QStringList qKeys = database_->propertyKeys(params[1], network, receiver, sender);
 			JSONNode keys(JSON_ARRAY);
 			keys.set_name("keys");
 			foreach(const QString &k, qKeys) {
@@ -676,7 +716,6 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Did not understand request"));
 		}
-		clearContext();
 	} else if(action == "config") {
 		if(params.size() < 1) {
 			response.push_back(JSONNode("success", false));
@@ -685,7 +724,7 @@ void SocketPlugin::handle(QIODevice *dev, const QByteArray &line, SocketInfo &in
 			QStringList parts = params[0].split('.');
 			QString group = parts.takeFirst();
 			QString name = parts.join(".");
-			QVariant conf = getConfig(name, group);
+			QVariant conf = config_->pluginConfig(group).value(name);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[0].toStdString())));
 			if(!conf.isNull()) {
