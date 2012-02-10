@@ -49,7 +49,7 @@ typedef struct dazeus_struct
 
 typedef struct dazeus_stringlist_struct
 {
-	const char *value;
+	char *value;
 	struct dazeus_stringlist_struct *next;
 } dazeus_stringlist;
 
@@ -86,6 +86,13 @@ dazeus_stringlist *libdazeus_networks(dazeus*);
  * Clean up memory allocated by earlier stringlist functions.
  */
 void libdazeus_stringlist_free(dazeus_stringlist*);
+
+/**
+ * Returns a linked list of channels on this DaZeus instance, or NULL if
+ * an error occured. Remember to free the returned structure with
+ * libdazeus_stringlist_free().
+ */
+dazeus_stringlist *libdazeus_channels(dazeus*, const char *network);
 
 #ifdef __cplusplus
 }

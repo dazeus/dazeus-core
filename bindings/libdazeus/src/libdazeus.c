@@ -379,6 +379,54 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
 }
 
 /**
+ * Returns a linked list of channels on this DaZeus instance, or NULL if
+ * an error occured. Remember to free the returned structure with
+ * libdazeus_stringlist_free().
+ */
+dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
+{
+	// {'get':'channels','params':['networkname']}
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("get", "channels");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	json_set_name(params, "params");
+	JSONNODE *param1   = json_new_a("", network);
+	json_push_back(params, param1);
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return NULL;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return NULL;
+	}
+
+	JSONNODE *channels = json_pop_back(response, "channels");
+	if(channels == NULL) {
+		json_free(response);
+		d->error = "Reply didn't have channels";
+		return NULL;
+	}
+	dazeus_stringlist *list = _jsonarray_to_stringlist(channels);
+	if(list == NULL) {
+		json_free(channels);
+		json_free(response);
+		d->error = "Channels in reply wasn't an array";
+		return NULL;
+	}
+
+	json_free(channels);
+	json_free(response);
+	return list;
+}
+
+/**
  * Clean up memory allocated by earlier stringlist functions.
  */
 void libdazeus_stringlist_free(dazeus_stringlist *n)
