@@ -19,6 +19,8 @@ examples/counter: examples/counter.c include/libdazeus.h lib/libdazeus.a
 examples/counterreset: examples/counterreset.c include/libdazeus.h lib/libdazeus.a
 	$(CXX) -o examples/counterreset examples/counterreset.c lib/libdazeus.a $(CFLAGS)
 
+examples/monitor: examples/monitor.c include/libdazeus.h lib/libdazeus.a
+	$(CXX) -o examples/monitor examples/monitor.c lib/libdazeus.a $(CFLAGS)
 
 .PHONY : clean distclean
 clean:
@@ -26,8 +28,10 @@ clean:
 	rm -rf examples/networks.dSYM
 	rm -rf examples/counter.dSYM
 	rm -rf examples/counterreset.dSYM
+	rm -rf examples/monitor.dSYM
 	make -C contrib/libjson clean
 
 distclean: clean
 	rm -f lib/libdazeus.a
 	rm -f examples/networks examples/counter examples/counterreset
+	rm -f examples/monitor
