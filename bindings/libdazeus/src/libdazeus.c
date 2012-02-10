@@ -517,7 +517,7 @@ void libdazeus_stringlist_free(dazeus_stringlist *n)
  */
 char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
 {
-	// {'do':'property','params':['get','variable']}
+	// {'do':'property','params':['get','variable',...scope...]}
 	JSONNODE *fulljson = json_new(JSON_NODE);
 	JSONNODE *request  = json_new_a("do", "property");
 	JSONNODE *params   = json_new(JSON_ARRAY);
@@ -566,6 +566,39 @@ char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
  */
 int libdazeus_set_property(dazeus *d, const char *variable, const char *value, dazeus_scope *s)
 {
+	// {'do':'property','params':['set','variable','value',...scope...]}
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("do", "property");
+	JSONNODE *params   = json_new(JSON_ARRAY);
+	JSONNODE *p1       = json_new_a("", "set");
+	JSONNODE *p2       = json_new_a("", variable);
+	JSONNODE *p3       = json_new_a("", value);
+	json_set_name(params, "params");
+	json_push_back(params, p1);
+	json_push_back(params, p2);
+	json_push_back(params, p3);
+	if(!_add_scope(d, s, params)) {
+		json_free(fulljson);
+		json_free(request);
+		json_free(params);
+		return 0;
+	}
+	json_push_back(fulljson, request);
+	json_push_back(fulljson, params);
+	_send(d, fulljson);
+	json_free(fulljson);
+
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return 0;
+	}
+
+	if(!_check_success(d, response)) {
+		json_free(response);
+		return 0;
+	}
+
+	json_free(response);
 	return 1;
 }
 
