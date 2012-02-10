@@ -12,6 +12,7 @@
 #include "plugins/pluginmanager.h"
 
 // #define DEBUG
+#define VERBOSE
 
 /**
  * @brief Constructor.
@@ -129,6 +130,9 @@ Database *DaZeus::database() const
 void DaZeus::welcomed()
 {
   Network *n = qobject_cast<Network*>(sender());
+#ifdef VERBOSE
+  qDebug() << "Welcomed to network: " << n;
+#endif
   Q_ASSERT( n != 0 );
   pluginManager_->welcomed( *n );
 }
@@ -143,6 +147,9 @@ void DaZeus::welcomed()
 void DaZeus::connected()
 {
   Network *n = qobject_cast<Network*>(sender());
+#ifdef VERBOSE
+  qDebug() << "Connected to network: " << n;
+#endif
   Q_ASSERT( n != 0 );
   const Server *s = n->activeServer();
   Q_ASSERT( s != 0 );
@@ -159,6 +166,9 @@ void DaZeus::connected()
 void DaZeus::disconnected()
 {
   Network *n = qobject_cast<Network*>(sender());
+#ifdef VERBOSE
+  qDebug() << "Disconnected from network: " << n;
+#endif
   Q_ASSERT( n != 0 );
   pluginManager_->disconnected( *n );
 }
@@ -209,7 +219,7 @@ bool DaZeus::loadConfig()
 
   if(!connectDatabase())
     return false;
-  
+
   pluginManager_ = new PluginManager( database_, this );
 
   foreach( NetworkConfig *netconf, networks )
