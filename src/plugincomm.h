@@ -6,18 +6,28 @@
 #ifndef SOCKETPLUGIN_H
 #define SOCKETPLUGIN_H
 
-#include "plugin.h"
 #include <QtCore/QVariant>
 #include <QtCore/QIODevice>
 #include <QtCore/QByteArray>
 #include <QtCore/QMultiMap>
+#include <QtCore/QStringList>
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QLocalServer>
 
 #include <sstream>
 #include <libjson.h>
 
-class SocketPlugin : public Plugin
+class Network;
+class Database;
+class Server;
+class Config;
+class DaZeus;
+
+namespace Irc {
+	class Buffer;
+}
+
+class PluginComm : public QObject
 {
   Q_OBJECT
 
@@ -128,8 +138,8 @@ class SocketPlugin : public Plugin
   };
 
   public:
-            SocketPlugin(PluginManager *man);
-  virtual  ~SocketPlugin();
+            PluginComm( Database *d, Config *c, DaZeus *bot );
+  virtual  ~PluginComm();
     void dispatch(const QString &event, const QStringList &parameters);
 
   public slots:
@@ -137,41 +147,41 @@ class SocketPlugin : public Plugin
     virtual void welcomed( Network &net );
     virtual void connected( Network &net, const Server &serv );
     virtual void disconnected( Network &net );
-    virtual void joined( Network &net, const QString &who, Irc::Buffer *channel );
-    virtual void parted( Network &net, const QString &who, const QString &leaveMessage,
+    virtual void joined( const QString &who, Irc::Buffer *channel );
+    virtual void parted( const QString &who, const QString &leaveMessage,
                          Irc::Buffer *channel );
-    virtual void motdReceived( Network &net, const QString &motd, Irc::Buffer *buffer );
-    virtual void quit(   Network &net, const QString &origin, const QString &message,
+    virtual void motdReceived( const QString &motd, Irc::Buffer *buffer );
+    virtual void quit(   const QString &origin, const QString &message,
                      Irc::Buffer *buffer );
-    virtual void nickChanged( Network &net, const QString &origin, const QString &nick,
+    virtual void nickChanged( const QString &origin, const QString &nick,
                           Irc::Buffer *buffer );
-    virtual void modeChanged( Network &net, const QString &origin, const QString &mode,
+    virtual void modeChanged( const QString &origin, const QString &mode,
                           const QString &args, Irc::Buffer *buffer );
-    virtual void topicChanged( Network &net, const QString &origin, const QString &topic,
+    virtual void topicChanged( const QString &origin, const QString &topic,
                            Irc::Buffer *buffer );
-    virtual void invited( Network &net, const QString &origin, const QString &receiver,
+    virtual void invited( const QString &origin, const QString &receiver,
                       const QString &channel, Irc::Buffer *buffer );
-    virtual void kicked( Network &net, const QString &origin, const QString &nick,
+    virtual void kicked( const QString &origin, const QString &nick,
                      const QString &message, Irc::Buffer *buffer );
-    virtual void messageReceived( Network &net, const QString &origin, const QString &message,
+    virtual void messageReceived( const QString &origin, const QString &message,
                               Irc::Buffer *buffer );
-    virtual void noticeReceived( Network &net, const QString &origin, const QString &notice,
+    virtual void noticeReceived( const QString &origin, const QString &notice,
                              Irc::Buffer *buffer );
-    virtual void ctcpRequestReceived(Network &net, const QString &origin, const QString &request,
+    virtual void ctcpRequestReceived(const QString &origin, const QString &request,
                                  Irc::Buffer *buffer );
-    virtual void ctcpReplyReceived( Network &net, const QString &origin, const QString &reply,
+    virtual void ctcpReplyReceived( const QString &origin, const QString &reply,
                                 Irc::Buffer *buffer );
-    virtual void ctcpActionReceived( Network &net, const QString &origin, const QString &action,
+    virtual void ctcpActionReceived( const QString &origin, const QString &action,
                                  Irc::Buffer *buffer );
-    virtual void numericMessageReceived( Network &net, const QString &origin, uint code,
+    virtual void numericMessageReceived( const QString &origin, uint code,
                                      const QStringList &params,
                                      Irc::Buffer *buffer );
-    virtual void unknownMessageReceived( Network &net, const QString &origin,
+    virtual void unknownMessageReceived( const QString &origin,
                                        const QStringList &params,
                                        Irc::Buffer *buffer );
-    virtual void whoisReceived( Network &net, const QString &origin, const QString &nick,
+    virtual void whoisReceived( const QString &origin, const QString &nick,
                                      bool identified, Irc::Buffer *buffer );
-    virtual void namesReceived( Network &net, const QString &origin, const QString &channel,
+    virtual void namesReceived( const QString &origin, const QString &channel,
                                      const QStringList &params, Irc::Buffer *buffer );
 
   private slots:
@@ -184,6 +194,9 @@ class SocketPlugin : public Plugin
     QList<QLocalServer*> localServers_;
     QList<Command*> commandQueue_;
     QMap<QIODevice*,SocketInfo> sockets_;
+    Database *database_;
+    Config *config_;
+    DaZeus *dazeus_;
     void handle(QIODevice *dev, const QByteArray &line, SocketInfo &info);
     void flushCommandQueue(const QString &nick = QString(), bool identified = false);
 };
