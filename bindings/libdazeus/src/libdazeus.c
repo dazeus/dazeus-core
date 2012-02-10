@@ -236,6 +236,57 @@ int _read(dazeus *d, JSONNODE **result) {
 	}
 }
 
+int _check_success(dazeus *d, JSONNODE *response) {
+	JSONNODE *success = json_pop_back(response, "success");
+	if(success == NULL) {
+		d->error = "No 'success' field in response.";
+		return 0;
+	}
+	json_char *succval = json_as_string(success);
+	if(strcmp(succval, "true") != 0) {
+		d->error = "Request failed, no error";
+		JSONNODE *error = json_pop_back(response, "error");
+		if(error) {
+			d->error = json_as_string(error);
+		}
+		json_free(error);
+		json_free(succval);
+		json_free(success);
+		return 0;
+	}
+	json_free(succval);
+	json_free(success);
+	return 1;
+}
+
+dazeus_stringlist *_jsonarray_to_stringlist(JSONNODE *array) {
+	if(json_type(array) != JSON_ARRAY)
+		return NULL;
+
+	JSONNODE_ITERATOR it = json_begin(array);
+	dazeus_stringlist *first = 0;
+	dazeus_stringlist *cur = first;
+	while(it != json_end(array)) {
+		JSONNODE *item = *it;
+
+		dazeus_stringlist *new = malloc(sizeof(dazeus_stringlist));
+		json_char *value = json_as_string(item);
+		new->value = malloc(strlen(value) + 1);
+		strcpy(new->value, value);
+		json_free(value);
+		new->next = 0;
+		if(first == 0) {
+			first = new;
+			cur = new;
+		} else {
+			cur->next = new;
+			cur = new;
+		}
+		it++;
+	}
+	return first;
+}
+
 /**
  * Create a new libdazeus instance.
  */
@@ -303,54 +354,28 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
 		return NULL;
 	}
 
-	JSONNODE *success = json_pop_back(response, "success");
-	if(success == NULL) {
+	if(!_check_success(d, response)) {
 		json_free(response);
-		d->error = "No 'success' field in response.";
 		return NULL;
 	}
-	json_char *succval = json_as_string(success);
-	if(strcmp(succval, "true") != 0) {
-		d->error = "Request failed, no error";
-		JSONNODE *error = json_pop_back(response, "error");
-		if(error) {
-			d->error = json_as_string(error);
-		}
-		json_free(succval);
-		json_free(success);
-		json_free(response);
-		json_free(error);
-		return NULL;
-	}
-	json_free(succval);
-	json_free(success);
 
 	JSONNODE *networks = json_pop_back(response, "networks");
-	JSONNODE_ITERATOR it = json_begin(networks);
-	dazeus_stringlist *first = 0;
-	dazeus_stringlist *cur = first;
-	while(it != json_end(networks)) {
-		JSONNODE *network = *it;
-
-		dazeus_stringlist *new = malloc(sizeof(dazeus_stringlist));
-		json_char *netname = json_as_string(network);
-		new->value = malloc(strlen(netname) + 1);
-		strcpy(new->network_name, netname);
-		json_free(netname);
-		new->next = 0;
-		if(first == 0) {
-			first = new;
-			cur = new;
-		} else {
-			cur->next = new;
-			cur = new;
-		}
-		it++;
+	if(networks == NULL) {
+		json_free(response);
+		d->error = "No networks present in reply";
+		return NULL;
+	}
+	dazeus_stringlist *list = _jsonarray_to_stringlist(networks);
+	if(list == NULL) {
+		json_free(networks);
+		json_free(response);
+		d->error = "Networks in reply wasn't an array";
+		return NULL;
 	}
 
 	json_free(networks);
 	json_free(response);
-	return first;
+	return list;
 }
 
 /**
