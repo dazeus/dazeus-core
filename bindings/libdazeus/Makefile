@@ -20,3 +20,4 @@ clean:
 
 distclean: clean
 	rm -f lib/libdazeus.a
+	rm -f examples/networks
