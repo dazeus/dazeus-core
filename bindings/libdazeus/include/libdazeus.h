@@ -37,11 +37,14 @@ extern "C" {
 #define LIBDAZEUS_VERSION_STR "2.0-beta1"
 #define LIBDAZEUS_VERSION 0x010901
 
+#define LIBDAZEUS_READAHEAD_SIZE 512
 typedef struct dazeus_struct
 {
 	char *socketfile;
 	int socket;
 	char *error;
+	char readahead[LIBDAZEUS_READAHEAD_SIZE];
+	unsigned int readahead_size;
 } dazeus;
 
 typedef struct dazeus_network_struct

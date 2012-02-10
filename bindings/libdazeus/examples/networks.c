@@ -17,6 +17,11 @@ int main(int argc, char *argv[]) {
 		return 3;
 	}
 	dazeus_network *net = libdazeus_networks(d);
+	if(net == NULL) {
+		fprintf(stderr, "Failed reading DaZeus networks: %s\n", d->error);
+		libdazeus_close(d);
+		return 4;
+	}
 	int i = 0;
 	while(net != 0) {
 		printf("Network %d: %s\n", ++i, net->network_name);

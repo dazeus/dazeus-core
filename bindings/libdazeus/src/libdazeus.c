@@ -31,13 +31,19 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/uio.h>
 #include <netinet/ip.h>
 #include <netdb.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <time.h>
+#include <ctype.h>
+
+#include <libjson.h>
 
 void _connect(dazeus *d)
 {
@@ -122,6 +128,113 @@ void _connect(dazeus *d)
 	assert(d->socket);
 }
 
+int _send(dazeus *d, JSONNODE *node) {
+	_connect(d);
+	if(!d->socket) {
+		return -1;
+	}
+	json_char *raw_json = json_write(node);
+	// TODO is json_char char or wchar_t here?
+	// what happens with size if it is wchar?
+	int size = strlen(raw_json);
+	dprintf(d->socket, "%d%s\n", size, raw_json);
+	return size;
+}
+
+// Don't forget to free the JSONNODE returned via 'result'
+// using json_free()!
+int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
+	// TODO implement timeout well in read()
+	assert(result != NULL);
+	*result = 0;
+	time_t starttime = time(NULL);
+	int once = timeout == 0;
+	_connect(d);
+	if(!d->socket) {
+		return -1;
+	}
+	while(timeout < 0 || once == 1 || time(NULL) <= starttime + timeout) {
+		once = 0;
+
+		// First, append the buffer by as much as we can
+		char buf[LIBDAZEUS_READAHEAD_SIZE];
+		int max_size = LIBDAZEUS_READAHEAD_SIZE - d->readahead_size;
+		ssize_t r = read(d->socket, buf, max_size);
+		if(r < 0) {
+			d->error = strerror(errno);
+			return -1;
+		}
+		memcpy(d->readahead + d->readahead_size, buf, r);
+		d->readahead_size += r;
+
+		// Now, try reading a packet out of this
+		// First the size, then the JSON data
+		memset(buf, 0, LIBDAZEUS_READAHEAD_SIZE);
+		char *jsonptr = buf;
+		uint16_t i;
+		for(i = 0; i < d->readahead_size; ++i) {
+			char c = (d->readahead)[i];
+			if(isdigit(c)) {
+				jsonptr[0] = c;
+				++jsonptr;
+			} else if(c == '{') {
+				break;
+			} // skip all other characters
+		}
+		jsonptr[0] = 0;
+		int json_size = atoi(buf);
+		if(json_size >= LIBDAZEUS_READAHEAD_SIZE) {
+			// We can't fit a packet of this size in our buffers,
+			// so close the connection
+			// TODO: implement growing buffers
+			close(d->socket);
+			d->socket = 0;
+			d->readahead_size = 0;
+			d->error = "JSON packet size is too large";
+			return -1;
+		}
+		if(d->readahead_size >= i + json_size) {
+			// enough data available to read a packet!
+			// first, move it into our own buffer
+			memcpy(buf, d->readahead + i, json_size);
+			buf[json_size] = 0;
+			// then, shrink the saved buffer
+			memmove(d->readahead, d->readahead + i + json_size, d->readahead_size - i - json_size);
+			d->readahead_size -= i + json_size;
+
+			JSONNODE *message = json_parse(buf);
+			if(message == NULL) {
+				close(d->socket);
+				d->socket = 0;
+				d->readahead_size = 0;
+				d->error = "Invalid JSON data sent to socket";
+				return -1;
+			}
+			*result = message;
+			return json_size;
+		}
+	}
+	return 0;
+}
+
+// Read incoming JSON requests until a non-event comes in (blocking)
+int _read(dazeus *d, JSONNODE **result) {
+	assert(result != NULL);
+	*result = 0;
+	while(1) {
+		JSONNODE *res = 0;
+		if(_readPacket(d, -1, &res) <= 0) {
+			// read error
+			return 0;
+		}
+		if(res != NULL) {
+			// TODO don't assume it's not an event
+			*result = res;
+			return 1;
+		}
+	}
+}
+
 /**
  * Create a new libdazeus instance.
  */
@@ -130,6 +243,7 @@ dazeus *libdazeus_create() {
 	ret->socketfile = 0;
 	ret->socket = 0;
 	ret->error = 0;
+	ret->readahead_size = 0;
 	return ret;
 }
 
@@ -175,17 +289,55 @@ void libdazeus_close(dazeus *d)
 dazeus_network *libdazeus_networks(dazeus *d)
 {
 	// {'get':'networks'}
-	dazeus_network *n1 = malloc(sizeof(dazeus_network));
-	dazeus_network *n2 = malloc(sizeof(dazeus_network));
-	dazeus_network *n3 = malloc(sizeof(dazeus_network));
-	n1->network_name = "freenode";
-	n1->next = n2;
-	n2->network_name = "kassala";
-	n2->next = n3;
-	n3->network_name = "oftc";
-	n3->next = 0;
+	JSONNODE *fulljson = json_new(JSON_NODE);
+	JSONNODE *request  = json_new_a("get", "networks");
+	json_push_back(fulljson,request);
+	_send(d, fulljson);
+	json_free(request);
+	json_free(fulljson);
 
-	return n1;
+	JSONNODE *response;
+	if(!_read(d, &response)) {
+		return NULL;
+	}
+
+	JSONNODE *success = json_pop_back(response, "success");
+	if(success == NULL) {
+		json_free(response);
+		d->error = "No 'success' field in response.";
+		return NULL;
+	} else if(strcmp(json_as_string(success), "true") != 0) {
+		d->error = "Request failed, no error";
+		JSONNODE *error = json_pop_back(response, "error");
+		if(error) {
+			d->error = json_as_string(error);
+		}
+		json_free(response);
+		return NULL;
+	}
+
+	JSONNODE *networks = json_pop_back(response, "networks");
+	JSONNODE_ITERATOR it = json_begin(networks);
+	dazeus_network *first = 0;
+	dazeus_network *cur = first;
+	while(it != json_end(networks)) {
+		JSONNODE *network = *it;
+
+		dazeus_network *new = malloc(sizeof(dazeus_network*));
+		new->network_name = json_as_string(network);
+		new->next = 0;
+		if(first == 0) {
+			first = new;
+			cur = new;
+		} else {
+			cur->next = new;
+			cur = new;
+		}
+		it++;
+	}
+
+	json_free(response);
+	return first;
 }
 
 /**
