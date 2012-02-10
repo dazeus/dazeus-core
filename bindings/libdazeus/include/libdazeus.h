@@ -156,8 +156,11 @@ int libdazeus_subscribe(dazeus*, const char *event);
  * Return the next event received (in order of coming in). Don't forget to free
  * the resulting structure using libdazeus_event_free. Do NOT
  * libdazeus_stringlist_free its 'parameters' property, though.
+ * If the 'timeout' parameter is -1, will wait forever until the first event.
+ * If the 'timeout' parameter is 0, will try getting an event exactly once.  If
+ * the 'timeout' parameter is > 0, will try that many seconds to get an event.
  */
-dazeus_event *libdazeus_handle_event(dazeus*);
+dazeus_event *libdazeus_handle_event(dazeus*, int timeout);
 
 /**
  * Free an event returned by libdazeus_handle_event. This function calls

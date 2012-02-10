@@ -32,9 +32,9 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/uio.h>
+#include <sys/select.h>
 #include <netinet/ip.h>
 #include <netdb.h>
-#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -143,8 +143,53 @@ int _send(dazeus *d, JSONNODE *node) {
 	return size;
 }
 
+// returns number of bytes added to buffer, or -1 on error
+// "disregard_timeout" overrides the "timeout" parameter, and causes
+// this method to return immediately.
+int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
+	char buf[LIBDAZEUS_READAHEAD_SIZE];
+	int max_size = LIBDAZEUS_READAHEAD_SIZE - d->readahead_size;
+
+	// can we even read within the given timeout?
+	fd_set readfs;
+	struct timeval tv;
+	struct timeval *tvptr = &tv;
+	if(disregard_timeout || timeout == 0) {
+		tvptr = 0;
+	} else if(timeout < 0) {
+		tvptr->tv_sec = 10;
+		tvptr->tv_usec = 0;
+	} else {
+		tvptr->tv_sec = timeout;
+		tvptr->tv_usec = 0;
+	}
+
+	FD_ZERO(&readfs);
+	FD_SET(d->socket, &readfs);
+	select(d->socket + 1, &readfs, NULL, NULL, &tv);
+
+	// No data is available to read anyway, don't even bother to try
+	if(!FD_ISSET(d->socket, &readfs))
+		return 0;
+
+	ssize_t r = read(d->socket, buf, max_size);
+	if(r < 0) {
+		d->error = strerror(errno);
+		return -1;
+	}
+
+	memcpy(d->readahead + d->readahead_size, buf, r);
+	d->readahead_size += r;
+	return r;
+}
+
 // Don't forget to free the JSONNODE returned via 'result'
 // using json_free()!
+// timeout=-1 => try indefinitely
+// timeout=0  => try exactly once
+// timeout>0  => try that many seconds
+// (in every case, the first call to read() will be non-blocking in case
+//  there is already data waiting to be parsed, and no data on the socket)
 int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 	// TODO implement timeout well in read()
 	assert(result != NULL);
@@ -156,35 +201,20 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 		return -1;
 	}
 
-	// Put socket in non-blocking mode so at least one read() call will
-	// always return information that was already in the read buffer
-	int flags = fcntl(d->socket, F_GETFL);
-	fcntl(d->socket, F_SETFL, flags | O_NONBLOCK);
-
 	while(timeout < 0 || once == 1 || time(NULL) <= starttime + timeout) {
-		once = 0;
-
 		// First, append the buffer by as much as we can
-		char buf[LIBDAZEUS_READAHEAD_SIZE];
-		int max_size = LIBDAZEUS_READAHEAD_SIZE - d->readahead_size;
-		ssize_t r = read(d->socket, buf, max_size);
-		fcntl(d->socket, F_SETFL, flags);
-		if(r < 0) {
-			// if this error is EAGAIN, it means there was no data
-			// available for reading; we can now check our buffer
-			// once to see if data is available there, otherwise we
-			// fallback to simply reading again in blocking mode
-			if(errno != EAGAIN) {
-				d->error = strerror(errno);
-				return -1;
-			}
-		} else {
-			memcpy(d->readahead + d->readahead_size, buf, r);
-			d->readahead_size += r;
+		// (try this immediately exactly once; the first time in this
+		//  loop we don't really care much about appending the buffer,
+		//  as there might already be data in the buffer)
+		int appended = _append_buffer(d, timeout, once);
+		if(appended == -1) {
+			return -1;
 		}
+		once = 0;
 
 		// Now, try reading a packet out of this
 		// First the size, then the JSON data
+		char buf[LIBDAZEUS_READAHEAD_SIZE];
 		memset(buf, 0, LIBDAZEUS_READAHEAD_SIZE);
 		char *jsonptr = buf;
 		uint16_t i;
@@ -791,14 +821,17 @@ int libdazeus_subscribe(dazeus *d, const char *event)
  * Return the next event received (in order of coming in). Don't forget to free
  * the resulting structure using libdazeus_event_free. Do NOT
  * libdazeus_stringlist_free its 'parameters' property, though.
+ * If the 'timeout' parameter is -1, will wait forever until the first event.
+ * If the 'timeout' parameter is 0, will try getting an event exactly once.  If
+ * the 'timeout' parameter is > 0, will try that many seconds to get an event.
  */
-dazeus_event *libdazeus_handle_event(dazeus *d)
+dazeus_event *libdazeus_handle_event(dazeus *d, int timeout)
 {
 	if(d->event == 0) {
 		// Wait for a new event to come in
 		assert(d->lastEvent == 0);
 		JSONNODE *res = 0;
-		if(_readPacket(d, -1, &res) <= 0) {
+		if(_readPacket(d, timeout, &res) <= 0) {
 			// read error
 			return NULL;
 		}
