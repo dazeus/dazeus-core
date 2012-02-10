@@ -34,6 +34,7 @@
 #include <sys/uio.h>
 #include <netinet/ip.h>
 #include <netdb.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -154,6 +155,12 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 	if(!d->socket) {
 		return -1;
 	}
+
+	// Put socket in non-blocking mode so at least one read() call will
+	// always return information that was already in the read buffer
+	int flags = fcntl(d->socket, F_GETFL);
+	fcntl(d->socket, F_SETFL, flags | O_NONBLOCK);
+
 	while(timeout < 0 || once == 1 || time(NULL) <= starttime + timeout) {
 		once = 0;
 
@@ -161,12 +168,20 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 		char buf[LIBDAZEUS_READAHEAD_SIZE];
 		int max_size = LIBDAZEUS_READAHEAD_SIZE - d->readahead_size;
 		ssize_t r = read(d->socket, buf, max_size);
+		fcntl(d->socket, F_SETFL, flags);
 		if(r < 0) {
-			d->error = strerror(errno);
-			return -1;
+			// if this error is EAGAIN, it means there was no data
+			// available for reading; we can now check our buffer
+			// once to see if data is available there, otherwise we
+			// fallback to simply reading again in blocking mode
+			if(errno != EAGAIN) {
+				d->error = strerror(errno);
+				return -1;
+			}
+		} else {
+			memcpy(d->readahead + d->readahead_size, buf, r);
+			d->readahead_size += r;
 		}
-		memcpy(d->readahead + d->readahead_size, buf, r);
-		d->readahead_size += r;
 
 		// Now, try reading a packet out of this
 		// First the size, then the JSON data
@@ -181,6 +196,10 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 			} else if(c == '{') {
 				break;
 			} // skip all other characters
+		}
+		if(i == d->readahead_size) {
+			// No start of JSON data found
+			continue;
 		}
 		jsonptr[0] = 0;
 		int json_size = atoi(buf);
