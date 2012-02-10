@@ -1,10 +1,8 @@
 Makefile
-dazeus.o
 finkbuild.tmp
 libdazeus-qt.dylib
 libdazeus-qt.dylib.1
 libdazeus-qt.dylib.1.9
 libdazeus-qt.dylib.1.9.1
 libdazeus-qt.a
-moc_dazeus.cpp
-moc_dazeus.o
+build

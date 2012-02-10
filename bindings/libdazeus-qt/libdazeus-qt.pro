@@ -9,6 +9,8 @@ TARGET = dazeus-qt
 DEPENDPATH += .
 INCLUDEPATH += . ../libdazeus/include
 LIBS += -L../libdazeus/lib -ldazeus
+MOC_DIR = build
+OBJECTS_DIR = build
 
 # Input
 HEADERS += dazeus.h
