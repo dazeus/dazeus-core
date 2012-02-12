@@ -383,7 +383,7 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 			flushCommandQueue();
 		}
 	}
-	dispatch("MESSAGE", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
+	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
 void PluginComm::noticeReceived( const QString &origin, const QString &notice,
