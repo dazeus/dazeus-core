@@ -724,7 +724,7 @@ void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info
 			QString group = parts.takeFirst();
 			QString name = parts.join(".");
 			// TODO get plugin group name for this plugin
-			QVariant conf = config_->groupConfig(group).value(name);
+			QVariant conf = config_->groupConfig("plugin " + group).value(name);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[0].toStdString())));
 			if(!conf.isNull()) {
