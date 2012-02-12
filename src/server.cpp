@@ -74,7 +74,6 @@ Server::Server()
 	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
 	SERVER_RELAY_3STR( kicked );
-	SERVER_RELAY_2STR( messageReceived );
 	SERVER_RELAY_2STR( noticeReceived );
 	SERVER_RELAY_2STR( ctcpRequestReceived );
 	SERVER_RELAY_2STR( ctcpReplyReceived );
@@ -245,7 +244,6 @@ SERVER_SLOT_RELAY_3STR( slotModeChanged, modeChanged );
 SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
 SERVER_SLOT_RELAY_3STR( slotKicked, kicked );
-SERVER_SLOT_RELAY_2STR( slotMessageReceived, messageReceived );
 SERVER_SLOT_RELAY_2STR( slotNoticeReceived, noticeReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
@@ -344,6 +342,9 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	for(unsigned int i = 0; i < count; ++i) {
 		arguments.append(QString::fromUtf8(params[i]));
 	}
+	if(arguments.size() >= 1) {
+		b->setReceiver(arguments[0]);
+	}
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
 	if(event == "CONNECT") {
@@ -406,13 +407,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 			message = QString::fromUtf8(params[2]);
 		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotKicked(origin, nick, message, b);
-	} else if(event == "CHANNEL" || event == "PRIVMSG") {
-		assert(count == 1 || count == 2);
-		QString message;
-		if(count == 2)
-			message = QString::fromUtf8(params[1]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotMessageReceived(origin, message, b);
 	} else if(event == "NOTICE" || event == "CHANNEL_NOTICE") {
 		assert(count == 1 || count == 2);
 		QString message;

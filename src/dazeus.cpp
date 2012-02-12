@@ -264,8 +264,6 @@ bool DaZeus::loadConfig()
                           const QString&, Irc::Buffer* ) );
     RELAY_NET_SIGN( kicked( const QString&, const QString&,
                           const QString&, Irc::Buffer* ) );
-    RELAY_NET_SIGN( messageReceived( const QString&,
-                          const QString&, Irc::Buffer* ) );
     RELAY_NET_SIGN( noticeReceived( const QString&,
                           const QString&, Irc::Buffer* ) );
     RELAY_NET_SIGN( ctcpRequestReceived( const QString&,

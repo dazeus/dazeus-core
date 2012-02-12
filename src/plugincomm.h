@@ -163,8 +163,6 @@ class PluginComm : public QObject
                       const QString &channel, Irc::Buffer *buffer );
     virtual void kicked( const QString &origin, const QString &nick,
                      const QString &message, Irc::Buffer *buffer );
-    virtual void messageReceived( const QString &origin, const QString &message,
-                              Irc::Buffer *buffer );
     virtual void noticeReceived( const QString &origin, const QString &notice,
                              Irc::Buffer *buffer );
     virtual void ctcpRequestReceived(const QString &origin, const QString &request,
@@ -191,6 +189,7 @@ class PluginComm : public QObject
     void newTcpConnection();
     void newLocalConnection();
     void poll();
+    void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
 
   private:
     QList<QTcpServer*> tcpServers_;

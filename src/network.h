@@ -85,7 +85,6 @@ class Network : public QObject
     void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
     void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
     void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );
-    void messageReceived( const QString &origin, const QString &message, Irc::Buffer *buffer );
     void noticeReceived( const QString &origin, const QString &notice, Irc::Buffer *buffer );
     void ctcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *buffer );
     void ctcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *buffer );
