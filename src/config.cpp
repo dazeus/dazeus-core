@@ -50,31 +50,29 @@ const DatabaseConfig *Config::databaseConfig() const
 }
 
 /**
- * @brief Returns configuration for a given plugin.
+ * @brief Returns configuration for a given group.
  *
  * Returns an empty list if no special configuration was found in the
  * configuration file. Currently, you *must* call networks() before calling
  * this method. This is considered a bug.
  */
-const QMap<QString,QVariant> Config::pluginConfig(QString plugin) const
+const QMap<QString,QVariant> Config::groupConfig(QString group) const
 {
 	QMap<QString,QVariant> configuration;
 	Q_ASSERT(settings_);
 
-	if(plugin.length() == 0)
+	if(group.length() == 0)
 		return configuration;
 
-	QString group;
+	bool found = false;
 	foreach(const QString &g, settings_->childGroups()) {
-		if(g.startsWith(QLatin1String("plugin "))
-		&& g.mid(7).compare(plugin, Qt::CaseInsensitive) == 0)
-		{
-			group = g;
+		if(g == group) {
+			found = true;
 			break;
 		}
 	}
 
-	if(group.length() == 0)
+	if(!found)
 		return configuration;
 
 	settings_->beginGroup(group);
@@ -244,6 +242,7 @@ const QList<NetworkConfig*> &Config::networks()
     }
     else if( category.toLower() != rw("generic")
           && category.toLower() != rw("database")
+          && category.toLower() != rw("sockets")
           && !category.toLower().startsWith(rw("plugin")) )
     {
       qWarning() << "Warning: Configuration category name not recognized: "
