@@ -74,7 +74,6 @@ Server::Server()
 	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
 	SERVER_RELAY_3STR( kicked );
-	SERVER_RELAY_2STR( noticeReceived );
 	SERVER_RELAY_2STR( ctcpRequestReceived );
 	SERVER_RELAY_2STR( ctcpReplyReceived );
 	SERVER_RELAY_2STR( ctcpActionReceived );
@@ -244,7 +243,6 @@ SERVER_SLOT_RELAY_3STR( slotModeChanged, modeChanged );
 SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
 SERVER_SLOT_RELAY_3STR( slotKicked, kicked );
-SERVER_SLOT_RELAY_2STR( slotNoticeReceived, noticeReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
@@ -407,13 +405,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 			message = QString::fromUtf8(params[2]);
 		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotKicked(origin, nick, message, b);
-	} else if(event == "NOTICE" || event == "CHANNEL_NOTICE") {
-		assert(count == 1 || count == 2);
-		QString message;
-		if(count == 2)
-			message = QString::fromUtf8(params[1]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotNoticeReceived(origin, message, b);
 	} else if(event == "INVITE") {
 		assert(count == 2);
 		QString receiver = QString::fromUtf8(params[0]);
@@ -447,7 +438,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		qWarning() << "Origin: " << origin;
 	} else {
 		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
-		assert(false);
 	}
 }
 
