@@ -175,8 +175,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( joined( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( parted( const QString&, const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( quit(   const QString&, const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( nickChanged( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( modeChanged( const QString&, const QString&, const QString &, Irc::Buffer* ) );
   RELAY_SIGN( topicChanged( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( invited( const QString&, const QString&, const QString &, Irc::Buffer* ) );
@@ -210,10 +208,8 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(   slotWhoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ) );
   connect( activeServer_,SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ),
            this,          SLOT(   slotNamesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ) );
-  connect( activeServer_, SIGNAL(              quit(const QString&, const QString&, Irc::Buffer*)),
-           this,          SLOT(            slotQuit(const QString&, const QString&, Irc::Buffer*)));
-  connect( activeServer_, SIGNAL(       nickChanged(const QString&, const QString&, Irc::Buffer*)),
-           this,          SLOT(     slotNickChanged(const QString&, const QString&, Irc::Buffer*)));
+  connect( activeServer_, SIGNAL(          ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+           this,          SLOT(        slotIrcEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
   activeServer_->connectToServer();
 }
 
@@ -507,4 +503,19 @@ void Network::slotNamesReceived(const QString&, const QString &channel, const QS
 	qDebug() << "Names received for"<<channel<<"; knownUsers_ is now:";
 	qDebug() << knownUsers_;
 #endif
+}
+
+void Network::slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buf) {
+#define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event; return; }
+	if(event == "QUIT") {
+		QString message;
+		if(params.size() > 0) {
+			message = params[0];
+		}
+		slotQuit(origin, message, buf);
+	} else if(event == "NICK") {
+		MIN(1);
+		slotNickChanged(origin, params[0], buf);
+	}
+#undef MIN
 }

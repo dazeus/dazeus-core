@@ -68,8 +68,6 @@ Server::Server()
 	SERVER_RELAY_1STR( motdReceived );
 	SERVER_RELAY_1STR( joined );
 	SERVER_RELAY_2STR( parted );
-	SERVER_RELAY_2STR( quit );
-	SERVER_RELAY_2STR( nickChanged );
 	SERVER_RELAY_3STR( modeChanged );
 	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
@@ -237,8 +235,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
 SERVER_SLOT_RELAY_1STR( slotJoined, joined );
 SERVER_SLOT_RELAY_2STR( slotParted, parted );
-SERVER_SLOT_RELAY_2STR( slotQuit, quit );
-SERVER_SLOT_RELAY_2STR( slotNickChanged, nickChanged );
 SERVER_SLOT_RELAY_3STR( slotModeChanged, modeChanged );
 SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
@@ -356,15 +352,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		// first one is my nick
 		// second one is "End of message of the day"
 		// ignore
-	} else if(event == "NICK") {
-		assert(count == 1);
-		server->slotNickChanged(origin, QString::fromUtf8(params[0]), b);
-	} else if(event == "QUIT") {
-		assert(count == 0 || count == 1);
-		QString message;
-		if(count == 1)
-			message = QString::fromUtf8(params[0]);
-		server->slotQuit(origin, message, b);
 	} else if(event == "JOIN") {
 		assert(count == 1);
 		b->setReceiver(QString::fromUtf8(params[0]));

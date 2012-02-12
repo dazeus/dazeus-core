@@ -280,20 +280,6 @@ void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
 }
 
-void PluginComm::quit(   const QString &origin, const QString &message,
-                     Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("QUIT", QStringList() << n->networkName() << origin << buffer->receiver() << message);
-}
-
-void PluginComm::nickChanged( const QString &origin, const QString &nick,
-                          Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("NICK", QStringList() << n->networkName() << origin << nick);
-}
-
 void PluginComm::modeChanged( const QString &origin, const QString &mode,
                           const QString &args, Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
@@ -386,13 +372,6 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
-void PluginComm::noticeReceived( const QString &origin, const QString &notice,
-                             Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("NOTICE", QStringList() << n->networkName() << origin << buffer->receiver() << notice << (n->isIdentified(origin) ? "true" : "false"));
-}
-
 void PluginComm::ctcpRequestReceived(const QString &origin, const QString &request,
                                  Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
@@ -433,13 +412,27 @@ void PluginComm::unknownMessageReceived( const QString &origin,
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
+#define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event; return; }
 	if(event == "PRIVMSG") {
+		MIN(2);
 		messageReceived(origin, params[1], buffer);
 	} else if(event == "NOTICE") {
-		noticeReceived(origin, params[1], buffer);
+		MIN(2);
+		dispatch("NOTICE", QStringList() << n->networkName() << origin
+		   << buffer->receiver() << params[1]
+		   << (n->isIdentified(origin) ? "true" : "false"));
+	} else if(event == "NICK") {
+		MIN(1);
+		dispatch("NICK", QStringList() << n->networkName() << origin << params[0]);
+	} else if(event == "QUIT") {
+		QString message;
+		if(params.size() == 1)
+			message = params[0];
+		dispatch("QUIT", QStringList() << n->networkName() << origin << message);
 	} else {
 		qDebug() << n << event << origin << buffer->receiver() << params;
 	}
+#undef MIN
 }
 
 void PluginComm::whoisReceived( const QString &origin, const QString &nick,
