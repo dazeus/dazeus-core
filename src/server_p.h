@@ -80,9 +80,7 @@ public:
 	QStringList in_names_;
 
 signals:
-	void connected();
 	void disconnected();
-	void welcomed();
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );

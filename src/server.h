@@ -70,9 +70,7 @@ public slots:
 	void names( const QString &channel );
 
 signals:
-	void connected();
 	void disconnected();
-	void welcomed();
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
