@@ -37,9 +37,9 @@ PluginComm::~PluginComm() {
 }
 
 void PluginComm::init() {
-	int sockets = config_->pluginConfig("socketplugin").value("sockets").toInt();
+	int sockets = config_->groupConfig("sockets").value("sockets").toInt();
 	for(int i = 1; i <= sockets; ++i) {
-		QString socket = config_->pluginConfig("socketplugin").value("socket" + QString::number(i)).toString();
+		QString socket = config_->groupConfig("sockets").value("socket" + QString::number(i)).toString();
 		int colon = socket.indexOf(':');
 		if(colon == -1) {
 			qWarning() << "(PluginComm) Did not understand socket option " << i << ":" << socket;
@@ -328,7 +328,7 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	Q_ASSERT(n != 0);
 
 	QString payload;
-	QString highlightChar = config_->pluginConfig("general").value("highlightCharacter").toString();
+	QString highlightChar = config_->groupConfig("general").value("highlightCharacter").toString();
 	if(highlightChar.isNull())
 		highlightChar = "}";
 
@@ -723,7 +723,8 @@ void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info
 			QStringList parts = params[0].split('.');
 			QString group = parts.takeFirst();
 			QString name = parts.join(".");
-			QVariant conf = config_->pluginConfig(group).value(name);
+			// TODO get plugin group name for this plugin
+			QVariant conf = config_->groupConfig(group).value(name);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[0].toStdString())));
 			if(!conf.isNull()) {
