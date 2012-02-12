@@ -23,11 +23,10 @@ int main(int argc, char *argv[]) {
 		libdazeus_close(d); \
 		return 4; \
 	}
-	s("WELCOMED"); s("CONNECTED"); s("DISCONNECTED"); s("JOINED");
-	s("PARTED"); s("MOTD"); s("QUIT"); s("NICK"); s("MODE"); s("TOPIC");
-	s("INVITE"); s("KICK"); s("PRIVMSG"); s("NOTICE"); s("CTCPREQ");
-	s("CTCPREPL"); s("ACTION"); s("NUMERIC"); s("UNKNOWN"); s("WHOIS");
-	s("NAMES");
+	s("CONNECT"); s("DISCONNECTED"); s("JOINED"); s("PARTED"); s("MOTD");
+	s("QUIT"); s("NICK"); s("MODE"); s("TOPIC"); s("INVITE"); s("KICK");
+	s("PRIVMSG"); s("NOTICE"); s("CTCPREQ"); s("CTCPREPL"); s("ACTION");
+	s("NUMERIC"); s("UNKNOWN"); s("WHOIS"); s("NAMES");
 #undef s
 
 	dazeus_event *e;

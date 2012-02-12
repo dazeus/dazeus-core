@@ -39,8 +39,6 @@ class DaZeus : public QObject
 
   private slots:
     void     resetConfig();
-    void     welcomed();
-    void     connected();
     void     disconnected();
 
   private:

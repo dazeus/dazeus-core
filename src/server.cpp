@@ -101,12 +101,6 @@ Server::Server()
 	connect( thread_, SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
-	connect( thread_, SIGNAL(connected()),
-	         this,    SIGNAL(connected()),
-	         Qt::BlockingQueuedConnection );
-	connect( thread_, SIGNAL(welcomed()),
-	         this,    SIGNAL(welcomed()),
-	         Qt::BlockingQueuedConnection );
 }
 
 Server::~Server()
@@ -297,16 +291,6 @@ void ServerThread::slotUnknownMessageReceived( const QString &str, const QString
 	emit unknownMessageReceived( str, list, buf );
 }
 
-void ServerThread::slotConnected()
-{
-	emit connected();
-}
-
-void ServerThread::slotWelcomed()
-{
-	emit welcomed();
-}
-
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
 	ServerThread *server = (ServerThread*) irc_get_ctx(s);
 	assert(server->getIrc() == s);
@@ -345,14 +329,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
-	if(event == "CONNECT") {
-		assert(count <= 2);
-		server->slotConnected();
-		server->slotWelcomed();
-		// first one is my nick
-		// second one is "End of message of the day"
-		// ignore
-	} else if(event == "JOIN") {
+	if(event == "JOIN") {
 		assert(count == 1);
 		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotJoined(origin, b);

@@ -73,9 +73,7 @@ class Network : public QObject
     void serverIsActuallyOkay( const ServerConfig *sc );
 
   signals:
-    void connected();
     void disconnected();
-    void welcomed();
     void motdReceived( const QString &motd, Irc::Buffer *buffer );
     void joined( const QString &origin, Irc::Buffer *buffer );
     void parted( const QString &origin, const QString &message, Irc::Buffer *buffer );
@@ -113,7 +111,6 @@ class Network : public QObject
 
   private slots:
     void onFailedConnection();
-    void serverIsActuallyOkay();
     void joinedChannel(const QString &user, Irc::Buffer *b);
     void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);
     void partedChannel(const QString &user, const QString &, Irc::Buffer *b);

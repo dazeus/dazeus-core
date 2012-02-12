@@ -169,9 +169,7 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 
   activeServer_ = Server::fromServerConfig( server );
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
-  RELAY_SIGN( connected() );
   RELAY_SIGN( disconnected() );
-  RELAY_SIGN( welcomed() );
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( joined( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( parted( const QString&, const QString&, Irc::Buffer* ) );
@@ -195,8 +193,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(         destroyed() ),
            this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_, SIGNAL(          welcomed() ),
-           this,          SLOT(serverIsActuallyOkay() ) );
   connect( activeServer_, SIGNAL(            joined(const QString&, Irc::Buffer*) ),
            this,          SLOT(       joinedChannel(const QString&, Irc::Buffer*) ) );
   connect( activeServer_, SIGNAL(            parted(const QString&, const QString&, Irc::Buffer*) ),
@@ -454,12 +450,6 @@ void Network::flagUndesirableServer( const ServerConfig *sc )
   undesirables_.insert( sc, 0 );
 }
 
-void Network::serverIsActuallyOkay()
-{
-  Q_ASSERT( activeServer_ != 0 );
-  serverIsActuallyOkay( activeServer_->config() );
-}
-
 void Network::serverIsActuallyOkay( const ServerConfig *sc )
 {
   undesirables_.remove(sc);
@@ -507,7 +497,9 @@ void Network::slotNamesReceived(const QString&, const QString &channel, const QS
 
 void Network::slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buf) {
 #define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event; return; }
-	if(event == "QUIT") {
+	if(event == "CONNECT") {
+		serverIsActuallyOkay(activeServer_->config());
+	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() > 0) {
 			message = params[0];

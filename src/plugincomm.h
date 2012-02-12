@@ -144,8 +144,6 @@ class PluginComm : public QObject
 
   public slots:
     virtual void init();
-    virtual void welcomed( Network &net );
-    virtual void connected( Network &net, const Server &serv );
     virtual void disconnected( Network &net );
     virtual void joined( const QString &who, Irc::Buffer *channel );
     virtual void parted( const QString &who, const QString &leaveMessage,

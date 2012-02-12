@@ -249,14 +249,6 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 	}
 }
 
-void PluginComm::welcomed( Network &net ) {
-	dispatch("WELCOMED", QStringList() << net.networkName());
-}
-
-void PluginComm::connected( Network &net, const Server & ) {
-	dispatch("CONNECTED", QStringList() << net.networkName());
-}
-
 void PluginComm::disconnected( Network &net ) {
 	dispatch("DISCONNECTED", QStringList() << net.networkName());
 }
@@ -429,6 +421,8 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		if(params.size() == 1)
 			message = params[0];
 		dispatch("QUIT", QStringList() << n->networkName() << origin << message);
+	} else if(event == "CONNECT") {
+		dispatch("CONNECT", QStringList() << n->networkName());
 	} else {
 		qDebug() << n << event << origin << buffer->receiver() << params;
 	}

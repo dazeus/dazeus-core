@@ -136,40 +136,6 @@ Database *DaZeus::database() const
   return database_;
 }
 
-/**
- * @brief We received the IRC 'welcomed' message from a server.
- *
- * Give a signal through to the plugin manager.
- */
-void DaZeus::welcomed()
-{
-  Network *n = qobject_cast<Network*>(sender());
-#ifdef VERBOSE
-  qDebug() << "Welcomed to network: " << n;
-#endif
-  Q_ASSERT( n != 0 );
-  plugins_->welcomed( *n );
-}
-
-
-
-/**
- * @brief The application connected.
- *
- * Give a signal through to the plugin manager.
- */
-void DaZeus::connected()
-{
-  Network *n = qobject_cast<Network*>(sender());
-#ifdef VERBOSE
-  qDebug() << "Connected to network: " << n;
-#endif
-  Q_ASSERT( n != 0 );
-  const Server *s = n->activeServer();
-  Q_ASSERT( s != 0 );
-  plugins_->connected( *n, *s );
-}
-
 
 
 /**
@@ -237,12 +203,8 @@ bool DaZeus::loadConfig()
       return false;
     }
 
-    connect( net,  SIGNAL(    connected() ),
-             this, SLOT(      connected() ) );
     connect( net,  SIGNAL( disconnected() ),
              this, SLOT(   disconnected() ) );
-    connect( net,  SIGNAL(     welcomed() ),
-             this, SLOT(       welcomed() ) );
 
 #define RELAY_NET_SIGN(sign) \
     connect( net,            SIGNAL( sign ),   \
