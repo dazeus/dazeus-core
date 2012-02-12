@@ -101,6 +101,7 @@ signals:
 	void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
 	void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
 	void unknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *buffer );
+	void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
 	void whoisReceivedHiPrio(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
 	void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
 	void namesReceivedHiPrio(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
@@ -125,6 +126,7 @@ public:
 	void slotUnknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *b );
 	void slotConnected();
 	void slotWelcomed();
+	void slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *b);
 };
 
 #endif

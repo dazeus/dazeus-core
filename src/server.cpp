@@ -90,14 +90,21 @@ Server::Server()
 	connect( thread_, SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
-	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)));
+	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)),
-	         this,    SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)));
+	         this,    SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
+	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
+	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
+	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(connected()),
 	         this,    SIGNAL(connected()),
 	         Qt::BlockingQueuedConnection );
@@ -286,6 +293,12 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	emit numericMessageReceived( origin, code, args, buf );
 }
 
+void ServerThread::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)
+{
+	Q_ASSERT(buf != 0);
+	emit ircEvent(event, origin, args, buf);
+}
+
 void ServerThread::slotUnknownMessageReceived( const QString &str, const QStringList &list, Irc::Buffer *buf )
 {
 	Q_ASSERT( buf != 0 );
@@ -326,6 +339,12 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	if(exclamMark != -1) {
 		origin = origin.left(exclamMark);
 	}
+
+	QStringList arguments;
+	for(unsigned int i = 0; i < count; ++i) {
+		arguments.append(QString::fromUtf8(params[i]));
+	}
+	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
 	if(event == "CONNECT") {
 		assert(count <= 2);
