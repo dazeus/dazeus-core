@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	}
 	s("WELCOMED"); s("CONNECTED"); s("DISCONNECTED"); s("JOINED");
 	s("PARTED"); s("MOTD"); s("QUIT"); s("NICK"); s("MODE"); s("TOPIC");
-	s("INVITE"); s("KICK"); s("MESSAGE"); s("NOTICE"); s("CTCPREQ");
+	s("INVITE"); s("KICK"); s("PRIVMSG"); s("NOTICE"); s("CTCPREQ");
 	s("CTCPREPL"); s("ACTION"); s("NUMERIC"); s("UNKNOWN"); s("WHOIS");
 	s("NAMES");
 #undef s

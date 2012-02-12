@@ -66,7 +66,7 @@ void MainWindow::on_pushButton_clicked()
         ui->tabWidget->setCurrentIndex(1);
         ui->tab->setDisabled(true);
         getCurrentNetworks();
-        d->subscribe(QStringList() << "MESSAGE");
+        d->subscribe(QStringList() << "PRIVMSG");
     } else {
         ui->label_3->setText(d->error());
     }
