@@ -151,10 +151,6 @@ class PluginComm : public QObject
     virtual void parted( const QString &who, const QString &leaveMessage,
                          Irc::Buffer *channel );
     virtual void motdReceived( const QString &motd, Irc::Buffer *buffer );
-    virtual void quit(   const QString &origin, const QString &message,
-                     Irc::Buffer *buffer );
-    virtual void nickChanged( const QString &origin, const QString &nick,
-                          Irc::Buffer *buffer );
     virtual void modeChanged( const QString &origin, const QString &mode,
                           const QString &args, Irc::Buffer *buffer );
     virtual void topicChanged( const QString &origin, const QString &topic,
@@ -188,7 +184,6 @@ class PluginComm : public QObject
     void newLocalConnection();
     void poll();
     void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
-    void noticeReceived(const QString &origin, const QString &notice, Irc::Buffer *buffer);
 
   private:
     QList<QTcpServer*> tcpServers_;
