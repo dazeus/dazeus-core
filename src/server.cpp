@@ -328,6 +328,10 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 
 	std::string event(e);
 	Irc::Buffer *b = new Irc::Buffer(server->server());
+	// From libircclient docs, but CHANNEL_NOTICE is bullshit...
+	if(event == "CHANNEL_NOTICE") {
+		event = "NOTICE";
+	}
 
 	// for now, keep these QStrings:
 	QString origin = QString::fromUtf8(o);
