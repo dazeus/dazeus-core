@@ -94,7 +94,6 @@ signals:
 	void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
 	void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
 	void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );
-	void messageReceived( const QString &origin, const QString &message, Irc::Buffer *buffer );
 	void noticeReceived( const QString &origin, const QString &notice, Irc::Buffer *buffer );
 	void ctcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *buffer );
 	void ctcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *buffer );
@@ -117,7 +116,6 @@ public:
 	void slotTopicChanged( const QString &origin, const QString &topic, Irc::Buffer *b );
 	void slotInvited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *b );
 	void slotKicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *b );
-	void slotMessageReceived( const QString &origin, const QString &message, Irc::Buffer *b );
 	void slotNoticeReceived( const QString &origin, const QString &notice, Irc::Buffer *b );
 	void slotCtcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *b );
 	void slotCtcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *b );

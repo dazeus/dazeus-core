@@ -181,7 +181,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   RELAY_SIGN( topicChanged( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( invited( const QString&, const QString&, const QString &, Irc::Buffer* ) );
   RELAY_SIGN( kicked( const QString&, const QString&, const QString &, Irc::Buffer* ) );
-  RELAY_SIGN( messageReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( noticeReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( ctcpRequestReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( ctcpReplyReceived( const QString&, const QString&, Irc::Buffer* ) );

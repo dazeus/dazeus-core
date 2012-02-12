@@ -433,7 +433,11 @@ void PluginComm::unknownMessageReceived( const QString &origin,
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
-	qDebug() << n << event << origin << buffer->receiver() << params;
+	if(event == "PRIVMSG") {
+		messageReceived(origin, params[1], buffer);
+	} else {
+		qDebug() << n << event << origin << buffer->receiver() << params;
+	}
 }
 
 void PluginComm::whoisReceived( const QString &origin, const QString &nick,
