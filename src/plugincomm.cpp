@@ -435,6 +435,8 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 	Q_ASSERT(n != 0);
 	if(event == "PRIVMSG") {
 		messageReceived(origin, params[1], buffer);
+	} else if(event == "NOTICE") {
+		noticeReceived(origin, params[1], buffer);
 	} else {
 		qDebug() << n << event << origin << buffer->receiver() << params;
 	}
