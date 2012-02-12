@@ -179,6 +179,9 @@ class PluginComm : public QObject
     virtual void unknownMessageReceived( const QString &origin,
                                        const QStringList &params,
                                        Irc::Buffer *buffer );
+    virtual void ircEvent(const QString &event, const QString &origin,
+                                       const QStringList &params,
+                                       Irc::Buffer *buffer );
     virtual void whoisReceived( const QString &origin, const QString &nick,
                                      bool identified, Irc::Buffer *buffer );
     virtual void namesReceived( const QString &origin, const QString &channel,

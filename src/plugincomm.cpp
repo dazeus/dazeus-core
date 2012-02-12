@@ -430,6 +430,12 @@ void PluginComm::unknownMessageReceived( const QString &origin,
 	dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << params);
 }
 
+void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
+	Network *n = Network::fromBuffer(buffer);
+	Q_ASSERT(n != 0);
+	qDebug() << n << event << origin << buffer->receiver() << params;
+}
+
 void PluginComm::whoisReceived( const QString &origin, const QString &nick,
                                  bool identified, Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
