@@ -171,8 +171,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
   RELAY_SIGN( disconnected() );
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( joined( const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( parted( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( modeChanged( const QString&, const QString&, const QString &, Irc::Buffer* ) );
   RELAY_SIGN( topicChanged( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( invited( const QString&, const QString&, const QString &, Irc::Buffer* ) );
@@ -193,10 +191,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(         destroyed() ),
            this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_, SIGNAL(            joined(const QString&, Irc::Buffer*) ),
-           this,          SLOT(       joinedChannel(const QString&, Irc::Buffer*) ) );
-  connect( activeServer_, SIGNAL(            parted(const QString&, const QString&, Irc::Buffer*) ),
-           this,          SLOT(       partedChannel(const QString&, const QString&, Irc::Buffer*) ) );
   connect( activeServer_, SIGNAL(            kicked(const QString&, const QString&, const QString&, Irc::Buffer*) ),
            this,          SLOT(       kickedChannel(const QString&, const QString&, const QString&, Irc::Buffer*) ) );
   // XXX HACK to make sure slotWhoisReceived and slotNamesReceived are excuted first
@@ -499,6 +493,12 @@ void Network::slotIrcEvent(const QString &event, const QString &origin, const QS
 #define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event; return; }
 	if(event == "CONNECT") {
 		serverIsActuallyOkay(activeServer_->config());
+	} else if(event == "JOIN") {
+		MIN(1);
+		joinedChannel(origin, buf);
+	} else if(event == "PART") {
+		MIN(1);
+		partedChannel(origin, QString(), buf);
 	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() > 0) {
