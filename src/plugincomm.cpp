@@ -253,19 +253,6 @@ void PluginComm::disconnected( Network &net ) {
 	dispatch("DISCONNECTED", QStringList() << net.networkName());
 }
 
-void PluginComm::joined( const QString &who, Irc::Buffer *channel ) {
-	Network *n = Network::fromBuffer(channel);
-	Q_ASSERT(n != 0);
-	dispatch("JOINED", QStringList() << n->networkName() << who << channel->receiver());
-}
-
-void PluginComm::parted( const QString &who, const QString &leaveMessage,
-                         Irc::Buffer *channel ) {
-	Network *n = Network::fromBuffer(channel);
-	Q_ASSERT(n != 0);
-	dispatch("PARTED", QStringList() << n->networkName() << who << channel->receiver() << leaveMessage);
-}
-
 void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
@@ -416,6 +403,15 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 	} else if(event == "NICK") {
 		MIN(1);
 		dispatch("NICK", QStringList() << n->networkName() << origin << params[0]);
+	} else if(event == "JOIN") {
+		MIN(1);
+		dispatch("JOIN", QStringList() << n->networkName() << origin << buffer->receiver());
+	} else if(event == "PART") {
+		MIN(1);
+		QString message;
+		if(params.size() == 2)
+			message = params[1];
+		dispatch("PART", QStringList() << n->networkName() << origin << buffer->receiver() << message);
 	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() == 1)

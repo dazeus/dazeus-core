@@ -84,8 +84,6 @@ signals:
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
-	void joined( const QString &origin, Irc::Buffer *buffer );
-	void parted( const QString &origin, const QString &message, Irc::Buffer *buffer );
 	void modeChanged( const QString &origin, const QString &mode, const QString &args, Irc::Buffer *buffer );
 	void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
 	void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );

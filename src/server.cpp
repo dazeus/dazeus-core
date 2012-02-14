@@ -66,8 +66,6 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 
 	SERVER_RELAY_1STR( motdReceived );
-	SERVER_RELAY_1STR( joined );
-	SERVER_RELAY_2STR( parted );
 	SERVER_RELAY_3STR( modeChanged );
 	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
@@ -227,8 +225,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 }
 
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-SERVER_SLOT_RELAY_1STR( slotJoined, joined );
-SERVER_SLOT_RELAY_2STR( slotParted, parted );
 SERVER_SLOT_RELAY_3STR( slotModeChanged, modeChanged );
 SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
@@ -329,18 +325,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
-	if(event == "JOIN") {
-		assert(count == 1);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotJoined(origin, b);
-	} else if(event == "PART") {
-		assert(count == 1 || count == 2);
-		QString message;
-		if(count == 2)
-			message = QString::fromUtf8(params[1]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotParted(origin, message, b);
-	} else if(event == "MODE") {
+	if(event == "MODE") {
 		assert(count >= 1);
 		QString mode;
 		if(count == 1) {
