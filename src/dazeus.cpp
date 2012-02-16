@@ -139,23 +139,6 @@ Database *DaZeus::database() const
 
 
 /**
- * @brief The application disconnected.
- *
- * Give a signal through to the plugin manager.
- */
-void DaZeus::disconnected()
-{
-  Network *n = qobject_cast<Network*>(sender());
-#ifdef VERBOSE
-  qDebug() << "Disconnected from network: " << n;
-#endif
-  Q_ASSERT( n != 0 );
-  plugins_->disconnected( *n );
-}
-
-
-
-/**
  * @brief Initialises plugins from the configuration file.
  */
 bool DaZeus::initPlugins()
@@ -202,9 +185,6 @@ bool DaZeus::loadConfig()
       resetConfig();
       return false;
     }
-
-    connect( net,  SIGNAL( disconnected() ),
-             this, SLOT(   disconnected() ) );
 
 #define RELAY_NET_SIGN(sign) \
     connect( net,            SIGNAL( sign ),   \

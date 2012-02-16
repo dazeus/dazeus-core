@@ -249,10 +249,6 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 	}
 }
 
-void PluginComm::disconnected( Network &net ) {
-	dispatch("DISCONNECTED", QStringList() << net.networkName());
-}
-
 void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
@@ -419,6 +415,8 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		dispatch("QUIT", QStringList() << n->networkName() << origin << message);
 	} else if(event == "CONNECT") {
 		dispatch("CONNECT", QStringList() << n->networkName());
+	} else if(event == "DISCONNECT") {
+		dispatch("DISCONNECT", QStringList() << n->networkName());
 	} else {
 		qDebug() << n << event << origin << buffer->receiver() << params;
 	}

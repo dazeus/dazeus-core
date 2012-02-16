@@ -73,7 +73,6 @@ class Network : public QObject
     void serverIsActuallyOkay( const ServerConfig *sc );
 
   signals:
-    void disconnected();
     void motdReceived( const QString &motd, Irc::Buffer *buffer );
     void modeChanged( const QString &origin, const QString &mode, const QString &args, Irc::Buffer *buffer );
     void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );

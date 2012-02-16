@@ -169,7 +169,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 
   activeServer_ = Server::fromServerConfig( server );
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
-  RELAY_SIGN( disconnected() );
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( modeChanged( const QString&, const QString&, const QString &, Irc::Buffer* ) );
   RELAY_SIGN( topicChanged( const QString&, const QString&, Irc::Buffer* ) );
@@ -297,6 +296,9 @@ void Network::onFailedConnection()
 
   identifiedUsers_.clear();
   knownUsers_.clear();
+
+  Irc::Buffer *b = new Irc::Buffer(activeServer_);
+  emit ircEvent("DISCONNECT", "", QStringList(), b);
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );

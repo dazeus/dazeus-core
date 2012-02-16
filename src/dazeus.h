@@ -39,7 +39,6 @@ class DaZeus : public QObject
 
   private slots:
     void     resetConfig();
-    void     disconnected();
 
   private:
     Config          *config_;

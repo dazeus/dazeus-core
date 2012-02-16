@@ -99,6 +99,8 @@ Server::Server()
 	connect( thread_, SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
+	connect( thread_, SIGNAL(disconnected()),
+	         this,    SIGNAL(disconnected()) );
 }
 
 Server::~Server()
@@ -325,6 +327,11 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
+	// TODO: handle disconnects nicely (probably using some ping and LIBIRC_ERR_CLOSED
+	if(event == "ERROR") {
+		server->slotDisconnected();
+	}
+
 	if(event == "MODE") {
 		assert(count >= 1);
 		QString mode;
@@ -436,4 +443,3 @@ void ServerThread::run()
 		config_->network->fullName.toLatin1());
 	irc_run(irc_);
 }
-
