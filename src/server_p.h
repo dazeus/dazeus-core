@@ -113,6 +113,9 @@ public:
 	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *b );
 	void slotUnknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *b );
 	void slotConnected();
+	void slotDisconnected() {
+		emit disconnected();
+	}
 	void slotWelcomed();
 	void slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *b);
 };
