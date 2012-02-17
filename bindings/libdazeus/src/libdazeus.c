@@ -147,9 +147,6 @@ int _send(dazeus *d, JSONNODE *node) {
 // "disregard_timeout" overrides the "timeout" parameter, and causes
 // this method to return immediately.
 int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
-	char buf[LIBDAZEUS_READAHEAD_SIZE];
-	int max_size = LIBDAZEUS_READAHEAD_SIZE - d->readahead_size;
-
 	// can we even read within the given timeout?
 	fd_set readfs;
 	struct timeval tv;
@@ -172,14 +169,18 @@ int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
 	if(!FD_ISSET(d->socket, &readfs))
 		return 0;
 
+	char *buf = calloc(1, d->readahead_capac);
+	int max_size = d->readahead_capac - d->readahead_size;
 	ssize_t r = read(d->socket, buf, max_size);
 	if(r < 0) {
 		d->error = strerror(errno);
+		free(buf);
 		return -1;
 	}
 
 	memcpy(d->readahead + d->readahead_size, buf, r);
 	d->readahead_size += r;
+	free(buf);
 	return r;
 }
 
@@ -214,8 +215,7 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 
 		// Now, try reading a packet out of this
 		// First the size, then the JSON data
-		char buf[LIBDAZEUS_READAHEAD_SIZE];
-		memset(buf, 0, LIBDAZEUS_READAHEAD_SIZE);
+		char *buf = calloc(1, d->readahead_capac);
 		char *jsonptr = buf;
 		uint16_t i;
 		for(i = 0; i < d->readahead_size; ++i) {
@@ -229,19 +229,35 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 		}
 		if(i == d->readahead_size) {
 			// No start of JSON data found
+			free(buf);
 			continue;
 		}
 		jsonptr[0] = 0;
 		int json_size = atoi(buf);
-		if(json_size >= LIBDAZEUS_READAHEAD_SIZE) {
-			// We can't fit a packet of this size in our buffers,
+		if(json_size >= LIBDAZEUS_MAX_JSON_SIZE) {
+			// A packet of this size is illegal,
 			// so close the connection
-			// TODO: implement growing buffers
 			close(d->socket);
 			d->socket = 0;
-			d->readahead_size = 0;
 			d->error = "JSON packet size is too large";
+			free(buf);
 			return -1;
+		} else if(json_size > d->readahead_capac) {
+			// We can't fit a packet of this size in our buffers,
+			// so grow the buffers a bit and immediately try again
+			// this full packet should fit exactly in json_size + i
+			d->readahead_capac = json_size + i;
+			d->readahead = realloc(d->readahead, d->readahead_capac);
+			if(d->readahead == NULL) {
+				close(d->socket);
+				d->socket = 0;
+				d->readahead_capac = 0;
+				d->error = "Failed to allocate more memory";
+				free(buf);
+				return -1;
+			}
+			once = 1;
+			continue;
 		}
 		if(d->readahead_size >= i + json_size) {
 			// enough data available to read a packet!
@@ -256,7 +272,6 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 			if(message == NULL) {
 				close(d->socket);
 				d->socket = 0;
-				d->readahead_size = 0;
 				d->error = "Invalid JSON data sent to socket";
 				return -1;
 			}
@@ -479,6 +494,7 @@ dazeus *libdazeus_create() {
 	ret->socket = 0;
 	ret->error = 0;
 	ret->readahead_size = 0;
+	ret->readahead_capac = 0;
 	ret->event = 0;
 	ret->lastEvent = 0;
 	return ret;
@@ -504,6 +520,15 @@ int libdazeus_open(dazeus *d, const char *socketfile)
 		close(d->socket);
 	}
 	free(d->socketfile);
+	d->readahead_size = 0;
+	if(d->readahead_capac == 0) {
+		d->readahead_capac = 256;
+		d->readahead = calloc(1, d->readahead_capac);
+		if(!d->readahead) {
+			d->error = "Failed to allocate readahead buffer";
+			return 0;
+		}
+	}
 	d->socketfile = malloc(strlen(socketfile) + 1);
 	strcpy(d->socketfile, socketfile);
 	_connect(d);

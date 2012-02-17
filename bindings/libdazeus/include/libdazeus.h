@@ -50,14 +50,15 @@ typedef struct dazeus_event_struct
 	struct dazeus_event_struct *_next;
 } dazeus_event;
 
-#define LIBDAZEUS_READAHEAD_SIZE 512
+#define LIBDAZEUS_MAX_JSON_SIZE 20 * 1024 // 20 kb
 typedef struct dazeus_struct
 {
 	char *socketfile;
 	int socket;
 	char *error;
-	char readahead[LIBDAZEUS_READAHEAD_SIZE];
+	char *readahead;
 	unsigned int readahead_size;
+	unsigned int readahead_capac;
 	dazeus_event *event;
 	dazeus_event *lastEvent;
 } dazeus;
