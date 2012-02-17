@@ -74,7 +74,6 @@ signals:
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
-	void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
 	void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
 	void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );
 	void ctcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *buffer );
