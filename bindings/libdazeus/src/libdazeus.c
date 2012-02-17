@@ -163,7 +163,7 @@ int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
 
 	FD_ZERO(&readfs);
 	FD_SET(d->socket, &readfs);
-	select(d->socket + 1, &readfs, NULL, NULL, &tv);
+	select(d->socket + 1, &readfs, NULL, NULL, tvptr);
 
 	// No data is available to read anyway, don't even bother to try
 	if(!FD_ISSET(d->socket, &readfs))
