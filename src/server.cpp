@@ -66,7 +66,6 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 
 	SERVER_RELAY_1STR( motdReceived );
-	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
 	SERVER_RELAY_3STR( kicked );
 	SERVER_RELAY_2STR( ctcpRequestReceived );
@@ -226,7 +225,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 }
 
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
 SERVER_SLOT_RELAY_3STR( slotKicked, kicked );
 SERVER_SLOT_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
@@ -333,14 +331,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
-	if(event == "TOPIC") {
-		assert(count == 1 || count == 2);
-		QString topic;
-		if(count == 2)
-			topic = QString::fromUtf8(params[1]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotTopicChanged(origin, topic, b);
-	} else if(event == "KICK") {
+	if(event == "KICK") {
 		assert(count > 1 && count <= 3);
 		QString nick;
 		QString message;

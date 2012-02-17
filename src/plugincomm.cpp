@@ -255,13 +255,6 @@ void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
 }
 
-void PluginComm::topicChanged( const QString &origin, const QString &topic,
-                           Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("TOPIC", QStringList() << n->networkName() << origin << buffer->receiver() << topic);
-}
-
 void PluginComm::invited( const QString &origin, const QString &receiver,
                       const QString &channel, Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
@@ -409,6 +402,12 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		if(params.size() == 1)
 			message = params[0];
 		dispatch("QUIT", QStringList() << n->networkName() << origin << message);
+	} else if(event == "TOPIC") {
+		MIN(1);
+		QString topic;
+		if(params.size() > 1)
+			topic = params[1];
+		dispatch("TOPIC", QStringList() << n->networkName() << origin << buffer->receiver() << topic);
 	} else if(event == "CONNECT") {
 		dispatch("CONNECT", QStringList() << n->networkName());
 	} else if(event == "DISCONNECT") {

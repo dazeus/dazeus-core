@@ -145,8 +145,6 @@ class PluginComm : public QObject
   public slots:
     virtual void init();
     virtual void motdReceived( const QString &motd, Irc::Buffer *buffer );
-    virtual void topicChanged( const QString &origin, const QString &topic,
-                           Irc::Buffer *buffer );
     virtual void invited( const QString &origin, const QString &receiver,
                       const QString &channel, Irc::Buffer *buffer );
     virtual void kicked( const QString &origin, const QString &nick,
