@@ -89,6 +89,7 @@ public:
 	 * "tcp:hostname:port" (including "tcp:127.0.0.1:1234").
 	 */
 	bool open(const QString &socketfile);
+	bool connected();
 
 	QStringList networks();
 	QStringList channels(const QString &network);
@@ -108,6 +109,12 @@ public:
 
 signals:
 	void newEvent(DaZeus::Event *);
+	// Connection to the DaZeus bot has failed during an internal event
+	// handling call. Use open() to re-connect. This signal will not be
+	// emitted if the connection fails during an imperative call to this
+	// class; in those cases, the return value should indicate an error
+	// which can be retrieved using error().
+	void connectionFailed();
 
 private:
 	dazeus *d_;

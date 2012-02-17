@@ -97,6 +97,10 @@ bool DaZeus::open(const QString &socketfile) {
 	return true;
 }
 
+bool DaZeus::connected() {
+	return libdazeus_get_socket(d_) != 0;
+}
+
 QStringList DaZeus::networks() {
 	dazeus_stringlist *networks = libdazeus_networks(d_);
 	dazeus_stringlist *neti = networks;
@@ -158,6 +162,10 @@ bool DaZeus::subscribe(const QStringList &events) {
 
 void DaZeus::activated() {
 	handleEvent(0);
+	if(!connected()) {
+		// connection closed while retrieving events
+		emit connectionFailed();
+	}
 }
 
 void DaZeus::handleEvent(int timeout) {
