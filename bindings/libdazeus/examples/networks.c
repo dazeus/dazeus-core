@@ -27,7 +27,9 @@ int main(int argc, char *argv[]) {
 	while(neti != 0) {
 		printf("Network %d: %s\n", ++i, neti->value);
 		dazeus_stringlist *channels = libdazeus_channels(d, neti->value);
-		if(channels == NULL) {
+		if(channels == NULL && libdazeus_error(d) == 0) {
+			printf("  (no channels)\n");
+		} else if(channels == NULL) {
 			fprintf(stderr, "Failed reading DaZeus channels for %s: %s\n", neti->value, libdazeus_error(d));
 			libdazeus_close(d);
 			return 5;

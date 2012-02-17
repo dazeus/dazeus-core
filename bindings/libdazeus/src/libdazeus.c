@@ -473,6 +473,8 @@ void libdazeus_scope_free(dazeus_scope *s)
  */
 dazeus *libdazeus_create() {
 	dazeus *ret = malloc(sizeof(dazeus));
+	if(!ret)
+		return NULL;
 	ret->socketfile = 0;
 	ret->socket = 0;
 	ret->error = 0;
@@ -497,6 +499,7 @@ const char *libdazeus_error(dazeus *d)
  */
 int libdazeus_open(dazeus *d, const char *socketfile)
 {
+	d->error = 0;
 	if(d->socket) {
 		close(d->socket);
 	}
@@ -535,6 +538,7 @@ void libdazeus_close(dazeus *d)
  */
 dazeus_stringlist *libdazeus_networks(dazeus *d)
 {
+	d->error = 0;
 	// {'get':'networks'}
 	JSONNODE *fulljson = json_new(JSON_NODE);
 	JSONNODE *request  = json_new_a("get", "networks");
@@ -559,13 +563,13 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
 		d->error = "No networks present in reply";
 		return NULL;
 	}
-	dazeus_stringlist *list = _jsonarray_to_stringlist(networks);
-	if(list == NULL) {
+	if(json_type(networks) != JSON_ARRAY) {
 		json_free(networks);
 		json_free(response);
 		d->error = "Networks in reply wasn't an array";
 		return NULL;
 	}
+	dazeus_stringlist *list = _jsonarray_to_stringlist(networks);
 
 	json_free(networks);
 	json_free(response);
@@ -579,6 +583,7 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
  */
 dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
 {
+	d->error = 0;
 	// {'get':'channels','params':['networkname']}
 	JSONNODE *fulljson = json_new(JSON_NODE);
 	JSONNODE *request  = json_new_a("get", "channels");
@@ -607,13 +612,13 @@ dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
 		d->error = "Reply didn't have channels";
 		return NULL;
 	}
-	dazeus_stringlist *list = _jsonarray_to_stringlist(channels);
-	if(list == NULL) {
+	if(json_type(channels) != JSON_ARRAY) {
 		json_free(channels);
 		json_free(response);
 		d->error = "Channels in reply wasn't an array";
 		return NULL;
 	}
+	dazeus_stringlist *list = _jsonarray_to_stringlist(channels);
 
 	json_free(channels);
 	json_free(response);
@@ -625,6 +630,7 @@ dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
  */
 int libdazeus_message(dazeus *d, const char *network, const char *receiver, const char *message)
 {
+	d->error = 0;
 	// {'do':'message','params':['network','recv','message']}
 	JSONNODE *fulljson = json_new(JSON_NODE);
 	JSONNODE *request  = json_new_a("do", "message");
@@ -674,6 +680,7 @@ void libdazeus_stringlist_free(dazeus_stringlist *n)
  */
 char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
 {
+	d->error = 0;
 	// {'do':'property','params':['get','variable'],'scope':[...]}
 	JSONNODE *scope    = _add_scope(d, s);
 	if(scope == NULL)
@@ -721,6 +728,7 @@ char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
  */
 int libdazeus_set_property(dazeus *d, const char *variable, const char *value, dazeus_scope *s)
 {
+	d->error = 0;
 	// {'do':'property','params':['set','variable','value'],'scope':[...]}
 	JSONNODE *scope    = _add_scope(d, s);
 	if(scope == NULL)
@@ -760,6 +768,7 @@ int libdazeus_set_property(dazeus *d, const char *variable, const char *value, d
  */
 int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
 {
+	d->error = 0;
 	// {'do':'property','params':['unset','variable'],'scope':[...]}
 	JSONNODE *scope    = _add_scope(d, s);
 	if(scope == NULL)
@@ -797,6 +806,7 @@ int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
  */
 int libdazeus_subscribe(dazeus *d, const char *event)
 {
+	d->error = 0;
 	// {'do':'subscribe','params':['event']
 	JSONNODE *fulljson = json_new(JSON_NODE);
 	JSONNODE *request  = json_new_a("do", "subscribe");
@@ -833,6 +843,7 @@ int libdazeus_subscribe(dazeus *d, const char *event)
  */
 dazeus_event *libdazeus_handle_event(dazeus *d, int timeout)
 {
+	d->error = 0;
 	if(d->event == 0) {
 		// Wait for a new event to come in
 		assert(d->lastEvent == 0);

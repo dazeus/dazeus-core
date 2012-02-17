@@ -86,7 +86,7 @@ dazeus_scope *libdazeus_scope_sender(const char *network, const char *receiver, 
 void libdazeus_scope_free(dazeus_scope*);
 
 /**
- * Create a new libdazeus instance.
+ * Create a new libdazeus instance, or NULL if there was no memory.
  */
 dazeus *libdazeus_create();
 
@@ -98,7 +98,7 @@ const char *libdazeus_error(dazeus*);
 /**
  * Connect this dazeus instance. Takes socket location as its only parameter.
  * Socket can be either of the form "unix:/path/to/unix/socket" or
- * "tcp:hostname:port" (including "tcp:127.0.0.1:1234").
+ * "tcp:hostname:port" (including "tcp:127.0.0.1:1234"). Returns 1 on success.
  */
 int libdazeus_open(dazeus*, const char *socketfile);
 
@@ -117,8 +117,8 @@ void libdazeus_close(dazeus*);
 
 /**
  * Returns a linked list of networks on this DaZeus instance, or NULL if
- * an error occured. Remember to free the returned structure with
- * libdazeus_networks_free().
+ * an error occured or there were no networks. Remember to free the returned
+ * structure with libdazeus_networks_free().
  */
 dazeus_stringlist *libdazeus_networks(dazeus*);
 
@@ -129,34 +129,36 @@ void libdazeus_stringlist_free(dazeus_stringlist*);
 
 /**
  * Returns a linked list of channels on this DaZeus instance, or NULL if
- * an error occured. Remember to free the returned structure with
- * libdazeus_stringlist_free().
+ * an error occured or there were no channels. Remember to free the returned
+ * structure with libdazeus_stringlist_free().
  */
 dazeus_stringlist *libdazeus_channels(dazeus*, const char *network);
 
 /**
- * Send a message to an IRC channel or user.
+ * Send a message to an IRC channel or user. Returns 1 if the call succeeded.
  */
 int libdazeus_message(dazeus*, const char *network, const char *receiver, const char *message);
 
 /**
  * Retrieve the value of a variable in the DaZeus 2 database. Remember to
- * free() the returned variable after use.
+ * free() the returned variable after use. Returns NULL if the variable did
+ * not exist, or an error occured.
  */
 char *libdazeus_get_property(dazeus*, const char *variable, dazeus_scope*);
 
 /**
- * Set the value of a variable in the DaZeus 2 database.
+ * Set the value of a variable in the DaZeus 2 database. Returns 1 if the
+ * call succeeded.
  */
 int libdazeus_set_property(dazeus*, const char *variable, const char *value, dazeus_scope*);
 
 /**
- * Forget a variable in the DaZeus 2 database.
+ * Forget a variable in the DaZeus 2 database. Returns 1 if the call succeeded.
  */
 int libdazeus_unset_property(dazeus*, const char *variable, dazeus_scope*);
 
 /**
- * Subscribe to a DaZeus 2 Event.
+ * Subscribe to a DaZeus 2 Event. Returns 1 if the call succeeded.
  */
 int libdazeus_subscribe(dazeus*, const char *event);
 
@@ -167,6 +169,8 @@ int libdazeus_subscribe(dazeus*, const char *event);
  * If the 'timeout' parameter is -1, will wait forever until the first event.
  * If the 'timeout' parameter is 0, will try getting an event exactly once.  If
  * the 'timeout' parameter is > 0, will try that many seconds to get an event.
+ * If this method returns NULL, it means either an error occured, or there was
+ * no event inside the given timeout period.
  */
 dazeus_event *libdazeus_handle_event(dazeus*, int timeout);
 
