@@ -164,6 +164,8 @@ void DaZeus::activated() {
 	handleEvent(0);
 	if(!connected()) {
 		// connection closed while retrieving events
+		delete n_;
+		n_ = 0;
 		emit connectionFailed();
 	}
 }
