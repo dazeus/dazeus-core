@@ -74,7 +74,6 @@ class Network : public QObject
 
   signals:
     void motdReceived( const QString &motd, Irc::Buffer *buffer );
-    void modeChanged( const QString &origin, const QString &mode, const QString &args, Irc::Buffer *buffer );
     void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
     void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
     void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );

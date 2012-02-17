@@ -84,7 +84,6 @@ signals:
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
-	void modeChanged( const QString &origin, const QString &mode, const QString &args, Irc::Buffer *buffer );
 	void topicChanged( const QString &origin, const QString &topic, Irc::Buffer *buffer );
 	void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
 	void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );
@@ -103,7 +102,6 @@ public:
 	void slotMotdReceived( const QString &motd, Irc::Buffer *b );
 	void slotJoined( const QString &origin, Irc::Buffer *b );
 	void slotParted( const QString &origin, const QString &message, Irc::Buffer *b );
-	void slotModeChanged( const QString &origin, const QString &mode, const QString &args, Irc::Buffer *b );
 	void slotTopicChanged( const QString &origin, const QString &topic, Irc::Buffer *b );
 	void slotInvited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *b );
 	void slotKicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *b );

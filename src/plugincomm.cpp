@@ -255,13 +255,6 @@ void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
 }
 
-void PluginComm::modeChanged( const QString &origin, const QString &mode,
-                          const QString &args, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("MODE", QStringList() << n->networkName() << origin << buffer->receiver() << mode << args);
-}
-
 void PluginComm::topicChanged( const QString &origin, const QString &topic,
                            Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
@@ -396,6 +389,9 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		dispatch("NOTICE", QStringList() << n->networkName() << origin
 		   << buffer->receiver() << params[1]
 		   << (n->isIdentified(origin) ? "true" : "false"));
+	} else if(event == "MODE" || event == "UMODE") {
+		MIN(1);
+		dispatch("MODE", QStringList() << n->networkName() << origin << params);
 	} else if(event == "NICK") {
 		MIN(1);
 		dispatch("NICK", QStringList() << n->networkName() << origin << params[0]);
