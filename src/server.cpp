@@ -323,12 +323,15 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	if(arguments.size() >= 1) {
 		b->setReceiver(arguments[0]);
 	}
-	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
 	// TODO: handle disconnects nicely (probably using some ping and LIBIRC_ERR_CLOSED
 	if(event == "ERROR") {
+		qWarning() << "Error received from libircclient: " << arguments;
+		qWarning() << "Origin: " << origin;
 		server->slotDisconnected();
 	}
+
+	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
 	if(event == "TOPIC") {
 		assert(count == 1 || count == 2);
@@ -371,13 +374,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 			args.append(QString::fromUtf8(params[i]));
 		}
 		server->slotUnknownMessageReceived(origin, args, b);
-	} else if(event == "ERROR") {
-		QStringList args;
-		for(unsigned int i = 0; i < count; ++i) {
-			args.append(QString::fromUtf8(params[i]));
-		}
-		qWarning() << "Error received from libircclient: " << args;
-		qWarning() << "Origin: " << origin;
 	} else {
 		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
 	}
