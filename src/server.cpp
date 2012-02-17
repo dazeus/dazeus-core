@@ -66,7 +66,6 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 
 	SERVER_RELAY_1STR( motdReceived );
-	SERVER_RELAY_3STR( modeChanged );
 	SERVER_RELAY_2STR( topicChanged );
 	SERVER_RELAY_3STR( invited );
 	SERVER_RELAY_3STR( kicked );
@@ -227,7 +226,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 }
 
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-SERVER_SLOT_RELAY_3STR( slotModeChanged, modeChanged );
 SERVER_SLOT_RELAY_2STR( slotTopicChanged, topicChanged );
 SERVER_SLOT_RELAY_3STR( slotInvited, invited );
 SERVER_SLOT_RELAY_3STR( slotKicked, kicked );
@@ -332,23 +330,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		server->slotDisconnected();
 	}
 
-	if(event == "MODE") {
-		assert(count >= 1);
-		QString mode;
-		if(count == 1) {
-			mode = QString::fromUtf8(params[0]);
-		} else {
-			mode = QString::fromUtf8(params[1]);
-			b->setReceiver(QString::fromUtf8(params[0]));
-		}
-		QStringList args;
-		for(unsigned int i = 2; i < count; ++i)
-			args.append(QString::fromUtf8(params[i]));
-		server->slotModeChanged(origin, mode, args.join(" "), b);
-	} else if(event == "UMODE") {
-		assert(count == 1);
-		server->slotModeChanged(origin, params[0], QString(), b);
-	} else if(event == "TOPIC") {
+	if(event == "TOPIC") {
 		assert(count == 1 || count == 2);
 		QString topic;
 		if(count == 2)
