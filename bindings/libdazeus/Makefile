@@ -1,6 +1,7 @@
 CFLAGS = -Wall -Iinclude -Icontrib/libjson $(EXTRACFLAGS)
 
 lib/libdazeus.a: lib/libdazeus.o contrib/libjson/libjson.a
+	mkdir -p lib
 	cp contrib/libjson/libjson.a lib/libdazeus.a
 	ar cur lib/libdazeus.a lib/libdazeus.o
 
