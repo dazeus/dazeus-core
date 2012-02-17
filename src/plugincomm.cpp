@@ -380,7 +380,7 @@ void PluginComm::unknownMessageReceived( const QString &origin,
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
-#define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event; return; }
+#define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event << ":" << params; return; }
 	if(event == "PRIVMSG") {
 		MIN(2);
 		messageReceived(origin, params[1], buffer);
