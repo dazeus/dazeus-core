@@ -66,8 +66,6 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 
 	SERVER_RELAY_1STR( motdReceived );
-	SERVER_RELAY_3STR( invited );
-	SERVER_RELAY_3STR( kicked );
 	SERVER_RELAY_2STR( ctcpRequestReceived );
 	SERVER_RELAY_2STR( ctcpReplyReceived );
 	SERVER_RELAY_2STR( ctcpActionReceived );
@@ -225,8 +223,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 }
 
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-SERVER_SLOT_RELAY_3STR( slotInvited, invited );
-SERVER_SLOT_RELAY_3STR( slotKicked, kicked );
 SERVER_SLOT_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
 SERVER_SLOT_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
@@ -331,22 +327,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 
-	if(event == "KICK") {
-		assert(count > 1 && count <= 3);
-		QString nick;
-		QString message;
-		if(count >= 2)
-			nick = QString::fromUtf8(params[1]);
-		if(count == 3)
-			message = QString::fromUtf8(params[2]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotKicked(origin, nick, message, b);
-	} else if(event == "INVITE") {
-		assert(count == 2);
-		QString receiver = QString::fromUtf8(params[0]);
-		QString channel  = QString::fromUtf8(params[1]);
-		server->slotInvited(origin, receiver, channel, b);
-	} else if(event == "CTCP_REQ" || event == "CTCP") {
+	if(event == "CTCP_REQ" || event == "CTCP") {
 		assert(count == 1);
 		server->slotCtcpRequestReceived(origin, QString::fromUtf8(params[0]), b);
 	} else if(event == "CTCP_REP") {

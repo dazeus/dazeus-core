@@ -170,8 +170,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   activeServer_ = Server::fromServerConfig( server );
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( invited( const QString&, const QString&, const QString &, Irc::Buffer* ) );
-  RELAY_SIGN( kicked( const QString&, const QString&, const QString &, Irc::Buffer* ) );
   RELAY_SIGN( ctcpRequestReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( ctcpReplyReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( ctcpActionReceived( const QString&, const QString&, Irc::Buffer* ) );
@@ -188,8 +186,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(         destroyed() ),
            this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_, SIGNAL(            kicked(const QString&, const QString&, const QString&, Irc::Buffer*) ),
-           this,          SLOT(       kickedChannel(const QString&, const QString&, const QString&, Irc::Buffer*) ) );
   // XXX HACK to make sure slotWhoisReceived and slotNamesReceived are excuted first
   connect( activeServer_,SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer* ) ),
            this,          SLOT(   slotWhoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ) );
@@ -499,6 +495,9 @@ void Network::slotIrcEvent(const QString &event, const QString &origin, const QS
 	} else if(event == "PART") {
 		MIN(1);
 		partedChannel(origin, QString(), buf);
+	} else if(event == "KICK") {
+		MIN(2);
+		kickedChannel(origin, params[1], QString(), buf);
 	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() > 0) {
