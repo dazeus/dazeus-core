@@ -348,14 +348,6 @@ void PluginComm::numericMessageReceived( const QString &origin, uint code,
 	dispatch("NUMERIC", QStringList() << n->networkName() << origin << buffer->receiver() << QString::number(code) << params);
 }
 
-void PluginComm::unknownMessageReceived( const QString &origin,
-                                       const QStringList &params,
-                                       Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << params);
-}
-
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
@@ -410,7 +402,8 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 	} else if(event == "DISCONNECT") {
 		dispatch("DISCONNECT", QStringList() << n->networkName());
 	} else {
-		qDebug() << n << event << origin << buffer->receiver() << params;
+		qDebug() << "Unknown event: " << n << event << origin << buffer->receiver() << params;
+		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << event << params);
 	}
 #undef MIN
 }

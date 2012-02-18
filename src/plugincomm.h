@@ -154,9 +154,6 @@ class PluginComm : public QObject
     virtual void numericMessageReceived( const QString &origin, uint code,
                                      const QStringList &params,
                                      Irc::Buffer *buffer );
-    virtual void unknownMessageReceived( const QString &origin,
-                                       const QStringList &params,
-                                       Irc::Buffer *buffer );
     virtual void ircEvent(const QString &event, const QString &origin,
                                        const QStringList &params,
                                        Irc::Buffer *buffer );

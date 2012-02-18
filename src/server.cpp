@@ -77,9 +77,6 @@ Server::Server()
 	connect( thread_, SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
-	connect( thread_, SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(unknownMessageReceived(const QString&, const QStringList&, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
@@ -275,12 +272,6 @@ void ServerThread::slotIrcEvent(const QString &event, const QString &origin, con
 	emit ircEvent(event, origin, args, buf);
 }
 
-void ServerThread::slotUnknownMessageReceived( const QString &str, const QStringList &list, Irc::Buffer *buf )
-{
-	Q_ASSERT( buf != 0 );
-	emit unknownMessageReceived( str, list, buf );
-}
-
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
 	ServerThread *server = (ServerThread*) irc_get_ctx(s);
 	assert(server->getIrc() == s);
@@ -340,12 +331,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 			message = QString::fromUtf8(params[1]);
 		b->setReceiver(QString::fromUtf8(params[0]));
 		server->slotCtcpActionReceived(origin, message, b);
-	} else if(event == "UNKNOWN") {
-		QStringList args;
-		for(unsigned int i = 0; i < count; ++i) {
-			args.append(QString::fromUtf8(params[i]));
-		}
-		server->slotUnknownMessageReceived(origin, args, b);
 	} else {
 		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
 	}
