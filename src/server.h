@@ -78,7 +78,6 @@ signals:
 	void ctcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *buffer );
 	void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
 	void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
-	void unknownMessageReceived( const QString &origin, const QStringList &params, Irc::Buffer *buffer );
 	void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
 	// XXX HACK
 	void whoisReceivedHiPrio(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer);
