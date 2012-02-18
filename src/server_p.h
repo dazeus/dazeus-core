@@ -84,8 +84,6 @@ signals:
 	void connectionTimeout();
 
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
-	void invited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *buffer );
-	void kicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *buffer );
 	void ctcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *buffer );
 	void ctcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *buffer );
 	void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
@@ -101,8 +99,6 @@ public:
 	void slotMotdReceived( const QString &motd, Irc::Buffer *b );
 	void slotJoined( const QString &origin, Irc::Buffer *b );
 	void slotParted( const QString &origin, const QString &message, Irc::Buffer *b );
-	void slotInvited( const QString &origin, const QString &receiver, const QString &channel, Irc::Buffer *b );
-	void slotKicked( const QString &origin, const QString &nick, const QString &message, Irc::Buffer *b );
 	void slotCtcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *b );
 	void slotCtcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *b );
 	void slotCtcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *b );

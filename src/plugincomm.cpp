@@ -255,20 +255,6 @@ void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
 	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
 }
 
-void PluginComm::invited( const QString &origin, const QString &receiver,
-                      const QString &channel, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("INVITE", QStringList() << n->networkName() << origin << buffer->receiver() << receiver << channel);
-}
-
-void PluginComm::kicked( const QString &origin, const QString &nick,
-                     const QString &message, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("KICK", QStringList() << n->networkName() << origin << buffer->receiver() << nick << message);
-}
-
 void PluginComm::messageReceived( const QString &origin, const QString &message,
                               Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);
@@ -397,6 +383,17 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		if(params.size() == 2)
 			message = params[1];
 		dispatch("PART", QStringList() << n->networkName() << origin << buffer->receiver() << message);
+	} else if(event == "KICK") {
+		MIN(2);
+		QString nick = params[1];
+		QString message;
+		if(params.size() == 3)
+			message = params[2];
+		dispatch("KICK", QStringList() << n->networkName() << origin << params[0] << nick << message);
+	} else if(event == "INVITE") {
+		MIN(2);
+		QString channel  = params[1];
+		dispatch("INVITE", QStringList() << n->networkName() << origin << channel);
 	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() == 1)
