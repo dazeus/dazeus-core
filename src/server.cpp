@@ -66,9 +66,6 @@ Server::Server()
 	         Qt::BlockingQueuedConnection );
 
 	SERVER_RELAY_1STR( motdReceived );
-	SERVER_RELAY_2STR( ctcpRequestReceived );
-	SERVER_RELAY_2STR( ctcpReplyReceived );
-	SERVER_RELAY_2STR( ctcpActionReceived );
 
 #undef SERVER_RELAY_1STR
 #undef SERVER_RELAY_2STR
@@ -220,9 +217,6 @@ void ServerThread::slotname (const QString &str, const QString &str2, const QStr
 }
 
 SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-SERVER_SLOT_RELAY_2STR( slotCtcpRequestReceived, ctcpRequestReceived );
-SERVER_SLOT_RELAY_2STR( slotCtcpReplyReceived, ctcpReplyReceived );
-SERVER_SLOT_RELAY_2STR( slotCtcpActionReceived, ctcpActionReceived );
 
 #undef SERVER_SLOT_RELAY_1STR
 #undef SERVER_SLOT_RELAY_2STR
@@ -317,23 +311,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
-
-	if(event == "CTCP_REQ" || event == "CTCP") {
-		assert(count == 1);
-		server->slotCtcpRequestReceived(origin, QString::fromUtf8(params[0]), b);
-	} else if(event == "CTCP_REP") {
-		assert(count == 1);
-		server->slotCtcpReplyReceived(origin, QString::fromUtf8(params[0]), b);
-	} else if(event == "CTCP_ACTION" || event == "ACTION") {
-		assert(count == 1 || count == 2);
-		QString message;
-		if(count == 2)
-			message = QString::fromUtf8(params[1]);
-		b->setReceiver(QString::fromUtf8(params[0]));
-		server->slotCtcpActionReceived(origin, message, b);
-	} else {
-		std::cerr << "Unknown event received from libircclient: " << event << std::endl;
-	}
 }
 
 void ServerThread::run()

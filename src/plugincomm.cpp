@@ -319,27 +319,6 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
-void PluginComm::ctcpRequestReceived(const QString &origin, const QString &request,
-                                 Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("CTCPREQ", QStringList() << n->networkName() << origin << buffer->receiver() << request);
-}
-
-void PluginComm::ctcpReplyReceived( const QString &origin, const QString &reply,
-                                Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("CTCPREPL", QStringList() << n->networkName() << origin << buffer->receiver() << reply);
-}
-
-void PluginComm::ctcpActionReceived( const QString &origin, const QString &action,
-                                 Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("ACTION", QStringList() << n->networkName() << origin << buffer->receiver() << action);
-}
-
 void PluginComm::numericMessageReceived( const QString &origin, uint code,
                                      const QStringList &params,
                                      Irc::Buffer *buffer ) {
@@ -401,6 +380,24 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		dispatch("CONNECT", QStringList() << n->networkName());
 	} else if(event == "DISCONNECT") {
 		dispatch("DISCONNECT", QStringList() << n->networkName());
+	} else if(event == "CTCP_REQ" || event == "CTCP") {
+		MIN(1);
+		// TODO: libircclient does not seem to tell us where the ctcp
+		// request was sent (user or channel), so just assume it was
+		// sent to our nick
+		QString to = n->user()->nick();
+		dispatch("CTCP", QStringList() << n->networkName() << origin << to << params[0]);
+	} else if(event == "CTCP_REP") {
+		MIN(1);
+		// TODO: see above
+		QString to = n->user()->nick();
+		dispatch("CTCP_REP", QStringList() << n->networkName() << origin << to << params[0]);
+	} else if(event == "CTCP_ACTION" || event == "ACTION") {
+		MIN(1);
+		QString message;
+		if(params.size() >= 2)
+			message = params[1];
+		dispatch("ACTION", QStringList() << n->networkName() << origin << buffer->receiver() << message);
 	} else {
 		qDebug() << "Unknown event: " << n << event << origin << buffer->receiver() << params;
 		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << event << params);
