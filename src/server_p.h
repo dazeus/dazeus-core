@@ -96,11 +96,6 @@ signals:
 
 public:
 	void slotMotdReceived( const QString &motd, Irc::Buffer *b );
-	void slotJoined( const QString &origin, Irc::Buffer *b );
-	void slotParted( const QString &origin, const QString &message, Irc::Buffer *b );
-	void slotCtcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *b );
-	void slotCtcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *b );
-	void slotCtcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *b );
 	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *b );
 	void slotConnected();
 	void slotDisconnected() {

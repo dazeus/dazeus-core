@@ -170,9 +170,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   activeServer_ = Server::fromServerConfig( server );
   #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( ctcpRequestReceived( const QString&, const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( ctcpReplyReceived( const QString&, const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( ctcpActionReceived( const QString&, const QString&, Irc::Buffer* ) );
   RELAY_SIGN( numericMessageReceived( const QString&, uint, const QStringList&, Irc::Buffer* ) );
   RELAY_SIGN( ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer* ) );
   RELAY_SIGN( whoisReceived( const QString&, const QString&, bool, Irc::Buffer* ) );
