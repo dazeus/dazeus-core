@@ -104,8 +104,9 @@ public:
 	 * Wait 'timeout' seconds for one next event. Subscribe to the
 	 * newEvent() signal to catch it. If 'timeout' is -1, wait forever.
 	 * If 'timeout' is 0, check if there is one, and return immediately.
+	 * Returns true if an event was emitted.
 	 */
-	void handleEvent(int timeout);
+	bool handleEvent(int timeout);
 
 signals:
 	void newEvent(DaZeus::Event *);

@@ -161,19 +161,22 @@ bool DaZeus::subscribe(const QStringList &events) {
 }
 
 void DaZeus::activated() {
-	handleEvent(0);
-	if(!connected()) {
-		// connection closed while retrieving events
-		delete n_;
-		n_ = 0;
-		emit connectionFailed();
-	}
+	bool handled;
+	do {
+		handled = handleEvent(0);
+		if(!connected()) {
+			// connection closed while retrieving events
+			delete n_;
+			n_ = 0;
+			emit connectionFailed();
+		}
+	} while(handled);
 }
 
-void DaZeus::handleEvent(int timeout) {
+bool DaZeus::handleEvent(int timeout) {
 	dazeus_event *de = libdazeus_handle_event(d_, timeout);
 	if(de == NULL) {
-		return;
+		return false;
 	}
 
 	DaZeus::Event *e = new DaZeus::Event;
@@ -187,4 +190,5 @@ void DaZeus::handleEvent(int timeout) {
 
 	libdazeus_event_free(de);
 	emit newEvent(e);
+	return true;
 }
