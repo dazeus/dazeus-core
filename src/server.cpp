@@ -80,14 +80,8 @@ Server::Server()
 	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
 	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
-	connect( thread_, SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)),
-	         this,    SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
-	connect( thread_, SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(disconnected()),
 	         this,    SIGNAL(disconnected()) );
@@ -238,9 +232,8 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 318)
 	{
-		// XXX HACK
-		emit whoisReceivedHiPrio( origin, in_whois_for_, whois_identified_, buf );
 		emit whoisReceived( origin, in_whois_for_, whois_identified_, buf );
+		emit ircEvent( "WHOIS", origin, QStringList() << in_whois_for_ << (whois_identified_ ? "true" : "false"), buf );
 		whois_identified_ = false;
 		in_whois_for_.clear();
 	}
@@ -252,9 +245,8 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 366)
 	{
-		// XXX HACK
-		emit namesReceivedHiPrio( origin, args.at(1), in_names_, buf );
 		emit namesReceived( origin, args.at(1), in_names_, buf );
+		emit ircEvent( "NAMES", origin, QStringList() << args.at(1) << in_names_, buf );
 		in_names_.clear();
 	}
 	emit numericMessageReceived( origin, code, args, buf );

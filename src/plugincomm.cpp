@@ -398,25 +398,18 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		if(params.size() >= 2)
 			message = params[1];
 		dispatch("ACTION", QStringList() << n->networkName() << origin << buffer->receiver() << message);
+	} else if(event == "WHOIS") {
+		MIN(2);
+		dispatch("WHOIS", QStringList() << n->networkName() << origin << params[0] << params[1]);
+		flushCommandQueue(params[0], params[1] == "true");
+	} else if(event == "NAMES") {
+		MIN(2);
+		dispatch("NAMES", QStringList() << n->networkName() << origin << params);
 	} else {
 		qDebug() << "Unknown event: " << n << event << origin << buffer->receiver() << params;
 		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << event << params);
 	}
 #undef MIN
-}
-
-void PluginComm::whoisReceived( const QString &origin, const QString &nick,
-                                 bool identified, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("WHOIS", QStringList() << n->networkName() << origin << nick << (identified ? "true" : "false"));
-	flushCommandQueue(nick, identified);
-}
-void PluginComm::namesReceived( const QString &origin, const QString &channel,
-                                 const QStringList &params, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("NAMES", QStringList() << n->networkName() << origin << channel << params);
 }
 
 void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {

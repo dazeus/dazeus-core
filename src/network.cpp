@@ -172,8 +172,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
   RELAY_SIGN( numericMessageReceived( const QString&, uint, const QStringList&, Irc::Buffer* ) );
   RELAY_SIGN( ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer* ) );
-  RELAY_SIGN( whoisReceived( const QString&, const QString&, bool, Irc::Buffer* ) );
-  RELAY_SIGN( namesReceived( const QString&, const QString&, const QStringList&, Irc::Buffer* ) );
   #undef RELAY_SIGN
 
   connect( activeServer_, SIGNAL(      disconnected() ),
@@ -182,10 +180,9 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL(         destroyed() ),
            this,          SLOT(  onFailedConnection() ) );
-  // XXX HACK to make sure slotWhoisReceived and slotNamesReceived are excuted first
-  connect( activeServer_,SIGNAL(whoisReceivedHiPrio(const QString&, const QString&, bool, Irc::Buffer* ) ),
+  connect( activeServer_,SIGNAL(      whoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ),
            this,          SLOT(   slotWhoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ) );
-  connect( activeServer_,SIGNAL(namesReceivedHiPrio(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ),
+  connect( activeServer_,SIGNAL(      namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ),
            this,          SLOT(   slotNamesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ) );
   connect( activeServer_, SIGNAL(          ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
            this,          SLOT(        slotIrcEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
