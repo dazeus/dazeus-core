@@ -13,6 +13,8 @@
 #include "server_p.h"
 #include "config.h"
 
+// #define DEBUG
+
 QDebug operator<<(QDebug dbg, const Server &s)
 {
 	return operator<<(dbg, &s);
@@ -295,11 +297,17 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		b->setReceiver(arguments[0]);
 	}
 
+#ifdef DEBUG
+	qDebug() << server->server() << " - " << QString::fromStdString(event) << " from " << origin << ": " << arguments;
+#endif
+
 	// TODO: handle disconnects nicely (probably using some ping and LIBIRC_ERR_CLOSED
 	if(event == "ERROR") {
 		qWarning() << "Error received from libircclient: " << arguments;
 		qWarning() << "Origin: " << origin;
 		server->slotDisconnected();
+	} else if(event == "CONNECT") {
+		qDebug() << "Connected to server:" << server->server();
 	}
 
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
