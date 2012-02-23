@@ -76,10 +76,7 @@ signals:
 	void motdReceived( const QString &motd, Irc::Buffer *buffer );
 	void numericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *buffer );
 	void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
-	// XXX HACK
-	void whoisReceivedHiPrio(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer);
 	void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
-	void namesReceivedHiPrio(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
 	void namesReceived(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
 
 private:

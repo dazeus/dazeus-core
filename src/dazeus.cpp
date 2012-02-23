@@ -195,10 +195,6 @@ bool DaZeus::loadConfig()
                           const QStringList&, Irc::Buffer* ) );
     RELAY_NET_SIGN( ircEvent( const QString&, const QString&,
                           const QStringList&, Irc::Buffer*) );
-    RELAY_NET_SIGN( whoisReceived( const QString&, const QString&,
-                          bool, Irc::Buffer* ) );
-    RELAY_NET_SIGN( namesReceived( const QString&, const QString&,
-                          const QStringList&, Irc::Buffer* ) );
 
 #undef RELAY_NET_SIGN
 
