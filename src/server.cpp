@@ -73,9 +73,6 @@ Server::Server()
 #undef SERVER_RELAY_2STR
 #undef SERVER_RELAY_3STR
 
-	connect( thread_, SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(numericMessageReceived(const QString&, uint, const QStringList&, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
 	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
@@ -251,7 +248,7 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 		emit ircEvent( "NAMES", origin, QStringList() << args.at(1) << in_names_, buf );
 		in_names_.clear();
 	}
-	emit numericMessageReceived( origin, code, args, buf );
+	emit ircEvent( "NUMERIC", origin, QStringList() << QString::number(code) << args, buf );
 }
 
 void ServerThread::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)

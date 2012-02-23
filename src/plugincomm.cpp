@@ -319,14 +319,6 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
-void PluginComm::numericMessageReceived( const QString &origin, uint code,
-                                     const QStringList &params,
-                                     Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("NUMERIC", QStringList() << n->networkName() << origin << buffer->receiver() << QString::number(code) << params);
-}
-
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
 	Network *n = Network::fromBuffer(buffer);
 	Q_ASSERT(n != 0);
@@ -405,6 +397,9 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 	} else if(event == "NAMES") {
 		MIN(2);
 		dispatch("NAMES", QStringList() << n->networkName() << origin << params);
+	} else if(event == "NUMERIC") {
+		MIN(1);
+		dispatch("NUMERIC", QStringList() << n->networkName() << origin << buffer->receiver() << params);
 	} else {
 		qDebug() << "Unknown event: " << n << event << origin << buffer->receiver() << params;
 		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << event << params);

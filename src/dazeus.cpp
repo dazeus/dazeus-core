@@ -191,8 +191,6 @@ bool DaZeus::loadConfig()
              plugins_,    SLOT(   sign ) );
 
     RELAY_NET_SIGN( motdReceived( const QString&, Irc::Buffer* ));
-    RELAY_NET_SIGN( numericMessageReceived( const QString&, uint,
-                          const QStringList&, Irc::Buffer* ) );
     RELAY_NET_SIGN( ircEvent( const QString&, const QString&,
                           const QStringList&, Irc::Buffer*) );
 
