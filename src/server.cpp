@@ -52,27 +52,6 @@ Server::Server()
 , connectTimer_( 0 )
 , thread_( new ServerThread(this) )
 {
-#define SERVER_RELAY_1STR( signname ) \
-	connect( thread_, SIGNAL(signname(const QString &, Irc::Buffer *)), \
-	         this,    SIGNAL(signname(const QString &, Irc::Buffer *)), \
-	         Qt::BlockingQueuedConnection );
-
-#define SERVER_RELAY_2STR( signname ) \
-	connect( thread_, SIGNAL(signname(const QString &, const QString &, Irc::Buffer *)), \
-	         this,    SIGNAL(signname(const QString &, const QString &, Irc::Buffer *)), \
-	         Qt::BlockingQueuedConnection );
-
-#define SERVER_RELAY_3STR( signname ) \
-	connect( thread_, SIGNAL(signname(const QString &, const QString &, const QString &, Irc::Buffer *)), \
-	         this,    SIGNAL(signname(const QString &, const QString &, const QString &, Irc::Buffer *)), \
-	         Qt::BlockingQueuedConnection );
-
-	SERVER_RELAY_1STR( motdReceived );
-
-#undef SERVER_RELAY_1STR
-#undef SERVER_RELAY_2STR
-#undef SERVER_RELAY_3STR
-
 	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         Qt::BlockingQueuedConnection );
@@ -189,31 +168,6 @@ void Irc::Buffer::message(const QString &message) {
 	assert(!receiver_.isEmpty());
 	session_->message(receiver_, message);
 }
-
-#define SERVER_SLOT_RELAY_1STR( slotname, signname ) \
-void ServerThread::slotname ( const QString &str, Irc::Buffer *buf ) { \
-	Q_ASSERT( buf != 0 ); \
-	emit signname ( str, buf ); \
-}
-
-#define SERVER_SLOT_RELAY_2STR( slotname, signname ) \
-void ServerThread::slotname ( const QString &str, const QString &str2, Irc::Buffer *buf ) { \
-	Q_ASSERT( buf != 0 ); \
-	emit signname ( str, str2, buf ); \
-}
-
-#define SERVER_SLOT_RELAY_3STR( slotname, signname ) \
-void ServerThread::slotname (const QString &str, const QString &str2, const QString &str3, Irc::Buffer *buf ) \
-{ \
-	Q_ASSERT( buf != 0 ); \
-	emit signname ( str, str2, str3, buf ); \
-}
-
-SERVER_SLOT_RELAY_1STR( slotMotdReceived, motdReceived );
-
-#undef SERVER_SLOT_RELAY_1STR
-#undef SERVER_SLOT_RELAY_2STR
-#undef SERVER_SLOT_RELAY_3STR
 
 void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	const QStringList &args, Irc::Buffer *buf )
