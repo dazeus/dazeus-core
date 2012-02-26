@@ -249,12 +249,6 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 	}
 }
 
-void PluginComm::motdReceived( const QString &motd, Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
-	Q_ASSERT(n != 0);
-	dispatch("MOTD", QStringList() << n->networkName() << motd << buffer->receiver());
-}
-
 void PluginComm::messageReceived( const QString &origin, const QString &message,
                               Irc::Buffer *buffer ) {
 	Network *n = Network::fromBuffer(buffer);

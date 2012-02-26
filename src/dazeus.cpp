@@ -186,15 +186,10 @@ bool DaZeus::loadConfig()
       return false;
     }
 
-#define RELAY_NET_SIGN(sign) \
-    connect( net,            SIGNAL( sign ),   \
-             plugins_,    SLOT(   sign ) );
-
-    RELAY_NET_SIGN( motdReceived( const QString&, Irc::Buffer* ));
-    RELAY_NET_SIGN( ircEvent( const QString&, const QString&,
-                          const QStringList&, Irc::Buffer*) );
-
-#undef RELAY_NET_SIGN
+   connect( net,      SIGNAL(ircEvent(const QString&, const QString&,
+                                      const QStringList&, Irc::Buffer*)),
+            plugins_, SLOT(  ircEvent(const QString&, const QString&,
+                                      const QStringList&, Irc::Buffer*)));
 
     networks_.append( net );
   }

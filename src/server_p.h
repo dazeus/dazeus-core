@@ -83,16 +83,11 @@ signals:
 	void disconnected();
 	void connectionTimeout();
 
-	void motdReceived( const QString &motd, Irc::Buffer *buffer );
-	void ctcpRequestReceived( const QString &origin, const QString &request, Irc::Buffer *buffer );
-	void ctcpReplyReceived( const QString &origin, const QString &reply, Irc::Buffer *buffer );
-	void ctcpActionReceived( const QString &origin, const QString &action, Irc::Buffer *buffer );
 	void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
 	void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
 	void namesReceived(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
 
 public:
-	void slotMotdReceived( const QString &motd, Irc::Buffer *b );
 	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *b );
 	void slotConnected();
 	void slotDisconnected() {

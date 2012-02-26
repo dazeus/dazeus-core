@@ -168,11 +168,11 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   }
 
   activeServer_ = Server::fromServerConfig( server );
-  #define RELAY_SIGN(x) connect(activeServer_, SIGNAL(x), this, SIGNAL(x));
-  RELAY_SIGN( motdReceived( const QString&, Irc::Buffer* ) );
-  RELAY_SIGN( ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer* ) );
-  #undef RELAY_SIGN
 
+  connect( activeServer_, SIGNAL( ircEvent(const QString&, const QString&,
+                                           const QStringList&, Irc::Buffer*)),
+           this,          SIGNAL( ircEvent(const QString&, const QString&,
+                                           const QStringList&, Irc::Buffer*)));
   connect( activeServer_, SIGNAL(      disconnected() ),
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL( connectionTimeout() ),
