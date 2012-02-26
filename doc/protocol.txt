@@ -101,13 +101,12 @@ See the section on properties below for more information.
 After subscribing, events can be received anytime outside another existing
 response. The following events exist:
 
-  CONNECT, DISCONNECTED, JOINED, PARTED, MOTD, QUIT, NICK, MODE, TOPIC, INVITE,
-  KICK, PRIVMSG, NOTICE, CTCPREQ, CTCPREPL, ACTION, NUMERIC, UNKNOWN, WHOIS,
-  NAMES
+  CONNECT, DISCONNECT, JOIN, PART, QUIT, NICK, MODE, TOPIC, INVITE, KICK,
+  PRIVMSG, NOTICE, CTCP, CTCP_REP, ACTION, NUMERIC, UNKNOWN, WHOIS, NAMES
 
 All events will have have an "event" field set to one of the above strings, and
 a "params" field that will contain an array with parameters depending on the
-event. Note that the above list is bound to change as the protocol changes.
+event.
 
 === Properties ===
 
