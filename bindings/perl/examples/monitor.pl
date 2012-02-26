@@ -10,9 +10,9 @@ if(!$socket) {
 }
 
 my $dazeus = DaZeus->connect($socket);
-$dazeus->subscribe(qw/CONNECT DISCONNECT JOIN PART MOTD QUIT NICK MODE
-	TOPIC INVITE KICK PRIVMSG NOTICE CTCPREQ CTCPREPL ACTION NUMERIC
-	UNKNOWN WHOIS NAMES COMMAND/);
+$dazeus->subscribe(qw/CONNECT DISCONNECT JOIN PART QUIT NICK MODE
+	TOPIC INVITE KICK PRIVMSG NOTICE CTCP CTCP_REP ACTION NUMERIC
+	UNKNOWN WHOIS NAMES/);
 
 while(my $event = $dazeus->handleEvent()) {
 	print Dumper($event);
