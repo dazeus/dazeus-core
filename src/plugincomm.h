@@ -140,13 +140,10 @@ class PluginComm : public QObject
   public:
             PluginComm( Database *d, Config *c, DaZeus *bot );
   virtual  ~PluginComm();
-    void dispatch(const QString &event, const QStringList &parameters);
-
-  public slots:
-    virtual void init();
-    virtual void ircEvent(const QString &event, const QString &origin,
-                                       const QStringList &params,
-                                       Irc::Buffer *buffer );
+  void dispatch(const QString &event, const QStringList &parameters);
+  void init();
+  void ircEvent(const QString &event, const QString &origin,
+                const QStringList &params, Irc::Buffer *buffer );
 
   private slots:
     void newTcpConnection();

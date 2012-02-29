@@ -7,6 +7,7 @@
 #include "server.h"
 #include "config.h"
 #include "user.h"
+#include "plugincomm.h"
 
 // #define DEBUG
 
@@ -106,8 +107,8 @@ bool serverNicenessLessThan( const ServerConfig *c1, const ServerConfig *c2 )
     goto ready;
 
   // otherwise, look at server undesirability (failure rate) too
-  n = Network::fromNetworkConfig( c1->network );
-  Q_ASSERT( n == Network::fromNetworkConfig( c2->network ) );
+  n = Network::fromNetworkConfig( c1->network, 0 );
+  Q_ASSERT( n == Network::fromNetworkConfig( c2->network, 0 ) );
 
   var1 -= n->serverUndesirability( c1 );
   var2 -= n->serverUndesirability( c2 );
@@ -169,10 +170,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 
   activeServer_ = Server::fromServerConfig( server, this );
 
-  connect( activeServer_, SIGNAL( ircEvent(const QString&, const QString&,
-                                           const QStringList&, Irc::Buffer*)),
-           this,          SIGNAL( ircEvent(const QString&, const QString&,
-                                           const QStringList&, Irc::Buffer*)));
   connect( activeServer_, SIGNAL(      disconnected() ),
            this,          SLOT(  onFailedConnection() ) );
   connect( activeServer_, SIGNAL( connectionTimeout() ),
@@ -284,7 +281,7 @@ void Network::onFailedConnection()
   knownUsers_.clear();
 
   Irc::Buffer *b = new Irc::Buffer(activeServer_);
-  emit ircEvent("DISCONNECT", "", QStringList(), b);
+  plugins_->ircEvent("DISCONNECT", "", QStringList(), b);
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
@@ -344,13 +341,14 @@ Network *Network::fromBuffer( Irc::Buffer *b )
 /**
  * @brief Create a Network from a given NetworkConfig.
  */
-Network *Network::fromNetworkConfig( const NetworkConfig *c )
+Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
 {
   if( networks_.contains( c->name ) )
     return networks_.value( c->name );
 
   Network *n = new Network( c->name );
   n->config_ = c;
+  n->plugins_ = p;
   return n;
 }
 
@@ -501,4 +499,6 @@ void Network::slotIrcEvent(const QString &event, const QString &origin, const QS
 		slotNickChanged(origin, params[0], buf);
 	}
 #undef MIN
+	Q_ASSERT(plugins_ != 0);
+	plugins_->ircEvent(event, origin, params, buf);
 }
