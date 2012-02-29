@@ -16,6 +16,7 @@
 
 class Server;
 class Network;
+class PluginComm;
 
 struct ServerConfig;
 struct NetworkConfig;
@@ -35,7 +36,7 @@ class Network : public QObject
   public:
                    ~Network();
 
-    static Network *fromNetworkConfig( const NetworkConfig *c );
+    static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
     static Network *getNetwork( const QString &name );
     static Network *fromBuffer( Irc::Buffer *b );
 
@@ -72,9 +73,6 @@ class Network : public QObject
     void flagUndesirableServer( const ServerConfig *sc );
     void serverIsActuallyOkay( const ServerConfig *sc );
 
-  signals:
-    void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
-
   private:
     void connectToServer( ServerConfig *conf, bool reconnect );
     bool disconnect( const QObject *sender, const char *signal,
@@ -93,6 +91,7 @@ class Network : public QObject
     User                 *me_;
     QList<QString>        identifiedUsers_;
     QMap<QString,QStringList> knownUsers_;
+    PluginComm           *plugins_;
 
   private slots:
     void onFailedConnection();

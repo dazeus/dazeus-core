@@ -180,16 +180,11 @@ bool DaZeus::loadConfig()
 
   foreach( NetworkConfig *netconf, networks )
   {
-    Network *net = Network::fromNetworkConfig( netconf );
+    Network *net = Network::fromNetworkConfig( netconf, plugins_ );
     if( net == 0 ) {
       resetConfig();
       return false;
     }
-
-   connect( net,      SIGNAL(ircEvent(const QString&, const QString&,
-                                      const QStringList&, Irc::Buffer*)),
-            plugins_, SLOT(  ircEvent(const QString&, const QString&,
-                                      const QStringList&, Irc::Buffer*)));
 
     networks_.append( net );
   }
