@@ -167,7 +167,7 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
     activeServer_->deleteLater();
   }
 
-  activeServer_ = Server::fromServerConfig( server );
+  activeServer_ = Server::fromServerConfig( server, this );
 
   connect( activeServer_, SIGNAL( ircEvent(const QString&, const QString&,
                                            const QStringList&, Irc::Buffer*)),
