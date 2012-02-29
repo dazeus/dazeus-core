@@ -51,6 +51,7 @@ Server::Server()
 , config_( 0 )
 , connectTimer_( 0 )
 , thread_( new ServerThread(this) )
+, network_(0)
 {
 	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
 	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
@@ -120,10 +121,11 @@ void Server::disconnectFromServer( Network::DisconnectReason reason )
 /**
  * @brief Create a Server from a given ServerConfig.
  */
-Server *Server::fromServerConfig( const ServerConfig *c )
+Server *Server::fromServerConfig( const ServerConfig *c, Network *n )
 {
 	Server *s = new Server;
 	s->config_ = c;
+	s->network_ = n;
 	return s;
 }
 

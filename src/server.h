@@ -53,7 +53,7 @@ private:
 
 public:
 	  ~Server();
-	static Server *fromServerConfig( const ServerConfig *c );
+	static Server *fromServerConfig( const ServerConfig *c, Network *n );
 	const ServerConfig *config() const;
 	QString motd() const;
 
@@ -81,6 +81,7 @@ private:
 	const ServerConfig *config_;
 	QString   motd_;
 	QTimer   *connectTimer_;
+	Network  *network_;
 	ServerThread *thread_;
 };
 
