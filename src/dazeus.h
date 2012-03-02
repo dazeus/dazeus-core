@@ -31,6 +31,8 @@ class DaZeus : public QObject
     Database *database() const;
     const QList<Network*> &networks() const { return networks_; }
 
+    void     run();
+
   public slots:
     bool     loadConfig();
     bool     initPlugins();

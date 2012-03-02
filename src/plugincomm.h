@@ -148,13 +148,13 @@ class PluginComm : public QObject
   void init();
   void ircEvent(const QString &event, const QString &origin,
                 const QStringList &params, Irc::Buffer *buffer );
+  void run();
 
   private slots:
     void newTcpConnection();
     void newLocalConnection();
     void poll();
     void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
-    void run();
 
   private:
     QList<int> tcpServers_;
@@ -165,7 +165,6 @@ class PluginComm : public QObject
     Database *database_;
     Config *config_;
     DaZeus *dazeus_;
-    QTimer *timer_;
     void handle(int dev, const QByteArray &line, SocketInfo &info);
     void flushCommandQueue(const QString &nick = QString(), bool identified = false);
 };

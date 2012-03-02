@@ -212,3 +212,10 @@ void DaZeus::resetConfig()
   //}
   //networks_.clear();
 }
+
+void DaZeus::run()
+{
+	while(1) {
+		plugins_->run();
+	}
+}
