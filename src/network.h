@@ -11,6 +11,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QHash>
+#include <QtCore/QMap>
 
 #include "user.h"
 
@@ -39,7 +40,7 @@ class Network : public QObject
                    ~Network();
 
     static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
-    static Network *getNetwork( const QString &name );
+    static Network *getNetwork( const std::string &name );
     static Network *fromBuffer( Irc::Buffer *b );
 
     enum DisconnectReason {

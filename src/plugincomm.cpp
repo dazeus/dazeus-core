@@ -384,8 +384,8 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	if(highlightChar.isNull())
 		highlightChar = "}";
 
-	if( message.startsWith(n->user()->nick() + ":", Qt::CaseInsensitive)
-	 || message.startsWith(n->user()->nick() + ",", Qt::CaseInsensitive)) {
+	if( message.startsWith(QString::fromStdString(n->user()->nick()) + ":", Qt::CaseInsensitive)
+	 || message.startsWith(QString::fromStdString(n->user()->nick()) + ",", Qt::CaseInsensitive)) {
 		payload = message.mid(n->user()->nick().length() + 1).trimmed();
 	} else if(message.startsWith(highlightChar, Qt::CaseInsensitive)) {
 		payload = message.mid(highlightChar.length()).trimmed();
@@ -496,12 +496,12 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		// TODO: libircclient does not seem to tell us where the ctcp
 		// request was sent (user or channel), so just assume it was
 		// sent to our nick
-		QString to = n->user()->nick();
+		QString to = QString::fromStdString(n->user()->nick());
 		dispatch("CTCP", QStringList() << n->networkName() << origin << to << params[0]);
 	} else if(event == "CTCP_REP") {
 		MIN(1);
 		// TODO: see above
-		QString to = n->user()->nick();
+		QString to = QString::fromStdString(n->user()->nick());
 		dispatch("CTCP_REP", QStringList() << n->networkName() << origin << to << params[0]);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
 		MIN(1);
@@ -633,7 +633,7 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 				}
 			} else if(action == "nick") {
 				response.push_back(JSONNode("success", true));
-				response.push_back(JSONNode("nick", libjson::to_json_string(net->user()->nick().toStdString())));
+				response.push_back(JSONNode("nick", libjson::to_json_string(net->user()->nick())));
 			} else {
 				Q_ASSERT(false);
 				return;

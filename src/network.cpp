@@ -52,7 +52,7 @@ Network::Network( const QString &name )
 Network::~Network()
 {
   disconnectFromNetwork();
-  Q_ASSERT( networks_.contains( config_->name ) && getNetwork( config_->name ) == this );
+  Q_ASSERT( networks_.contains( config_->name ) && getNetwork( config_->name.toStdString() ) == this );
   networks_.remove( config_->name );
 }
 
@@ -174,31 +174,31 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 
 void Network::joinedChannel(const QString &user, Irc::Buffer *b)
 {
-	User u(user, this);
+	User u(user.toStdString(), this);
 	if(u.isMe() && !knownUsers_.keys().contains(b->receiver().toLower())) {
 		knownUsers_.insert(b->receiver().toLower(), QList<QString>());
 	}
 	if(!knownUsers_[b->receiver().toLower()].contains(user.toLower()))
 		knownUsers_[b->receiver().toLower()].append(user.toLower());
 #ifdef DEBUG
-	qDebug() << "User " << user << " joined channel " << b->receiver();
+	qDebug() << "User " << user.toString() << " joined channel " << b->receiver();
 	qDebug() << "knownUsers is now: " << knownUsers_;
 #endif
 }
 
 void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
 {
-	User u(user, this);
+	User u(user.toStdString(), this);
 	if(u.isMe()) {
 		knownUsers_.remove(b->receiver().toLower());
 	} else {
 		knownUsers_[b->receiver().toLower()].removeAll(user.toLower());
 	}
-	if(!isKnownUser(u.nick())) {
-		identifiedUsers_.removeAll(u.nick().toLower());
+	if(!isKnownUser(QString::fromStdString(u.nick()))) {
+		identifiedUsers_.removeAll(QString::fromStdString(u.nick()).toLower());
 	}
 #ifdef DEBUG
-	qDebug() << "User " << user << " left channel " << b->receiver();
+	qDebug() << "User " << user.toString() << " left channel " << b->receiver();
 	qDebug() << "knownUsers is now: " << knownUsers_;
 	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
 #endif
@@ -223,9 +223,9 @@ void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::
 {
 	identifiedUsers_.removeAll(origin.toLower());
 	identifiedUsers_.removeAll(nick.toLower());
-	User u(origin, this);
+	User u(origin.toStdString(), this);
 	if(u.isMe()) {
-		user()->setNick(nick);
+		user()->setNick(nick.toStdString());
 	}
 	foreach(const QString &channel, knownUsers_.keys()) {
 		QStringList &users = knownUsers_[channel];
@@ -242,14 +242,14 @@ void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::
 
 void Network::kickedChannel(const QString&, const QString &user, const QString&, Irc::Buffer *b)
 {
-	User u(user, this);
+	User u(user.toStdString(), this);
 	if(u.isMe()) {
 		knownUsers_.remove(b->receiver().toLower());
 	} else {
-		knownUsers_[b->receiver().toLower()].removeAll(u.nick().toLower());
+		knownUsers_[b->receiver().toLower()].removeAll(QString::fromStdString(u.nick()).toLower());
 	}
-	if(!isKnownUser(u.nick())) {
-		identifiedUsers_.removeAll(u.nick().toLower());
+	if(!isKnownUser(QString::fromStdString(u.nick()))) {
+		identifiedUsers_.removeAll(QString::fromStdString(u.nick()).toLower());
 	}
 #ifdef DEBUG
 	qDebug() << "User " << user << " was kicked from " << b->receiver();
@@ -343,11 +343,11 @@ Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
 /**
  * @brief Retrieve the Network with given name.
  */
-Network *Network::getNetwork( const QString &name )
+Network *Network::getNetwork( const std::string &name )
 {
-  if( !networks_.contains( name ) )
+  if( !networks_.contains( QString::fromStdString(name) ) )
     return 0;
-  return networks_.value( name );
+  return networks_.value( QString::fromStdString(name) );
 }
 
 void Network::joinChannel( QString channel )
@@ -389,8 +389,8 @@ User *Network::user()
 {
   if( me_ == 0 )
   {
-    me_ = new User( config_->nickName, config_->nickName,
-                    QLatin1String("__local__"), this );
+    me_ = new User( config_->nickName.toStdString(), config_->nickName.toStdString(),
+                    "__local__", this );
   }
 
   return me_;

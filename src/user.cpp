@@ -6,20 +6,13 @@
 #include "user.h"
 #include "network.h"
 
-QDebug operator<<(QDebug dbg, const User &u)
-{
-  dbg.nospace() << "User[" << u.nickName() << "]";
-
-  return dbg.space();
-}
-
-User::User( const QString &fullName, Network *n )
+User::User( const std::string &fullName, Network *n )
 {
   setFullName( fullName );
   setNetwork( n );
 }
 
-User::User( const QString &nick, const QString &ident, const QString &host, Network *n )
+User::User( const std::string &nick, const std::string &ident, const std::string &host, Network *n )
 {
   setNick( nick );
   setIdent( ident );
@@ -27,6 +20,10 @@ User::User( const QString &nick, const QString &ident, const QString &host, Netw
   setNetwork( n );
 }
 
+std::string User::toString() const
+{
+  return "User[" + nickName() + "]";
+}
 
 /**
  * @brief Get the User object pointing to ourselves.
@@ -36,20 +33,20 @@ User::User( const QString &nick, const QString &ident, const QString &host, Netw
  * for every network, so you have to give the network name for which you want
  * to get the User object.
  */
-User *User::getMe( const QString &network )
+User *User::getMe( const std::string &network )
 {
   Network *n = Network::getNetwork( network );
   return n->user();
 }
 
 
-const QString &User::host() const
+const std::string &User::host() const
 {
   return host_;
 }
 
 
-const QString &User::ident() const
+const std::string &User::ident() const
 {
   return ident_;
 }
@@ -67,32 +64,32 @@ Network *User::network() const
 }
 
 
-const QString &User::nickName() const
+const std::string &User::nickName() const
 {
   return nick_;
 }
 
-void User::setHost( const QString &host )
+void User::setHost( const std::string &host )
 {
   host_ = host;
 }
 
 
-void User::setFullName( const QString &fullName )
+void User::setFullName( const std::string &fullName )
 {
-  int pos1 = fullName.indexOf( QLatin1Char('!') );
-  int pos2 = fullName.indexOf( QLatin1Char('@'), pos1 == -1 ? 0 : pos1 );
+  size_t pos1 = fullName.find('!');
+  size_t pos2 = fullName.find('@', pos1 == std::string::npos ? 0 : pos1 );
 
   // left(): The entire string is returned if n is [...] less than zero.
-  setNick( fullName.left( pos1 != -1 ? pos1 : pos2 ) );
-  setIdent( pos1 == -1 ? QString() : fullName.mid( pos1 + 1, pos2 - pos1 - 1 ) );
-  setHost(  pos2 == -1 ? QString() : fullName.mid( pos2 + 1 ) );
+  setNick( fullName.substr(0, pos1 != std::string::npos ? pos1 : pos2 ) );
+  setIdent( pos1 == std::string::npos ? std::string() : fullName.substr( pos1 + 1, pos2 - pos1 - 1 ) );
+  setHost(  pos2 == std::string::npos ? std::string() : fullName.substr( pos2 + 1 ) );
   //setIdent( fullName.mid( pos1 + 1 ) );
   //setIdent( fullName.mid( pos1 + 1 ), pos2 - pos1 - 1 );
 }
 
 
-void User::setIdent( const QString &ident )
+void User::setIdent( const std::string &ident )
 {
   ident_ = ident;
 }
@@ -104,7 +101,7 @@ void User::setNetwork( Network *n )
 }
 
 
-void User::setNick( const QString &nick )
+void User::setNick( const std::string &nick )
 {
   nick_ = nick;
 }

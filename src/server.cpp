@@ -5,6 +5,7 @@
 
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
+#include <QtCore/QDebug>
 #include <assert.h>
 #include <iostream>
 
