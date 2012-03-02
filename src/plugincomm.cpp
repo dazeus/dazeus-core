@@ -527,7 +527,7 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 }
 
 void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
-	const QList<Network*> &networks = dazeus_->networks();
+	const std::list<Network*> &networks = dazeus_->networks();
 
 	JSONNode n;
 	try {

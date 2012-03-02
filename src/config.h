@@ -55,16 +55,16 @@ class Config : public QObject
   public:
         Config();
        ~Config();
-  bool  loadFromFile( QString fileName );
+  bool  loadFromFile( std::string fileName );
 
-  const QList<NetworkConfig*> &networks();
+  const std::list<NetworkConfig*> &networks();
   const QString               &lastError();
   const DatabaseConfig        *databaseConfig() const;
   const QMap<QString,QVariant> groupConfig(QString plugin) const;
 
   private:
-  QList<NetworkConfig*> oldNetworks_;
-  QList<NetworkConfig*> networks_;
+  std::list<NetworkConfig*> oldNetworks_;
+  std::list<NetworkConfig*> networks_;
   QString               error_;
   QSettings            *settings_;
   DatabaseConfig       *databaseConfig_;

@@ -3,13 +3,12 @@
  * See LICENSE for license.
  */
 
-#include <QtCore/QTimer>
-
 #include "dazeus.h"
 #include "database.h"
 #include "network.h"
 #include "config.h"
 #include "plugincomm.h"
+#include <cassert>
 
 // #define DEBUG
 #define VERBOSE
@@ -20,14 +19,13 @@
  * Initialises the object, and loads configuration if a path was given.
  * @param configFileName optional path to the configuration file.
  */
-DaZeus::DaZeus( QString configFileName )
-: QObject()
-, config_( 0 )
+DaZeus::DaZeus( std::string configFileName )
+: config_( 0 )
 , configFileName_( configFileName )
 , plugins_( 0 )
 , database_( 0 )
 {
-  if( !configFileName_.isEmpty() )
+  if( configFileName_.length() != 0 )
     loadConfig();
 
   // Pretty number of initialisations viewer -- and also an immediate database
@@ -42,7 +40,7 @@ DaZeus::DaZeus( QString configFileName )
   else if(numInits%10 == 1) suffix = "st";
   else if(numInits%10 == 2) suffix = "nd";
   else if(numInits%10 == 3) suffix = "rd";
-  qDebug() << "Initialising DaZeus for the " << numInits << suffix << " time!";
+  printf("Initialising DaZeus for the %d%s time!\n", numInits, suffix);
 }
 
 
@@ -72,21 +70,23 @@ DaZeus::~DaZeus()
 void DaZeus::autoConnect()
 {
 #ifdef DEBUG
-  qDebug() << "DaZeus::autoConnect() called: looking for networks to connect to";
+  fprintf(stderr, "DaZeus::autoConnect() called: looking for networks to connect to\n");
 #endif
   foreach( Network *n, networks_ )
   {
     if( n->autoConnectEnabled() )
     {
 #ifdef DEBUG
-      qDebug() << "Connecting to " << n << " (autoconnect is enabled)";
+      // TODO: toString
+      fprintf(stderr, "Connecting to %p (autoconnect is enabled)\n", n);
 #endif
       n->connectToNetwork();
     }
 #ifdef DEBUG
     else
     {
-      qDebug() << "Not connecting to " << n << ", autoconnect is disabled.";
+      // TODO: toString
+      fprintf(stderr, "Not connecting to %p, autoconnect is disabled.\n", n);
     }
 #endif
   }
@@ -114,14 +114,14 @@ bool DaZeus::connectDatabase()
 
   if( !database_->open() )
   {
-    qWarning() << "Could not connect to database: " << database_->lastError();
+    fprintf(stderr, "Could not connect to database: %s\n", database_->lastError().text().toUtf8().constData());
     return false;
   }
 
   // create it if it doesn't exist yet
   if( !database_->createTable() )
   {
-    qWarning() << "Could not create table: " << database_->lastError();
+    fprintf(stderr, "Could not create table: %s\n", database_->lastError().text().toUtf8().constData());
     return false;
   }
 
@@ -161,7 +161,7 @@ bool DaZeus::loadConfig()
   // Clean up this object.
   resetConfig();
 
-  Q_ASSERT( !configFileName_.isEmpty() );
+  assert( configFileName_.length() != 0 );
 
   if( config_ == 0 )
     config_ = new Config();
@@ -171,7 +171,7 @@ bool DaZeus::loadConfig()
   if( !config_ )
     return false;
 
-  const QList<NetworkConfig*> &networks = config_->networks();
+  const std::list<NetworkConfig*> &networks = config_->networks();
 
   if(!connectDatabase())
     return false;
@@ -186,7 +186,7 @@ bool DaZeus::loadConfig()
       return false;
     }
 
-    networks_.append( net );
+    networks_.push_back( net );
   }
 
   return true;
