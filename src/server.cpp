@@ -53,14 +53,11 @@ Server::Server()
 , network_(0)
 {
 	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
+	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
 	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
-	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
+	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)));
 	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         Qt::BlockingQueuedConnection );
+	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
 	connect( thread_, SIGNAL(disconnected()),
 	         this,    SIGNAL(disconnected()) );
 }
@@ -68,7 +65,6 @@ Server::Server()
 Server::~Server()
 {
 	delete connectTimer_;
-	thread_->quit();
 	delete thread_;
 }
 
@@ -81,9 +77,8 @@ void Server::connectToServer()
 {
 	qDebug() << "Connecting to server" << this;
 	Q_ASSERT( !config_->network->nickName.isEmpty() );
-	Q_ASSERT( !thread_->isRunning() );
 	thread_->setConfig(config_);
-	thread_->start();
+	thread_->run();
 }
 
 void Server::disconnectFromServer( Network::DisconnectReason reason )
@@ -163,6 +158,14 @@ void Server::part( const QString &channel, const QString &reason ) {
 }
 void Server::message( const QString &destination, const QString &message ) {
 	thread_->message(destination, message);
+}
+
+void Server::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
+	thread_->addDescriptors(in_set, out_set, maxfd);
+}
+
+void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
+	thread_->processDescriptors(in_set, out_set);
 }
 
 void Irc::Buffer::message(const QString &message) {
@@ -305,5 +308,4 @@ void ServerThread::run()
 		config_->network->nickName.toLatin1(),
 		config_->network->userName.toLatin1(),
 		config_->network->fullName.toLatin1());
-	irc_run(irc_);
 }

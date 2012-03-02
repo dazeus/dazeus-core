@@ -63,10 +63,11 @@ PluginComm::~PluginComm() {
 }
 
 void PluginComm::run() {
-	fd_set sockets;
+	fd_set sockets, out_sockets;
 	int highest = 0;
 	struct timeval timeout;
 	FD_ZERO(&sockets);
+	FD_ZERO(&out_sockets);
 	foreach(int tcpServer, tcpServers_) {
 		if(tcpServer > highest)
 			highest = tcpServer;
@@ -82,10 +83,20 @@ void PluginComm::run() {
 			highest = socket;
 		FD_SET(socket, &sockets);
 	}
+	// and add the IRC descriptors
+	foreach(Network *n, dazeus_->networks()) {
+		Server *active = n->activeServer();
+		if(active) {
+			int ircmaxfd = 0;
+			active->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
+			if(ircmaxfd > highest)
+				highest = ircmaxfd;
+		}
+	}
 	// TODO dynamic?
 	timeout.tv_sec = 1;
 	timeout.tv_usec = 0;
-	int socks = select(highest + 1, &sockets, NULL, NULL, &timeout);
+	int socks = select(highest + 1, &sockets, &out_sockets, NULL, &timeout);
 	if(socks < 0) {
 		qWarning() << "select() failed: " << strerror(errno);
 		return;
@@ -109,6 +120,12 @@ void PluginComm::run() {
 		if(FD_ISSET(socket, &sockets)) {
 			poll();
 			break;
+		}
+	}
+	foreach(Network *n, dazeus_->networks()) {
+		Server *active = n->activeServer();
+		if(active) {
+			active->processDescriptors(&sockets, &out_sockets);
 		}
 	}
 }

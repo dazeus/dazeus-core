@@ -6,7 +6,6 @@
 #ifndef SERVER_P_H
 #define SERVER_P_H
 
-#include <QtCore/QThread>
 #include <QtCore/QStringList>
 #include <assert.h>
 #include <iostream>
@@ -16,12 +15,12 @@
 #include "server.h"
 #include "config.h"
 
-class ServerThread : public QThread
+class ServerThread : public QObject
 {
 Q_OBJECT
 
 public:
-	ServerThread(Server *s) : QThread(), s_(s), config_(0), irc_(0), whois_identified_(false) {}
+	ServerThread(Server *s) : QObject(), s_(s), config_(0), irc_(0), whois_identified_(false) {}
 	~ServerThread() { irc_destroy_session(irc_); }
 
 	Server *server() {
@@ -35,7 +34,6 @@ public:
 	}
 
 	void run();
-	void quit() { QThread::quit(); }
 
 	void quit( const QString &reason ) {
 		irc_cmd_quit(irc_, reason.toUtf8());
@@ -69,6 +67,14 @@ public:
 
 	void names( const QString &channel ) {
 		irc_cmd_names(irc_, channel.toUtf8());
+	}
+
+	void addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
+		irc_add_select_descriptors(irc_, in_set, out_set, maxfd);
+	}
+
+	void processDescriptors(fd_set *in_set, fd_set *out_set) {
+		irc_process_select_descriptors(irc_, in_set, out_set);
 	}
 
 	Server *s_;
