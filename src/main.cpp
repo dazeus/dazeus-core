@@ -28,5 +28,7 @@ int main(int argc, char *argv[])
     // connect to servers marked as "autoconnect"
     d.autoConnect();
 
-    return a.exec();
+    // start the event loop
+    d.run();
+    return 0;
 }

@@ -41,13 +41,7 @@ PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
 , database_(d)
 , config_(c)
 , dazeus_(bot)
-, timer_(new QTimer())
 {
-	// TODO don't do this with a timer, do it with a real event loop
-	connect(timer_, SIGNAL(timeout()),
-	        this,   SLOT(      run()));
-	timer_->setSingleShot(false);
-	timer_->start(50);
 }
 
 PluginComm::~PluginComm() {
