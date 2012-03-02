@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Sjors Gielen, 2010
+ * Copyright (c) Sjors Gielen, 2010-2012
  * See LICENSE for license.
  */
 
@@ -8,11 +8,15 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <libircclient.h>
 #include <cassert>
+#include <iostream>
 
 #include "user.h"
 #include "network.h"
+#include "server.h"
+#include "config.h"
 
 // #define SERVER_FULLDEBUG
 
@@ -58,6 +62,10 @@ public:
 	QString motd() const;
 	void addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd);
 	void processDescriptors(fd_set *in_set, fd_set *out_set);
+	irc_session_t *getIrc() const;
+
+private:
+	void run();
 
 public slots:
 	void connectToServer();
@@ -70,6 +78,11 @@ public slots:
 	void part( const QString &channel, const QString &reason = QString() );
 	void message( const QString &destination, const QString &message );
 	void names( const QString &channel );
+	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *b );
+	void slotDisconnected() {
+		emit disconnected();
+	}
+	void slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *b);
 
 signals:
 	void disconnected();
@@ -84,7 +97,10 @@ private:
 	QString   motd_;
 	QTimer   *connectTimer_;
 	Network  *network_;
-	ServerThread *thread_;
+	irc_session_t *irc_;
+	QString in_whois_for_;
+	bool whois_identified_;
+	QStringList in_names_;
 };
 
 #endif
