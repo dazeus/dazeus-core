@@ -9,7 +9,6 @@
 #include <iostream>
 
 #include "server.h"
-#include "server_p.h"
 #include "config.h"
 
 // #define DEBUG
@@ -49,23 +48,16 @@ Server::Server()
 : QObject()
 , config_( 0 )
 , connectTimer_( 0 )
-, thread_( new ServerThread(this) )
 , network_(0)
+, irc_(0)
+, whois_identified_(false)
 {
-	connect( thread_, SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
-	connect( thread_, SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)),
-	         this,    SIGNAL(whoisReceived(const QString&, const QString&, bool, Irc::Buffer*)));
-	connect( thread_, SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-	         this,    SIGNAL(namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
-	connect( thread_, SIGNAL(disconnected()),
-	         this,    SIGNAL(disconnected()) );
 }
 
 Server::~Server()
 {
 	delete connectTimer_;
-	delete thread_;
+	irc_destroy_session(irc_);
 }
 
 const ServerConfig *Server::config() const
@@ -77,8 +69,7 @@ void Server::connectToServer()
 {
 	qDebug() << "Connecting to server" << this;
 	Q_ASSERT( !config_->network->nickName.isEmpty() );
-	thread_->setConfig(config_);
-	thread_->run();
+	run();
 }
 
 void Server::disconnectFromServer( Network::DisconnectReason reason )
@@ -131,49 +122,52 @@ QString Server::motd() const
 }
 
 void Server::quit( const QString &reason ) {
-	thread_->quit(reason);
+	irc_cmd_quit(irc_, reason.toUtf8());
 }
+
 void Server::whois( const QString &destination ) {
-	//int sep = destination.indexOf('!');
-	//if(sep != -1) {
-	//	thread_->whois(destination.left(sep));
-	//} else {
-		thread_->whois(destination);
-	//}
+	irc_cmd_whois(irc_, destination.toUtf8());
 }
+
 void Server::ctcpAction( const QString &destination, const QString &message ) {
-	thread_->ctcpAction(destination, message);
+	irc_cmd_me(irc_, destination.toUtf8(), message.toUtf8());
 }
+
 void Server::names( const QString &channel ) {
-	thread_->names(channel);
+	irc_cmd_names(irc_, channel.toUtf8());
 }
+
 void Server::ctcpRequest( const QString &destination, const QString &message ) {
-	thread_->ctcpRequest(destination, message);
+	irc_cmd_ctcp_request(irc_, destination.toUtf8(), message.toUtf8());
 }
+
 void Server::join( const QString &channel, const QString &key ) {
-	thread_->join(channel, key);
+	irc_cmd_join(irc_, channel.toUtf8(), key.toUtf8());
 }
+
 void Server::part( const QString &channel, const QString &reason ) {
-	thread_->part(channel, reason);
+	irc_cmd_part(irc_, channel.toUtf8());
 }
+
 void Server::message( const QString &destination, const QString &message ) {
-	thread_->message(destination, message);
+	QStringList lines = message.split(QRegExp(QLatin1String("[\\r\\n]+")), QString::SkipEmptyParts);
+	foreach(const QString& line, lines)
+		irc_cmd_msg(irc_, destination.toUtf8(), line.toUtf8());
 }
 
 void Server::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
-	thread_->addDescriptors(in_set, out_set, maxfd);
+	irc_add_select_descriptors(irc_, in_set, out_set, maxfd);
 }
 
 void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
-	thread_->processDescriptors(in_set, out_set);
+	irc_process_select_descriptors(irc_, in_set, out_set);
 }
-
 void Irc::Buffer::message(const QString &message) {
 	assert(!receiver_.isEmpty());
 	session_->message(receiver_, message);
 }
 
-void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
+void Server::slotNumericMessageReceived( const QString &origin, uint code,
 	const QStringList &args, Irc::Buffer *buf )
 {
 	Q_ASSERT( buf != 0 );
@@ -209,29 +203,29 @@ void ServerThread::slotNumericMessageReceived( const QString &origin, uint code,
 	emit ircEvent( "NUMERIC", origin, QStringList() << QString::number(code) << args, buf );
 }
 
-void ServerThread::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)
+void Server::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)
 {
 	Q_ASSERT(buf != 0);
 	emit ircEvent(event, origin, args, buf);
 }
 
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
-	ServerThread *server = (ServerThread*) irc_get_ctx(s);
+	Server *server = (Server*) irc_get_ctx(s);
 	assert(server->getIrc() == s);
 	QStringList params;
 	for(unsigned int i = 0; i < count; ++i) {
 		params.append(QString::fromUtf8(p[i]));
 	}
-	Irc::Buffer *b = new Irc::Buffer(server->server());
+	Irc::Buffer *b = new Irc::Buffer(server);
 	server->slotNumericMessageReceived(QString::fromUtf8(origin), event, params, b);
 }
 
 void irc_callback(irc_session_t *s, const char *e, const char *o, const char **params, unsigned int count) {
-	ServerThread *server = (ServerThread*) irc_get_ctx(s);
+	Server *server = (Server*) irc_get_ctx(s);
 	assert(server->getIrc() == s);
 
 	std::string event(e);
-	Irc::Buffer *b = new Irc::Buffer(server->server());
+	Irc::Buffer *b = new Irc::Buffer(server);
 	// From libircclient docs, but CHANNEL_NOTICE is bullshit...
 	if(event == "CHANNEL_NOTICE") {
 		event = "NOTICE";
@@ -262,13 +256,13 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		qWarning() << "Origin: " << origin;
 		server->slotDisconnected();
 	} else if(event == "CONNECT") {
-		qDebug() << "Connected to server:" << server->server();
+		qDebug() << "Connected to server:" << server;
 	}
 
 	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
 }
 
-void ServerThread::run()
+void Server::run()
 {
 	irc_callbacks_t callbacks;
 	callbacks.event_connect = irc_callback;
@@ -308,4 +302,8 @@ void ServerThread::run()
 		config_->network->nickName.toLatin1(),
 		config_->network->userName.toLatin1(),
 		config_->network->fullName.toLatin1());
+}
+
+irc_session_t *Server::getIrc() const {
+	return irc_;
 }
