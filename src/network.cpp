@@ -60,7 +60,7 @@ Network::~Network()
 /**
  * Returns the active server in this network, or 0 if there is none.
  */
-const Server *Network::activeServer() const
+Server *Network::activeServer() const
 {
   return activeServer_;
 }

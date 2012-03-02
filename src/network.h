@@ -52,7 +52,7 @@ class Network : public QObject
     bool                        autoConnectEnabled() const;
     const QList<ServerConfig*> &servers() const;
     User                       *user();
-    const Server               *activeServer() const;
+    Server                     *activeServer() const;
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
     QString                     networkName() const;
