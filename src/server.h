@@ -23,7 +23,6 @@
 class QTimer;
 struct ServerConfig;
 
-class ServerThread;
 class Server;
 
 QDebug operator<<(QDebug, const Server &);
@@ -49,11 +48,9 @@ class Server : public QObject
 {
 Q_OBJECT
 
-friend class TestServer;
-friend class ServerThread;
-
 private:
 	   Server();
+	void run();
 
 public:
 	  ~Server();
@@ -64,10 +61,6 @@ public:
 	void processDescriptors(fd_set *in_set, fd_set *out_set);
 	irc_session_t *getIrc() const;
 
-private:
-	void run();
-
-public slots:
 	void connectToServer();
 	void disconnectFromServer( Network::DisconnectReason );
 	void quit( const QString &reason );
