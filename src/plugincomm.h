@@ -150,13 +150,12 @@ class PluginComm : public QObject
                 const QStringList &params, Irc::Buffer *buffer );
   void run();
 
-  private slots:
+  private:
     void newTcpConnection();
     void newLocalConnection();
     void poll();
     void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
 
-  private:
     QList<int> tcpServers_;
     QList<int> localServers_;
     QList<Command*> commandQueue_;

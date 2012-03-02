@@ -62,7 +62,6 @@ class Network : public QObject
     bool                        isIdentified(const QString &user) const;
     bool                        isKnownUser(const QString &user) const;
 
-  public slots:
     void connectToNetwork( bool reconnect = false );
     void disconnectFromNetwork( DisconnectReason reason = UnknownReason );
     void joinChannel( QString channel );
@@ -95,7 +94,6 @@ class Network : public QObject
     QMap<QString,QStringList> knownUsers_;
     PluginComm           *plugins_;
 
-  private slots:
     void onFailedConnection();
     void joinedChannel(const QString &user, Irc::Buffer *b);
     void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);

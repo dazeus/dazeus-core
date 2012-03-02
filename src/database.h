@@ -64,9 +64,6 @@ class Database : public QObject
                               const QString &receiverScope = QString(),
                               const QString &senderScope   = QString() );
 
-  public slots:
-
-
   private:
     QString network_;
     QSqlDatabase db_;

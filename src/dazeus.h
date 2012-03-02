@@ -32,17 +32,14 @@ class DaZeus : public QObject
     const QList<Network*> &networks() const { return networks_; }
 
     void     run();
-
-  public slots:
     bool     loadConfig();
     bool     initPlugins();
     void     autoConnect();
     bool     connectDatabase();
 
-  private slots:
+  private:
     void     resetConfig();
 
-  private:
     Config          *config_;
     QString          configFileName_;
     PluginComm      *plugins_;
