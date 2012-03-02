@@ -109,8 +109,6 @@ bool Config::loadFromFile( QString fileName )
   delete settings_;
   settings_ = 0;
 
-  emit beforeConfigReload();
-
   // load!
   error_.clear();
   if( !QFile::exists(fileName) )
@@ -131,11 +129,9 @@ bool Config::loadFromFile( QString fileName )
     qWarning() << "Error: " << error_;
     delete settings_;
     settings_ = 0;
-    emit configReloadFailed();
     return false;
   }
 
-  emit configReloaded();
   return true;
 }
 

@@ -62,11 +62,6 @@ class Config : public QObject
   const DatabaseConfig        *databaseConfig() const;
   const QMap<QString,QVariant> groupConfig(QString plugin) const;
 
-  signals:
-  void  beforeConfigReload();
-  void  configReloaded();
-  void  configReloadFailed();
-
   private:
   QList<NetworkConfig*> oldNetworks_;
   QList<NetworkConfig*> networks_;

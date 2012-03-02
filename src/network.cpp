@@ -435,7 +435,6 @@ bool Network::isKnownUser(const QString &user) const {
 	return false;
 }
 
-// This function must be executed _before_ the whoisReceived signal is emitted around the application
 void Network::slotWhoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buf) {
 	if(!identified) {
 		identifiedUsers_.removeAll(nick.toLower());
