@@ -171,7 +171,9 @@ void Server::slotNumericMessageReceived( const QString &origin, uint code,
 	const QStringList &args, Irc::Buffer *buf )
 {
 	Q_ASSERT( buf != 0 );
-	// Also emit some other interesting signals
+	Q_ASSERT( network_ != 0 );
+	Q_ASSERT( network_->activeServer() == this );
+	// Also send out some other interesting events
 	if(code == 311) {
 		in_whois_for_ = args[1];
 		Q_ASSERT( !whois_identified_ );
@@ -183,8 +185,8 @@ void Server::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 318)
 	{
-		emit whoisReceived( origin, in_whois_for_, whois_identified_, buf );
-		emit ircEvent( "WHOIS", origin, QStringList() << in_whois_for_ << (whois_identified_ ? "true" : "false"), buf );
+		network_->slotWhoisReceived( origin, in_whois_for_, whois_identified_, buf );
+		network_->slotIrcEvent( "WHOIS", origin, QStringList() << in_whois_for_ << (whois_identified_ ? "true" : "false"), buf );
 		whois_identified_ = false;
 		in_whois_for_.clear();
 	}
@@ -196,17 +198,24 @@ void Server::slotNumericMessageReceived( const QString &origin, uint code,
 	}
 	else if(code == 366)
 	{
-		emit namesReceived( origin, args.at(1), in_names_, buf );
-		emit ircEvent( "NAMES", origin, QStringList() << args.at(1) << in_names_, buf );
+		network_->slotNamesReceived( origin, args.at(1), in_names_, buf );
+		network_->slotIrcEvent( "NAMES", origin, QStringList() << args.at(1) << in_names_, buf );
 		in_names_.clear();
 	}
-	emit ircEvent( "NUMERIC", origin, QStringList() << QString::number(code) << args, buf );
+	network_->slotIrcEvent( "NUMERIC", origin, QStringList() << QString::number(code) << args, buf );
+}
+
+void Server::slotDisconnected()
+{
+	network_->onFailedConnection();
 }
 
 void Server::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)
 {
 	Q_ASSERT(buf != 0);
-	emit ircEvent(event, origin, args, buf);
+	Q_ASSERT(network_ != 0);
+	Q_ASSERT(network_->activeServer() == this);
+	network_->slotIrcEvent(event, origin, args, buf);
 }
 
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
