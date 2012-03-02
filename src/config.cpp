@@ -100,7 +100,7 @@ const QString &Config::lastError()
  * This method attempts to load all contents from the given file to the Config
  * object, then returns whether that worked or not.
  */
-bool Config::loadFromFile( QString fileName )
+bool Config::loadFromFile( std::string fileName )
 {
   // TODO do this properly in reset()!
   oldNetworks_ = networks_;
@@ -111,16 +111,16 @@ bool Config::loadFromFile( QString fileName )
 
   // load!
   error_.clear();
-  if( !QFile::exists(fileName) )
+  if( !QFile::exists(QString::fromStdString(fileName)) )
   {
-    error_ = rw("Configuration file does not exist: ") + fileName;
+    error_ = rw("Configuration file does not exist: ") + QString::fromStdString(fileName);
   }
   if( error_.isEmpty() )
   {
-    settings_ = new QSettings(fileName, QSettings::IniFormat);
+    settings_ = new QSettings(QString::fromStdString(fileName), QSettings::IniFormat);
     if( settings_->status() != QSettings::NoError )
     {
-      error_ = rw("Could not read configuration file: ") + fileName;
+      error_ = rw("Could not read configuration file: ") + QString::fromStdString(fileName);
     }
   }
 
@@ -135,11 +135,11 @@ bool Config::loadFromFile( QString fileName )
   return true;
 }
 
-const QList<NetworkConfig*> &Config::networks()
+const std::list<NetworkConfig*> &Config::networks()
 {
   Q_ASSERT( settings_ != 0 );
   // TODO remove later
-  if( networks_.count() > 0 )
+  if( networks_.size() > 0 )
     return networks_;
 
   // Database settings
@@ -258,7 +258,10 @@ const QList<NetworkConfig*> &Config::networks()
     }
   }
 
-  networks_ = networks.values();
+  networks_.clear();
+  foreach(NetworkConfig *v, networks.values()) {
+    networks_.push_back(v);
+  }
 
   return networks_;
 }
