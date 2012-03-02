@@ -56,6 +56,8 @@ public:
 	static Server *fromServerConfig( const ServerConfig *c, Network *n );
 	const ServerConfig *config() const;
 	QString motd() const;
+	void addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd);
+	void processDescriptors(fd_set *in_set, fd_set *out_set);
 
 public slots:
 	void connectToServer();
