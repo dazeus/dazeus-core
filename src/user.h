@@ -6,44 +6,42 @@
 #ifndef USER_H
 #define USER_H
 
-#include <QtCore/QString>
-#include <QtCore/QDebug>
+#include <string>
 
 class User;
 class Network;
 
-QDebug operator<<(QDebug, const User &);
-
 class User {
   public:
-            User( const QString &fullName, Network *n );
-            User( const QString &nick, const QString &ident, const QString &host, Network *n );
-    void    setFullName( const QString &fullName );
-    void    setNick( const QString &nick );
-    void    setIdent( const QString &ident );
-    void    setHost( const QString &host );
+            User( const std::string &fullName, Network *n );
+            User( const std::string &nick, const std::string &ident, const std::string &host, Network *n );
+    void    setFullName( const std::string &fullName );
+    void    setNick( const std::string &nick );
+    void    setIdent( const std::string &ident );
+    void    setHost( const std::string &host );
     void    setNetwork( Network *n );
-    const QString &fullName() const;
-    const QString &nickName() const;
-    const QString &nick() const { return nickName(); }
-    const QString &ident() const;
-    const QString &host() const;
+    const std::string &fullName() const;
+    const std::string &nickName() const;
+    const std::string &nick() const { return nickName(); }
+    const std::string &ident() const;
+    const std::string &host() const;
     Network *network() const;
+    std::string toString() const;
 
     bool    isMe() const;
-    bool    isMe( const QString &network ) const;
+    bool    isMe( const std::string &network ) const;
     bool    isSameUser( const User &other ) const;
 
-    static User *getMe( const QString &network );
+    static User *getMe( const std::string &network );
     static bool isSameUser( const User &one, const User &two );
-    static bool isMe( const User &which, const QString &network );
+    static bool isMe( const User &which, const std::string &network );
 
   private:
-    QString nick_;
-    QString ident_;
-    QString host_;
-    User   *me;
-    Network *network_;
+    std::string nick_;
+    std::string ident_;
+    std::string host_;
+    User       *me;
+    Network    *network_;
 };
 
 #endif
