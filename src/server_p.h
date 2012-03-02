@@ -8,7 +8,6 @@
 
 #include <QtCore/QThread>
 #include <QtCore/QStringList>
-#include <QtNetwork/QHostAddress>
 #include <assert.h>
 #include <iostream>
 

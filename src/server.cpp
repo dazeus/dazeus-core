@@ -5,7 +5,6 @@
 
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
-#include <QtNetwork/QHostAddress>
 #include <assert.h>
 #include <iostream>
 
