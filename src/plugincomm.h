@@ -7,15 +7,15 @@
 #define SOCKETPLUGIN_H
 
 #include <QtCore/QVariant>
-#include <QtCore/QIODevice>
 #include <QtCore/QByteArray>
 #include <QtCore/QMultiMap>
 #include <QtCore/QStringList>
-#include <QtNetwork/QTcpServer>
-#include <QtNetwork/QLocalServer>
+#include <QtCore/QDebug>
+#include <QtCore/QTimer>
 
 #include <sstream>
 #include <libjson.h>
+#include <unistd.h>
 
 class Network;
 class Database;
@@ -111,7 +111,7 @@ class PluginComm : public QObject
     void subscribeToCommand(const QString &cmd, RequirementInfo *info) {
         commands.insert(cmd, info);
     }
-    void dispatch(QIODevice *d, QString event, QStringList parameters) {
+    void dispatch(int d, QString event, QStringList parameters) {
       Q_ASSERT(!event.contains(' '));
 
       JSONNode params(JSON_ARRAY);
@@ -129,12 +129,16 @@ class PluginComm : public QObject
       mstr << jsonMsg.length();
       mstr << jsonMsg;
       mstr << "\n";
-      d->write(mstr.str().c_str(), mstr.str().length());
+      if(write(d, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
+        qWarning() << "Failed to write correct number of JSON bytes to client socket in dispatch().";
+        close(d);
+      }
     }
     QString type;
     QStringList subscriptions;
     QMultiMap<QString,RequirementInfo*> commands;
     int waitingSize;
+    QByteArray readahead;
   };
 
   public:
@@ -150,16 +154,19 @@ class PluginComm : public QObject
     void newLocalConnection();
     void poll();
     void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
+    void run();
 
   private:
-    QList<QTcpServer*> tcpServers_;
-    QList<QLocalServer*> localServers_;
+    QList<int> tcpServers_;
+    QList<int> localServers_;
     QList<Command*> commandQueue_;
-    QMap<QIODevice*,SocketInfo> sockets_;
+    QMap<int,SocketInfo> sockets_;
+    const char *readahead_;
     Database *database_;
     Config *config_;
     DaZeus *dazeus_;
-    void handle(QIODevice *dev, const QByteArray &line, SocketInfo &info);
+    QTimer *timer_;
+    void handle(int dev, const QByteArray &line, SocketInfo &info);
     void flushCommandQueue(const QString &nick = QString(), bool identified = false);
 };
 

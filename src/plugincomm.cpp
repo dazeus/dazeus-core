@@ -6,15 +6,25 @@
 #include <QtCore/QList>
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
-#include <QtNetwork/QTcpServer>
-#include <QtNetwork/QTcpSocket>
-#include <QtNetwork/QHostAddress>
-#include <QtNetwork/QHostInfo>
-#include <QtNetwork/QLocalServer>
-#include <QtNetwork/QLocalSocket>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <libjson.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/uio.h>
+#include <sys/select.h>
+#include <netinet/ip.h>
+#include <netdb.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <errno.h>
+#include <time.h>
+#include <ctype.h>
 
 #include "plugincomm.h"
 #include "network.h"
@@ -24,16 +34,83 @@
 #include "dazeus.h"
 #include "database.h"
 
+#define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
+
 PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
 : QObject()
 , database_(d)
 , config_(c)
 , dazeus_(bot)
-{}
+, timer_(new QTimer())
+{
+	// TODO don't do this with a timer, do it with a real event loop
+	connect(timer_, SIGNAL(timeout()),
+	        this,   SLOT(      run()));
+	timer_->setSingleShot(false);
+	timer_->start(50);
+}
 
 PluginComm::~PluginComm() {
-	qDeleteAll(sockets_.keys());
-	qDeleteAll(tcpServers_);
+	foreach(int s, sockets_.keys()) {
+		close(s);
+	}
+	foreach(int s, tcpServers_) {
+		close(s);
+	}
+	foreach(int s, localServers_) {
+		close(s);
+	}
+}
+
+void PluginComm::run() {
+	fd_set sockets;
+	int highest = 0;
+	struct timeval timeout;
+	FD_ZERO(&sockets);
+	foreach(int tcpServer, tcpServers_) {
+		if(tcpServer > highest)
+			highest = tcpServer;
+		FD_SET(tcpServer, &sockets);
+	}
+	foreach(int localServer,localServers_) {
+		if(localServer > highest)
+			highest = localServer;
+		FD_SET(localServer, &sockets);
+	}
+	foreach(int socket, sockets_.keys()) {
+		if(socket > highest)
+			highest = socket;
+		FD_SET(socket, &sockets);
+	}
+	// TODO dynamic?
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	int socks = select(highest + 1, &sockets, NULL, NULL, &timeout);
+	if(socks < 0) {
+		qWarning() << "select() failed: " << strerror(errno);
+		return;
+	}
+	else if(socks == 0) {
+		return;
+	}
+	foreach(int tcpServer, tcpServers_) {
+		if(FD_ISSET(tcpServer, &sockets)) {
+			newTcpConnection();
+			break;
+		}
+	}
+	foreach(int localServer, localServers_) {
+		if(FD_ISSET(localServer, &sockets)) {
+			newLocalConnection();
+			break;
+		}
+	}
+	foreach(int socket, sockets_.keys()) {
+		if(FD_ISSET(socket, &sockets)) {
+			poll();
+			break;
+		}
+	}
 }
 
 void PluginComm::init() {
@@ -49,14 +126,25 @@ void PluginComm::init() {
 		socket = socket.mid(colon + 1);
 		if(socketType == "unix") {
 			QFile::remove(socket);
-			QLocalServer *server = new QLocalServer();
-			if(!server->listen(socket)) {
-				qWarning() << "(PluginComm) Failed to start listening for local connections on "
-				           << socket << ": " << server->errorString();
+			int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
+			if(server <= 0) {
+				qWarning() << "(PluginComm) Failed to create socket for "
+				           << socket << ": " << strerror(errno);
 				continue;
 			}
-			connect(server, SIGNAL(newConnection()),
-			        this,   SLOT(newLocalConnection()));
+			NOTBLOCKING(server);
+			struct sockaddr_un addr;
+			addr.sun_family = AF_UNIX;
+			strcpy(addr.sun_path, socket.toLatin1());
+			if(bind(server, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
+				close(server);
+				qWarning() << "(PluginComm) Failed to start listening for local connections on "
+				           << socket << ": " << strerror(errno);
+			}
+			if(listen(server, 5) < 0) {
+				close(server);
+				QFile::remove(socket);
+			}
 			localServers_.append(server);
 		} else if(socketType == "tcp") {
 			colon = socket.indexOf(':');
@@ -74,25 +162,38 @@ void PluginComm::init() {
 				qWarning() << "(PluginComm) Invalid TCP port number for socket " << i;
 				continue;
 			}
-			QHostAddress host(tcpHost);
-			if(tcpHost == "*") {
-				host = QHostAddress::Any;
-			} else if(host.isNull()) {
-				QHostInfo info = QHostInfo::fromName(tcpHost);
-				if(info.error() != QHostInfo::NoError || info.addresses().length() == 0) {
-					qWarning() << "(PluginComm) Couldn't resolve TCP host for socket "
-					           << i << ": " << info.errorString();
-					continue;
-				}
-				host = info.addresses().at(0);
-			}
-			QTcpServer *server = new QTcpServer();
-			if(!server->listen(host, port)) {
-				qWarning() << "(PluginComm) Failed to start listening for TCP connections: " << server->errorString();
+
+			struct addrinfo *hints, *result;
+			hints = (struct addrinfo*)calloc(1, sizeof(struct addrinfo));
+			hints->ai_flags = 0;
+			hints->ai_family = AF_INET;
+			hints->ai_socktype = SOCK_STREAM;
+			hints->ai_protocol = 0;
+
+			int s = getaddrinfo(tcpHost.toLatin1(), tcpPort.toLatin1(), hints, &result);
+			free(hints);
+			hints = 0;
+
+			if(s != 0) {
+				qWarning() << "(PluginComm) Failed to resolve TCP address: " << (char*)gai_strerror(s);
 				continue;
 			}
-			connect(server, SIGNAL(newConnection()),
-			        this,   SLOT(newTcpConnection()));
+
+			int server = ::socket(AF_INET, SOCK_STREAM, 0);
+			if(server <= 0) {
+				qWarning() << "(PluginComm) failed to create socket: " << strerror(errno);
+				continue;
+			}
+			NOTBLOCKING(server);
+			if(bind(server, result->ai_addr, result->ai_addrlen) < 0) {
+				close(server);
+				qWarning() << "(PluginComm) Failed to start listening for local connections on "
+				           << socket << ": " << strerror(errno);
+			}
+			if(listen(server, 5) < 0) {
+				close(server);
+				QFile::remove(socket);
+			}
 			tcpServers_.append(server);
 		} else {
 			qWarning() << "(PluginComm) Skipping socket " << i << ": unknown type " << socketType;
@@ -102,16 +203,15 @@ void PluginComm::init() {
 
 void PluginComm::newTcpConnection() {
 	for(int i = 0; i < tcpServers_.length(); ++i) {
-		QTcpServer *s = tcpServers_[i];
-		if(!s->isListening()) {
-			qWarning() << "Something is wrong: TCP server is not listening anymore\n";
-			qWarning() << s->serverAddress() << s->serverPort() << s->errorString();
-			continue;
-		}
-		while(s->hasPendingConnections()) {
-			QTcpSocket *sock = s->nextPendingConnection();
-			sock->setParent(this);
-			connect(sock, SIGNAL(readyRead()), this, SLOT(poll()));
+		int s = tcpServers_[i];
+		while(1) {
+			int sock = accept(s, NULL, NULL);
+			if(sock < 0) {
+				if(errno != EWOULDBLOCK)
+					qWarning() << "Error on listening socket: " << strerror(errno);
+				break;
+			}
+			NOTBLOCKING(sock);
 			sockets_.insert(sock, SocketInfo("tcp"));
 		}
 	}
@@ -119,72 +219,86 @@ void PluginComm::newTcpConnection() {
 
 void PluginComm::newLocalConnection() {
 	for(int i = 0; i < localServers_.length(); ++i) {
-		QLocalServer *s = localServers_[i];
-		if(!s->isListening()) {
-			qWarning() << "Something is wrong: local server is not listening anymore\n";
-			qWarning() << s->serverName() << s->errorString();
-			continue;
-		}
-		while(s->hasPendingConnections()) {
-			QLocalSocket *sock = s->nextPendingConnection();
-			sock->setParent(this);
-			connect(sock, SIGNAL(readyRead()), this, SLOT(poll()));
+		int s = localServers_[i];
+		while(1) {
+			int sock = accept(s, NULL, NULL);
+			if(sock < 0) {
+				if(errno != EWOULDBLOCK)
+					qWarning() << "Error on listening socket: " << strerror(errno);
+				break;
+			}
+			NOTBLOCKING(sock);
 			sockets_.insert(sock, SocketInfo("unix"));
 		}
 	}
 }
 
 void PluginComm::poll() {
-	QList<QIODevice*> toRemove_;
-	QList<QIODevice*> socks = sockets_.keys();
+	QList<int> toRemove_;
+	QList<int> socks = sockets_.keys();
 	for(int i = 0; i < socks.size(); ++i) {
-		QIODevice *dev = socks[i];
+		int dev = socks[i];
 		SocketInfo info = sockets_[dev];
-		if(!dev->isOpen()) {
-			toRemove_.append(dev);
-			continue;
-		}
-		while(dev->isOpen() && dev->bytesAvailable()) {
-			if(info.waitingSize == 0) {
-				// Read the byte size, everything until the start of the JSON message
-				char size[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-				dev->peek(size, sizeof(size));
-				for(unsigned i = 0; i < sizeof(size); ++i) {
-					if(size[i] == '{') {
-						// Start of the JSON character, we can start reading the full response
-						dev->read(i);
-						for(unsigned j = 0; j < i; ++j) {
-							// Ignore any other character than numbers (i.e. newlines)
-							if(size[j] >= 0x30 && size[j] <= 0x39) {
-								info.waitingSize *= 10;
-								info.waitingSize += size[j] - 0x30;
-							}
-						}
-					}
+		bool appended = false;
+		while(1) {
+			char *readahead = (char*)malloc(512);
+			ssize_t r = read(dev, readahead, 512);
+			if(r == 0) {
+				// end-of-file
+				toRemove_.append(dev);
+				break;
+			} else if(r < 0) {
+				if(errno != EWOULDBLOCK) {
+					qWarning() << "Socket error: " << strerror(errno);
+					toRemove_.append(dev);
 				}
-				Q_ASSERT(info.waitingSize >= 0);
-				if(info.waitingSize == 0)
-					break;
-				continue;
-			} else if(info.waitingSize > dev->bytesAvailable()) {
+				free(readahead);
 				break;
 			}
-			QByteArray json = dev->read(info.waitingSize);
-			if(json.length() != info.waitingSize) {
-				qDebug() << "Failed to read from socket; breaking";
-			}
-			handle(dev, json, info);
-			info.waitingSize = 0;
+			appended = true;
+			info.readahead.append(QByteArray(readahead, r));
+			free(readahead);
+		}
+		if(appended) {
+			// try reading as much commands as we can
+			bool parsedPacket;
+			do {
+				parsedPacket = false;
+				if(info.waitingSize == 0) {
+					QByteArray waitingSize;
+					int j;
+					for(j = 0; j < info.readahead.size(); ++j) {
+						if(isdigit(info.readahead[j])) {
+							waitingSize.append(info.readahead[j]);
+						} else if(info.readahead[j] == '{') {
+							info.waitingSize = waitingSize.toInt();
+							break;
+						}
+					}
+					// remove everything to j from the readahead buffer
+					if(info.waitingSize != 0)
+						info.readahead = info.readahead.mid(j);
+				}
+				if(info.waitingSize != 0) {
+					if(info.readahead.length() >= info.waitingSize) {
+						QByteArray packet = info.readahead.left(info.waitingSize);
+						info.readahead = info.readahead.mid(info.waitingSize + 1);
+						handle(dev, packet, info);
+						info.waitingSize = 0;
+						parsedPacket = true;
+					}
+				}
+			} while(parsedPacket);
 		}
 		sockets_[dev] = info;
 	}
-	foreach(QIODevice* i, toRemove_) {
+	foreach(int i, toRemove_) {
 		sockets_.remove(i);
 	}
 }
 
 void PluginComm::dispatch(const QString &event, const QStringList &parameters) {
-	foreach(QIODevice *i, sockets_.keys()) {
+	foreach(int i, sockets_.keys()) {
 		SocketInfo &info = sockets_[i];
 		if(info.isSubscribed(event)) {
 			info.dispatch(i, event, parameters);
@@ -204,7 +318,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// anyway.
 		// Check if we have all needed information
 		bool whoisRequired = false;
-		foreach(QIODevice *i, sockets_.keys()) {
+		foreach(int i, sockets_.keys()) {
 			SocketInfo &info = sockets_[i];
 			if(info.commandMightNeedWhois(cmd->command)
 			&& !cmd->network.isIdentified(cmd->origin)) {
@@ -233,7 +347,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		           << cmd->channel << cmd->command << cmd->fullArgs
 		           << cmd->args;
 
-		foreach(QIODevice *i, sockets_.keys()) {
+		foreach(int i, sockets_.keys()) {
 			SocketInfo &info = sockets_[i];
 			if(!info.isSubscribedToCommand(cmd->command, cmd->channel, cmd->origin,
 				cmd->network.isIdentified(cmd->origin) || identified, cmd->network)) {
@@ -401,8 +515,7 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 #undef MIN
 }
 
-void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info) {
-	if(!dev->isOpen()) return;
+void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 	const QList<Network*> &networks = dazeus_->networks();
 
 	JSONNode n;
@@ -698,5 +811,8 @@ void PluginComm::handle(QIODevice *dev, const QByteArray &line, SocketInfo &info
 	mstr << jsonMsg.length();
 	mstr << jsonMsg;
 	mstr << "\n";
-	dev->write(mstr.str().c_str(), mstr.str().length());
+	if(write(dev, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
+		qWarning() << "Failed to write correct number of JSON bytes to client socket.";
+		close(dev);
+	}
 }
