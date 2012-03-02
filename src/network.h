@@ -33,6 +33,8 @@ class Network : public QObject
 {
   Q_OBJECT
 
+  friend class Server;
+
   public:
                    ~Network();
 

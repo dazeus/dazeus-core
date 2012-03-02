@@ -79,18 +79,8 @@ public slots:
 	void message( const QString &destination, const QString &message );
 	void names( const QString &channel );
 	void slotNumericMessageReceived( const QString &origin, uint code, const QStringList &params, Irc::Buffer *b );
-	void slotDisconnected() {
-		emit disconnected();
-	}
 	void slotIrcEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *b);
-
-signals:
-	void disconnected();
-	void connectionTimeout();
-
-	void ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer );
-	void whoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buffer );
-	void namesReceived(const QString &origin, const QString &channel, const QStringList &names, Irc::Buffer *buffer );
+	void slotDisconnected();
 
 private:
 	const ServerConfig *config_;

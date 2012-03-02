@@ -169,19 +169,6 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   }
 
   activeServer_ = Server::fromServerConfig( server, this );
-
-  connect( activeServer_, SIGNAL(      disconnected() ),
-           this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_, SIGNAL( connectionTimeout() ),
-           this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_, SIGNAL(         destroyed() ),
-           this,          SLOT(  onFailedConnection() ) );
-  connect( activeServer_,SIGNAL(      whoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ),
-           this,          SLOT(   slotWhoisReceived(const QString&, const QString&, bool, Irc::Buffer* ) ) );
-  connect( activeServer_,SIGNAL(      namesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ),
-           this,          SLOT(   slotNamesReceived(const QString&, const QString&, const QStringList&, Irc::Buffer* ) ) );
-  connect( activeServer_, SIGNAL(          ircEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)),
-           this,          SLOT(        slotIrcEvent(const QString&, const QString&, const QStringList&, Irc::Buffer*)));
   activeServer_->connectToServer();
 }
 
