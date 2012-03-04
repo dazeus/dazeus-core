@@ -3,52 +3,32 @@
  * See LICENSE for license.
  */
 
-#include <QtCore/QStringList>
-#include <QtCore/QTimer>
-#include <QtCore/QDebug>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
+#include <sstream>
 
 #include "server.h"
 #include "config.h"
 
 // #define DEBUG
 
-QDebug operator<<(QDebug dbg, const Server &s)
+std::string Server::toString(const Server *s)
 {
-	return operator<<(dbg, &s);
-}
-
-QDebug operator<<(QDebug dbg, const Server *s)
-{
-	dbg.nospace() << "Server[";
-	if( s == 0 ) {
-		dbg.nospace() << "0";
+	std::stringstream res;
+	res << "Server[";
+	if(s  == 0 ) {
+		res << "0";
 	} else {
 		const ServerConfig *sc = s->config();
-		dbg.nospace() << sc->host << ":" << sc->port;
+		res << sc->host.toStdString() << ":" << sc->port;
 	}
-	dbg.nospace() << "]";
+	res << "]";
 
-	return dbg.maybeSpace();
-}
-
-QDebug operator<<(QDebug dbg, const Irc::Buffer *b)
-{
-	dbg.nospace() << "Irc::Buffer[";
-	if( b == 0 ) {
-		dbg.nospace() << "0";
-	} else {
-		dbg.nospace() << b->receiver_;
-	}
-	dbg.nospace() << "]";
-	return dbg.maybeSpace();
+	return res.str();
 }
 
 Server::Server()
-: QObject()
-, config_( 0 )
-, connectTimer_( 0 )
+: config_( 0 )
 , network_(0)
 , irc_(0)
 , whois_identified_(false)
@@ -57,7 +37,6 @@ Server::Server()
 
 Server::~Server()
 {
-	delete connectTimer_;
 	irc_destroy_session(irc_);
 }
 
@@ -68,36 +47,34 @@ const ServerConfig *Server::config() const
 
 void Server::connectToServer()
 {
-	qDebug() << "Connecting to server" << this;
-	Q_ASSERT( !config_->network->nickName.isEmpty() );
+	printf("Connecting to server: %s\n", toString(this).c_str());
+	assert( !config_->network->nickName.length() == 0 );
 	run();
 }
 
 void Server::disconnectFromServer( Network::DisconnectReason reason )
 {
-	QString reasonString;
+	std::string reasonString;
 	switch( reason )
 	{
-#define rw(x) QLatin1String(x)
 	case Network::ShutdownReason:
-		reasonString = rw("Shutting down");
+		reasonString = "Shutting down";
 		break;
 	case Network::ConfigurationReloadReason:
-		reasonString = rw("Reloading configuration");
+		reasonString = "Reloading configuration";
 		break;
 	case Network::SwitchingServersReason:
-		reasonString = rw("Switching servers");
+		reasonString = "Switching servers";
 		break;
 	case Network::ErrorReason:
-		reasonString = rw("Unknown error");
+		reasonString = "Unknown error";
 		break;
 	case Network::AdminRequestReason:
-		reasonString = rw("An admin asked me to disconnect");
+		reasonString = "An admin asked me to disconnect";
 		break;
 	case Network::UnknownReason:
 	default:
-		reasonString = rw("See you around!");
-#undef rw
+		reasonString = "See you around!";
 	}
 
 	quit( reasonString );
@@ -116,44 +93,46 @@ Server *Server::fromServerConfig( const ServerConfig *c, Network *n )
 }
 
 
-QString Server::motd() const
+std::string Server::motd() const
 {
-	qWarning() << "MOTD cannot be retrieved.";
-	return QString();
+	fprintf(stderr, "MOTD cannot be retrieved.\n");
+	return std::string();
 }
 
-void Server::quit( const QString &reason ) {
-	irc_cmd_quit(irc_, reason.toUtf8());
+void Server::quit( const std::string &reason ) {
+	irc_cmd_quit(irc_, reason.c_str());
 }
 
-void Server::whois( const QString &destination ) {
-	irc_cmd_whois(irc_, destination.toUtf8());
+void Server::whois( const std::string &destination ) {
+	irc_cmd_whois(irc_, destination.c_str());
 }
 
-void Server::ctcpAction( const QString &destination, const QString &message ) {
-	irc_cmd_me(irc_, destination.toUtf8(), message.toUtf8());
+void Server::ctcpAction( const std::string &destination, const std::string &message ) {
+	irc_cmd_me(irc_, destination.c_str(), message.c_str());
 }
 
-void Server::names( const QString &channel ) {
-	irc_cmd_names(irc_, channel.toUtf8());
+void Server::names( const std::string &channel ) {
+	irc_cmd_names(irc_, channel.c_str());
 }
 
-void Server::ctcpRequest( const QString &destination, const QString &message ) {
-	irc_cmd_ctcp_request(irc_, destination.toUtf8(), message.toUtf8());
+void Server::ctcpRequest( const std::string &destination, const std::string &message ) {
+	irc_cmd_ctcp_request(irc_, destination.c_str(), message.c_str());
 }
 
-void Server::join( const QString &channel, const QString &key ) {
-	irc_cmd_join(irc_, channel.toUtf8(), key.toUtf8());
+void Server::join( const std::string &channel, const std::string &key ) {
+	irc_cmd_join(irc_, channel.c_str(), key.c_str());
 }
 
-void Server::part( const QString &channel, const QString &reason ) {
-	irc_cmd_part(irc_, channel.toUtf8());
+void Server::part( const std::string &channel, const std::string &reason ) {
+	irc_cmd_part(irc_, channel.c_str());
 }
 
-void Server::message( const QString &destination, const QString &message ) {
-	QStringList lines = message.split(QRegExp(QLatin1String("[\\r\\n]+")), QString::SkipEmptyParts);
-	foreach(const QString& line, lines)
-		irc_cmd_msg(irc_, destination.toUtf8(), line.toUtf8());
+void Server::message( const std::string &destination, const std::string &message ) {
+	std::stringstream ss(message);
+	std::string line;
+	while(std::getline(ss, line)) {
+		irc_cmd_msg(irc_, destination.c_str(), line.c_str());
+	}
 }
 
 void Server::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
@@ -163,21 +142,21 @@ void Server::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
 void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
 	irc_process_select_descriptors(irc_, in_set, out_set);
 }
-void Irc::Buffer::message(const QString &message) {
-	assert(!receiver_.isEmpty());
+void Irc::Buffer::message(const std::string &message) {
+	assert(receiver_.length() > 0);
 	session_->message(receiver_, message);
 }
 
-void Server::slotNumericMessageReceived( const QString &origin, uint code,
-	const QStringList &args, Irc::Buffer *buf )
+void Server::slotNumericMessageReceived( const std::string &origin, uint code,
+	const std::vector<std::string> &args, Irc::Buffer *buf )
 {
-	Q_ASSERT( buf != 0 );
-	Q_ASSERT( network_ != 0 );
-	Q_ASSERT( network_->activeServer() == this );
+	assert( buf != 0 );
+	assert( network_ != 0 );
+	assert( network_->activeServer() == this );
 	// Also send out some other interesting events
 	if(code == 311) {
 		in_whois_for_ = args[1];
-		Q_ASSERT( !whois_identified_ );
+		assert( !whois_identified_ );
 	}
 	// TODO: should use CAP IDENTIFY_MSG for this:
 	else if(code == 307 || code == 330) // 330 means "logged in as", but doesn't check whether nick is grouped
@@ -187,23 +166,42 @@ void Server::slotNumericMessageReceived( const QString &origin, uint code,
 	else if(code == 318)
 	{
 		network_->slotWhoisReceived( origin, in_whois_for_, whois_identified_, buf );
-		network_->slotIrcEvent( "WHOIS", origin, QStringList() << in_whois_for_ << (whois_identified_ ? "true" : "false"), buf );
+		std::vector<std::string> parameters;
+		parameters.push_back(in_whois_for_);
+		parameters.push_back(whois_identified_ ? "true" : "false");
+		network_->slotIrcEvent( "WHOIS", origin, parameters, buf );
 		whois_identified_ = false;
 		in_whois_for_.clear();
 	}
 	// part of NAMES
 	else if(code == 353)
 	{
-		QStringList names = args.last().split(' ', QString::SkipEmptyParts);
-		in_names_.append(names);
+		std::vector<std::string> names;
+		std::stringstream ss(args.back());
+		std::string name;
+		while(std::getline(ss, name, ' ')) {
+			in_names_.push_back(name);
+		}
 	}
 	else if(code == 366)
 	{
 		network_->slotNamesReceived( origin, args.at(1), in_names_, buf );
-		network_->slotIrcEvent( "NAMES", origin, QStringList() << args.at(1) << in_names_, buf );
+		std::vector<std::string> parameters;
+		parameters.push_back(args.at(1));
+		foreach(std::string name, in_names_) {
+			parameters.push_back(name);
+		}
+		network_->slotIrcEvent( "NAMES", origin, parameters, buf );
 		in_names_.clear();
 	}
-	network_->slotIrcEvent( "NUMERIC", origin, QStringList() << QString::number(code) << args, buf );
+	std::stringstream codestream;
+	codestream << code;
+	std::vector<std::string> params;
+	params.push_back(codestream.str());
+	foreach(std::string arg, args) {
+		params.push_back(arg);
+	}
+	network_->slotIrcEvent( "NUMERIC", origin, params, buf );
 }
 
 void Server::slotDisconnected()
@@ -211,23 +209,23 @@ void Server::slotDisconnected()
 	network_->onFailedConnection();
 }
 
-void Server::slotIrcEvent(const QString &event, const QString &origin, const QStringList &args, Irc::Buffer *buf)
+void Server::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &args, Irc::Buffer *buf)
 {
-	Q_ASSERT(buf != 0);
-	Q_ASSERT(network_ != 0);
-	Q_ASSERT(network_->activeServer() == this);
+	assert(buf != 0);
+	assert(network_ != 0);
+	assert(network_->activeServer() == this);
 	network_->slotIrcEvent(event, origin, args, buf);
 }
 
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
 	Server *server = (Server*) irc_get_ctx(s);
 	assert(server->getIrc() == s);
-	QStringList params;
+	std::vector<std::string> params;
 	for(unsigned int i = 0; i < count; ++i) {
-		params.append(QString::fromUtf8(p[i]));
+		params.push_back(std::string(p[i]));
 	}
 	Irc::Buffer *b = new Irc::Buffer(server);
-	server->slotNumericMessageReceived(QString::fromUtf8(origin), event, params, b);
+	server->slotNumericMessageReceived(std::string(origin), event, params, b);
 }
 
 void irc_callback(irc_session_t *s, const char *e, const char *o, const char **params, unsigned int count) {
@@ -241,35 +239,34 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		event = "NOTICE";
 	}
 
-	// for now, keep these QStrings:
-	QString origin = QString::fromUtf8(o);
-	int exclamMark = origin.indexOf('!');
-	if(exclamMark != -1) {
-		origin = origin.left(exclamMark);
+	// for now, keep these std::strings:
+	std::string origin = std::string(o);
+	int exclamMark = origin.find('!');
+	if(exclamMark != std::string::npos) {
+		origin = origin.substr(0, exclamMark);
 	}
 
-	QStringList arguments;
+	std::vector<std::string> arguments;
 	for(unsigned int i = 0; i < count; ++i) {
-		arguments.append(QString::fromUtf8(params[i]));
+		arguments.push_back(std::string(params[i]));
 	}
 	if(arguments.size() >= 1) {
 		b->setReceiver(arguments[0]);
 	}
 
 #ifdef DEBUG
-	qDebug() << server->server() << " - " << QString::fromStdString(event) << " from " << origin << ": " << arguments;
+	fprintf(stderr, "%s - %s from %s\n", server->toString().c_str, event.c_str(), origin.c_str());
 #endif
 
 	// TODO: handle disconnects nicely (probably using some ping and LIBIRC_ERR_CLOSED
 	if(event == "ERROR") {
-		qWarning() << "Error received from libircclient: " << arguments;
-		qWarning() << "Origin: " << origin;
+		fprintf(stderr, "Error received from libircclient; origin=%s.\n", origin.c_str());
 		server->slotDisconnected();
 	} else if(event == "CONNECT") {
-		qDebug() << "Connected to server:" << server;
+		printf("Connected to server: %s\n", Server::toString(server).c_str());
 	}
 
-	server->slotIrcEvent(QString::fromStdString(event), origin, arguments, b);
+	server->slotIrcEvent(event, origin, arguments, b);
 }
 
 void Server::run()
@@ -305,7 +302,7 @@ void Server::run()
 	}
 	irc_set_ctx(irc_, this);
 
-	Q_ASSERT( !config_->network->nickName.isEmpty() );
+	assert( !config_->network->nickName.isEmpty() );
 	irc_connect(irc_, config_->host.toLatin1(),
 		config_->port,
 		config_->network->password.toLatin1(),

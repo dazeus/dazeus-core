@@ -427,7 +427,7 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 
 			Command *cmd = new Command(*n);
 			cmd->origin = origin;
-			cmd->channel = buffer->receiver();
+			cmd->channel = QString::fromStdString(buffer->receiver());
 			cmd->command = command;
 			cmd->fullArgs = fullArgs.trimmed();
 			cmd->args = args;
@@ -435,7 +435,7 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 			flushCommandQueue();
 		}
 	}
-	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << buffer->receiver() << message << (n->isIdentified(origin) ? "true" : "false"));
+	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message << (n->isIdentified(origin) ? "true" : "false"));
 }
 
 void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
@@ -448,7 +448,7 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 	} else if(event == "NOTICE") {
 		MIN(2);
 		dispatch("NOTICE", QStringList() << n->networkName() << origin
-		   << buffer->receiver() << params[1]
+		   << QString::fromStdString(buffer->receiver()) << params[1]
 		   << (n->isIdentified(origin) ? "true" : "false"));
 	} else if(event == "MODE" || event == "UMODE") {
 		MIN(1);
@@ -458,13 +458,13 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		dispatch("NICK", QStringList() << n->networkName() << origin << params[0]);
 	} else if(event == "JOIN") {
 		MIN(1);
-		dispatch("JOIN", QStringList() << n->networkName() << origin << buffer->receiver());
+		dispatch("JOIN", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()));
 	} else if(event == "PART") {
 		MIN(1);
 		QString message;
 		if(params.size() == 2)
 			message = params[1];
-		dispatch("PART", QStringList() << n->networkName() << origin << buffer->receiver() << message);
+		dispatch("PART", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message);
 	} else if(event == "KICK") {
 		MIN(2);
 		QString nick = params[1];
@@ -486,7 +486,7 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		QString topic;
 		if(params.size() > 1)
 			topic = params[1];
-		dispatch("TOPIC", QStringList() << n->networkName() << origin << buffer->receiver() << topic);
+		dispatch("TOPIC", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << topic);
 	} else if(event == "CONNECT") {
 		dispatch("CONNECT", QStringList() << n->networkName());
 	} else if(event == "DISCONNECT") {
@@ -508,7 +508,7 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		QString message;
 		if(params.size() >= 2)
 			message = params[1];
-		dispatch("ACTION", QStringList() << n->networkName() << origin << buffer->receiver() << message);
+		dispatch("ACTION", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message);
 	} else if(event == "WHOIS") {
 		MIN(2);
 		dispatch("WHOIS", QStringList() << n->networkName() << origin << params[0] << params[1]);
@@ -518,10 +518,10 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		dispatch("NAMES", QStringList() << n->networkName() << origin << params);
 	} else if(event == "NUMERIC") {
 		MIN(1);
-		dispatch("NUMERIC", QStringList() << n->networkName() << origin << buffer->receiver() << params);
+		dispatch("NUMERIC", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << params);
 	} else {
-		qDebug() << "Unknown event: " << n << event << origin << buffer->receiver() << params;
-		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << buffer->receiver() << event << params);
+		qDebug() << "Unknown event: " << n << event << origin << QString::fromStdString(buffer->receiver()) << params;
+		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << event << params);
 	}
 #undef MIN
 }
