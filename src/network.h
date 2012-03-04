@@ -14,6 +14,8 @@
 #include <QtCore/QMap>
 
 #include "user.h"
+#include <vector>
+#include <string>
 
 class Server;
 class Network;
@@ -61,7 +63,7 @@ class Network : public QObject
     QString                     networkName() const;
     QList<QString>              joinedChannels() const { return knownUsers_.keys(); }
     bool                        isIdentified(const QString &user) const;
-    bool                        isKnownUser(const QString &user) const;
+    bool                        isKnownUser(const std::string &user) const;
 
     void connectToNetwork( bool reconnect = false );
     void disconnectFromNetwork( DisconnectReason reason = UnknownReason );
@@ -100,10 +102,10 @@ class Network : public QObject
     void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);
     void partedChannel(const QString &user, const QString &, Irc::Buffer *b);
     void slotQuit(const QString &origin, const QString&, Irc::Buffer*);
-    void slotWhoisReceived(const QString &origin, const QString &nick, bool identified, Irc::Buffer *buf);
+    void slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified, Irc::Buffer *buf);
     void slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer *buffer );
-    void slotNamesReceived(const QString&, const QString&, const QStringList &names, Irc::Buffer *buf );
-    void slotIrcEvent(const QString&, const QString&, const QStringList&, Irc::Buffer *buf);
+    void slotNamesReceived(const std::string&, const std::string&, const std::vector<std::string> &names, Irc::Buffer *buf );
+    void slotIrcEvent(const std::string&, const std::string&, const std::vector<std::string>&, Irc::Buffer *buf);
 };
 
 #endif
