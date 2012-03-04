@@ -18,8 +18,9 @@ OBJECTS_DIR = build
 
 SOURCES += src/main.cpp src/dazeus.cpp src/network.cpp src/config.cpp
 SOURCES += src/user.cpp src/server.cpp src/database.cpp src/plugincomm.cpp
+SOURCES += src/utils.cpp
 HEADERS += src/dazeus.h src/network.h src/config.h src/user.h src/server.h
-HEADERS += src/database.h src/plugincomm.h
+HEADERS += src/database.h src/plugincomm.h src/utils.h
 
 INCLUDEPATH += src
 
