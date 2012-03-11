@@ -274,13 +274,13 @@ void Server::connectToServer()
 	}
 	irc_set_ctx(irc_, this);
 
-	assert( !config_->network->nickName.isEmpty() );
+	assert( config_->network->nickName.length() != 0 );
 	irc_connect(irc_, config_->host.c_str(),
 		config_->port,
-		config_->network->password.toLatin1(),
-		config_->network->nickName.toLatin1(),
-		config_->network->userName.toLatin1(),
-		config_->network->fullName.toLatin1());
+		config_->network->password.c_str(),
+		config_->network->nickName.c_str(),
+		config_->network->userName.c_str(),
+		config_->network->fullName.c_str());
 }
 
 irc_session_t *Server::getIrc() const {
