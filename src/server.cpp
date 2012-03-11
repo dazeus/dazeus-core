@@ -45,13 +45,6 @@ const ServerConfig *Server::config() const
 	return config_;
 }
 
-void Server::connectToServer()
-{
-	printf("Connecting to server: %s\n", toString(this).c_str());
-	assert( !config_->network->nickName.length() == 0 );
-	run();
-}
-
 void Server::disconnectFromServer( Network::DisconnectReason reason )
 {
 	std::string reasonString;
@@ -258,8 +251,11 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	server->slotIrcEvent(event, origin, arguments);
 }
 
-void Server::run()
+void Server::connectToServer()
 {
+	printf("Connecting to server: %s\n", toString(this).c_str());
+	assert( !config_->network->nickName.length() == 0 );
+
 	irc_callbacks_t callbacks;
 	callbacks.event_connect = irc_callback;
 	callbacks.event_nick = irc_callback;

@@ -26,7 +26,6 @@ class Server
 
 private:
 	   Server();
-	void run();
 
 public:
 	  ~Server();
