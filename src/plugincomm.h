@@ -6,12 +6,9 @@
 #ifndef SOCKETPLUGIN_H
 #define SOCKETPLUGIN_H
 
-#include <QtCore/QVariant>
-#include <QtCore/QByteArray>
 #include <QtCore/QMultiMap>
 #include <QtCore/QStringList>
 #include <QtCore/QDebug>
-#include <QtCore/QTimer>
 
 #include <sstream>
 #include <libjson.h>
@@ -134,7 +131,7 @@ class PluginComm : public QObject
     QStringList subscriptions;
     QMultiMap<QString,RequirementInfo*> commands;
     int waitingSize;
-    QByteArray readahead;
+    std::string readahead;
   };
 
   public:
@@ -160,7 +157,7 @@ class PluginComm : public QObject
     Database *database_;
     Config *config_;
     DaZeus *dazeus_;
-    void handle(int dev, const QByteArray &line, SocketInfo &info);
+    void handle(int dev, const std::string &line, SocketInfo &info);
     void flushCommandQueue(const QString &nick = QString(), bool identified = false);
 };
 

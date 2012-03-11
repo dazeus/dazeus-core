@@ -268,7 +268,7 @@ void PluginComm::poll() {
 				break;
 			}
 			appended = true;
-			info.readahead.append(QByteArray(readahead, r));
+			info.readahead.append(readahead, r);
 			free(readahead);
 		}
 		if(appended) {
@@ -277,24 +277,28 @@ void PluginComm::poll() {
 			do {
 				parsedPacket = false;
 				if(info.waitingSize == 0) {
-					QByteArray waitingSize;
-					int j;
+					std::stringstream s;
+					std::string waitingSize;
+					unsigned int j;
 					for(j = 0; j < info.readahead.size(); ++j) {
 						if(isdigit(info.readahead[j])) {
-							waitingSize.append(info.readahead[j]);
+							s << info.readahead[j];
 						} else if(info.readahead[j] == '{') {
-							info.waitingSize = waitingSize.toInt();
+							int waitingSize;
+							s >> waitingSize;
+							assert(s);
+							info.waitingSize = waitingSize;
 							break;
 						}
 					}
 					// remove everything to j from the readahead buffer
 					if(info.waitingSize != 0)
-						info.readahead = info.readahead.mid(j);
+						info.readahead = info.readahead.substr(j);
 				}
 				if(info.waitingSize != 0) {
 					if(info.readahead.length() >= info.waitingSize) {
-						QByteArray packet = info.readahead.left(info.waitingSize);
-						info.readahead = info.readahead.mid(info.waitingSize + 1);
+						std::string packet = info.readahead.substr(0, info.waitingSize);
+						info.readahead = info.readahead.substr(info.waitingSize + 1);
 						handle(dev, packet, info);
 						info.waitingSize = 0;
 						parsedPacket = true;
@@ -534,12 +538,12 @@ void PluginComm::ircEvent(const std::string &e, const std::string &o, const std:
 #undef MIN
 }
 
-void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
+void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	const std::list<Network*> &networks = dazeus_->networks();
 
 	JSONNode n;
 	try {
-		n = libjson::parse(line.constData());
+		n = libjson::parse(line.c_str());
 	} catch(std::invalid_argument &exception) {
 		qWarning() << "Got incorrect JSON, ignoring";
 		return;
