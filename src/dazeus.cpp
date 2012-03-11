@@ -180,7 +180,7 @@ bool DaZeus::loadConfig()
 
   foreach( NetworkConfig *netconf, networks )
   {
-    Network *net = Network::fromNetworkConfig( netconf, plugins_ );
+    Network *net = new Network( netconf, plugins_ );
     if( net == 0 ) {
       resetConfig();
       return false;

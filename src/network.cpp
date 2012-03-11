@@ -30,10 +30,11 @@ std::string Network::toString(const Network *n)
 /**
  * @brief Constructor.
  */
-Network::Network( const std::string &name )
+Network::Network( const NetworkConfig *c, PluginComm *p )
 : activeServer_(0)
-, config_(0)
+, config_(c)
 , me_(0)
+, plugins_(p)
 {}
 
 
@@ -296,18 +297,6 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
   // TODO: maybe deleteLater?
   delete activeServer_;
   activeServer_ = 0;
-}
-
-
-/**
- * @brief Create a Network from a given NetworkConfig.
- */
-Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
-{
-	Network *n = new Network( c->name.toStdString() );
-	n->config_ = c;
-	n->plugins_ = p;
-	return n;
 }
 
 
