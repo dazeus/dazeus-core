@@ -35,7 +35,6 @@ class Network
 
     static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
     static Network *getNetwork( const std::string &name );
-    static Network *fromBuffer( Irc::Buffer *b );
     static std::string toString(const Network *n);
 
     enum DisconnectReason {

@@ -276,7 +276,7 @@ void Network::onFailedConnection()
   knownUsers_.clear();
 
   Irc::Buffer *b = new Irc::Buffer(activeServer_);
-  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), b);
+  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), this, b);
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
@@ -310,23 +310,6 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
   // TODO: maybe deleteLater?
   delete activeServer_;
   activeServer_ = 0;
-}
-
-
-/**
- * @brief Get the Network belonging to this Buffer.
- */
-Network *Network::fromBuffer( Irc::Buffer *b )
-{
-	// One of the Servers in one of the Networks in network_, is an
-	// Irc::Session that has created this buffer.
-	std::map<std::string,Network*>::iterator it;
-	for(it = networks_.begin(); it != networks_.end(); ++it) {
-		if( it->second->activeServer() == b->session() ) {
-			return it->second;
-		}
-	}
-	return 0;
 }
 
 
@@ -499,5 +482,5 @@ void Network::slotIrcEvent(const std::string &event, const std::string &origin, 
 	}
 #undef MIN
 	assert(plugins_ != 0);
-	plugins_->ircEvent(event, origin, params, buf);
+	plugins_->ircEvent(event, origin, params, this, buf);
 }
