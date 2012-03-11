@@ -20,7 +20,7 @@ std::string Server::toString(const Server *s)
 		res << "0";
 	} else {
 		const ServerConfig *sc = s->config();
-		res << sc->host.toStdString() << ":" << sc->port;
+		res << sc->host << ":" << sc->port;
 	}
 	res << "]";
 
@@ -292,7 +292,7 @@ void Server::run()
 	irc_set_ctx(irc_, this);
 
 	assert( !config_->network->nickName.isEmpty() );
-	irc_connect(irc_, config_->host.toLatin1(),
+	irc_connect(irc_, config_->host.c_str(),
 		config_->port,
 		config_->network->password.toLatin1(),
 		config_->network->nickName.toLatin1(),

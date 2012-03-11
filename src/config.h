@@ -32,9 +32,9 @@ struct NetworkConfig {
 };
 
 struct ServerConfig {
-  QString host;
-  quint16 port;
-  quint8 priority;
+  std::string host;
+  uint16_t port;
+  uint8_t priority;
   NetworkConfig *network;
   bool ssl;
 };

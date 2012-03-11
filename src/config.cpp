@@ -225,7 +225,7 @@ const std::list<NetworkConfig*> &Config::networks()
       }
 
       ServerConfig *sc = new ServerConfig;
-      sc->host         = settings_->value(category + rw("/host"),QString()).toString();
+      sc->host         = settings_->value(category + rw("/host"),QString()).toString().toStdString();
       sc->port         = settings_->value(category + rw("/port"),6667).toInt();
       sc->priority     = settings_->value(category + rw("/priority"), 5).toInt();
       sc->ssl          = settings_->value(category + rw("/ssl"), false).toBool();
