@@ -230,7 +230,7 @@ const std::list<NetworkConfig*> &Config::networks()
       sc->priority     = settings_->value(category + rw("/priority"), 5).toInt();
       sc->ssl          = settings_->value(category + rw("/ssl"), false).toBool();
       sc->network      = networks[networkName];
-      networks[networkName]->servers.append( sc );
+      networks[networkName]->servers.push_back( sc );
 
 #ifdef DEBUG
       qDebug() << "Server for network: " << networkName;
@@ -250,7 +250,7 @@ const std::list<NetworkConfig*> &Config::networks()
   while(i.hasNext())
   {
     i.next();
-    if( i.value()->servers.count() == 0 )
+    if( i.value()->servers.size() == 0 )
     {
       qWarning() << "Warning: Network block for " << i.key()
                  << " exists, but no server block found. Ignoring block.";

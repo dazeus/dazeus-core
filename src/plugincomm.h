@@ -146,8 +146,8 @@ class PluginComm : public QObject
   virtual  ~PluginComm();
   void dispatch(const QString &event, const QStringList &parameters);
   void init();
-  void ircEvent(const QString &event, const QString &origin,
-                const QStringList &params, Irc::Buffer *buffer );
+  void ircEvent(const std::string &event, const std::string &origin,
+                const std::vector<std::string> &params, Irc::Buffer *buffer );
   void run();
 
   private:
