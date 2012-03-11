@@ -6,8 +6,8 @@
 #ifndef DAZEUS_H
 #define DAZEUS_H
 
-// TODO remove
-#include "network.h"
+#include <QString>
+#include <list>
 
 class Config;
 class PluginComm;

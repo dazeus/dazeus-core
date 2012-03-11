@@ -6,12 +6,10 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <QtCore/QHash>
-#include <QtCore/QMap>
-
 #include "user.h"
 #include <vector>
 #include <string>
+#include <map>
 
 class Server;
 class Network;
@@ -48,7 +46,7 @@ class Network
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
     std::string                 networkName() const;
-    std::vector<std::string>    joinedChannels() const; // knownUsers_.keys()
+    std::vector<std::string>    joinedChannels() const;
     bool                        isIdentified(const std::string &user) const;
     bool                        isKnownUser(const std::string &user) const;
 
