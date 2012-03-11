@@ -178,40 +178,40 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   activeServer_->connectToServer();
 }
 
-void Network::joinedChannel(const std::string &user, Irc::Buffer *b)
+void Network::joinedChannel(const std::string &user, const std::string &receiver)
 {
 	User u(user, this);
-	if(u.isMe() && !contains(knownUsers_, strToLower(b->receiver()))) {
-		knownUsers_[strToLower(b->receiver())] = std::vector<std::string>();
+	if(u.isMe() && !contains(knownUsers_, strToLower(receiver))) {
+		knownUsers_[strToLower(receiver)] = std::vector<std::string>();
 	}
-	std::vector<std::string> users = knownUsers_[strToLower(b->receiver())];
+	std::vector<std::string> users = knownUsers_[strToLower(receiver)];
 	if(!contains(users, strToLower(user)))
-		knownUsers_[strToLower(b->receiver())].push_back(strToLower(user));
+		knownUsers_[strToLower(receiver)].push_back(strToLower(user));
 #ifdef DEBUG
-	qDebug() << "User " << user << " joined channel " << b->receiver();
+	qDebug() << "User " << user << " joined channel " << receiver;
 	qDebug() << "knownUsers is now: " << knownUsers_;
 #endif
 }
 
-void Network::partedChannel(const std::string &user, const std::string &, Irc::Buffer *b)
+void Network::partedChannel(const std::string &user, const std::string &, const std::string &receiver)
 {
 	User u(user, this);
 	if(u.isMe()) {
-		knownUsers_.erase(strToLower(b->receiver()));
+		knownUsers_.erase(strToLower(receiver));
 	} else {
-		erase(knownUsers_[strToLower(b->receiver())], strToLower(user));
+		erase(knownUsers_[strToLower(receiver)], strToLower(user));
 	}
 	if(!isKnownUser(u.nick())) {
 		erase(identifiedUsers_, strToLower(u.nick()));
 	}
 #ifdef DEBUG
-	qDebug() << "User " << user << " left channel " << b->receiver();
+	qDebug() << "User " << user << " left channel " << receiver;
 	qDebug() << "knownUsers is now: " << knownUsers_;
 	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
 #endif
 }
 
-void Network::slotQuit(const std::string &origin, const std::string&, Irc::Buffer *b)
+void Network::slotQuit(const std::string &origin, const std::string&, const std::string &receiver)
 {
 	std::map<std::string,std::vector<std::string> >::iterator it;
 	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
@@ -227,7 +227,7 @@ void Network::slotQuit(const std::string &origin, const std::string&, Irc::Buffe
 #endif
 }
 
-void Network::slotNickChanged( const std::string &origin, const std::string &nick, Irc::Buffer* )
+void Network::slotNickChanged( const std::string &origin, const std::string &nick, const std::string & )
 {
 	erase(identifiedUsers_, strToLower(origin));
 	erase(identifiedUsers_, strToLower(nick));
@@ -250,19 +250,19 @@ void Network::slotNickChanged( const std::string &origin, const std::string &nic
 #endif
 }
 
-void Network::kickedChannel(const std::string&, const std::string &user, const std::string&, Irc::Buffer *b)
+void Network::kickedChannel(const std::string&, const std::string &user, const std::string&, const std::string &receiver)
 {
 	User u(user, this);
 	if(u.isMe()) {
-		knownUsers_.erase(strToLower(b->receiver()));
+		knownUsers_.erase(strToLower(receiver));
 	} else {
-		erase(knownUsers_[strToLower(b->receiver())], strToLower(u.nick()));
+		erase(knownUsers_[strToLower(receiver)], strToLower(u.nick()));
 	}
 	if(!isKnownUser(u.nick())) {
 		erase(identifiedUsers_, strToLower(u.nick()));
 	}
 #ifdef DEBUG
-	qDebug() << "User " << user << " was kicked from " << b->receiver();
+	qDebug() << "User " << user << " was kicked from " << receiver;
 	qDebug() << "knownUsers is now: " << knownUsers_;
 	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
 #endif
@@ -275,7 +275,6 @@ void Network::onFailedConnection()
   identifiedUsers_.clear();
   knownUsers_.clear();
 
-  Irc::Buffer *b = new Irc::Buffer(activeServer_);
   plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), this);
 
   // Flag old server as undesirable
@@ -424,7 +423,7 @@ bool Network::isKnownUser(const std::string &user) const {
 	return false;
 }
 
-void Network::slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified, Irc::Buffer *buf) {
+void Network::slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified) {
 	if(!identified) {
 		erase(identifiedUsers_, strToLower(nick));
 	} else if(identified && !contains(identifiedUsers_, strToLower(nick)) && isKnownUser(nick)) {
@@ -436,7 +435,7 @@ void Network::slotWhoisReceived(const std::string &origin, const std::string &ni
 #endif
 }
 
-void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, Irc::Buffer *buf ) {
+void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, const std::string &receiver ) {
 	assert(contains(knownUsers_, strToLower(channel)));
 	std::vector<std::string> &users = knownUsers_[strToLower(channel)];
 	foreach(std::string n, names) {
@@ -457,28 +456,32 @@ void Network::slotNamesReceived(const std::string&, const std::string &channel, 
 #endif
 }
 
-void Network::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Irc::Buffer *buf) {
+void Network::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params) {
+	std::string receiver;
+	if(params.size() > 0)
+		receiver = params[0];
+
 #define MIN(a) if(params.size() < a) { fprintf(stderr, "Too few parameters for event %s\n", event.c_str()); return; }
 	if(event == "CONNECT") {
 		serverIsActuallyOkay(activeServer_->config());
 	} else if(event == "JOIN") {
 		MIN(1);
-		joinedChannel(origin, buf);
+		joinedChannel(origin, receiver);
 	} else if(event == "PART") {
 		MIN(1);
-		partedChannel(origin, std::string(), buf);
+		partedChannel(origin, std::string(), receiver);
 	} else if(event == "KICK") {
 		MIN(2);
-		kickedChannel(origin, params[1], std::string(), buf);
+		kickedChannel(origin, params[1], std::string(), receiver);
 	} else if(event == "QUIT") {
 		std::string message;
 		if(params.size() > 0) {
 			message = params[0];
 		}
-		slotQuit(origin, message, buf);
+		slotQuit(origin, message, receiver);
 	} else if(event == "NICK") {
 		MIN(1);
-		slotNickChanged(origin, params[0], buf);
+		slotNickChanged(origin, params[0], receiver);
 	}
 #undef MIN
 	assert(plugins_ != 0);

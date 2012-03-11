@@ -20,11 +20,6 @@ class PluginComm;
 struct ServerConfig;
 struct NetworkConfig;
 
-namespace Irc
-{
-  class Buffer;
-};
-
 class Network
 {
 
@@ -83,14 +78,14 @@ class Network
     PluginComm           *plugins_;
 
     void onFailedConnection();
-    void joinedChannel(const std::string &user, Irc::Buffer *b);
-    void kickedChannel(const std::string &user, const std::string&, const std::string&, Irc::Buffer *b);
-    void partedChannel(const std::string &user, const std::string &, Irc::Buffer *b);
-    void slotQuit(const std::string &origin, const std::string&, Irc::Buffer*);
-    void slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified, Irc::Buffer *buf);
-    void slotNickChanged( const std::string &origin, const std::string &nick, Irc::Buffer *buffer );
-    void slotNamesReceived(const std::string&, const std::string&, const std::vector<std::string> &names, Irc::Buffer *buf );
-    void slotIrcEvent(const std::string&, const std::string&, const std::vector<std::string>&, Irc::Buffer *buf);
+    void joinedChannel(const std::string &user, const std::string &receiver);
+    void kickedChannel(const std::string &user, const std::string&, const std::string&, const std::string &receiver);
+    void partedChannel(const std::string &user, const std::string &, const std::string &receiver);
+    void slotQuit(const std::string &origin, const std::string&, const std::string &receiver);
+    void slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified);
+    void slotNickChanged( const std::string &origin, const std::string &nick, const std::string &receiver );
+    void slotNamesReceived(const std::string&, const std::string&, const std::vector<std::string> &names, const std::string &receiver );
+    void slotIrcEvent(const std::string&, const std::string&, const std::vector<std::string>&);
 };
 
 #endif

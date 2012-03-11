@@ -21,21 +21,6 @@
 
 struct ServerConfig;
 
-class Server;
-
-namespace Irc {
-	struct Buffer {
-		// TEMPORARY PLACEHOLDER
-		Server *session_;
-		std::string receiver_;
-		inline Server *session() const { return session_; }
-		inline void setReceiver(const std::string &p) { receiver_ = p; }
-		inline const std::string &receiver() const { return receiver_; }
-
-		Buffer(Server *s) : session_(s) {}
-	};
-};
-
 class Server
 {
 
@@ -63,8 +48,8 @@ public:
 	void part( const std::string &channel, const std::string &reason = std::string() );
 	void message( const std::string &destination, const std::string &message );
 	void names( const std::string &channel );
-	void slotNumericMessageReceived( const std::string &origin, uint code, const std::vector<std::string> &params, Irc::Buffer *b );
-	void slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Irc::Buffer *b);
+	void slotNumericMessageReceived( const std::string &origin, uint code, const std::vector<std::string> &params);
+	void slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params);
 	void slotDisconnected();
 
 private:
