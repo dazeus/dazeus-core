@@ -174,7 +174,7 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
     delete(activeServer_);
   }
 
-  activeServer_ = Server::fromServerConfig( server, this );
+  activeServer_ = new Server( server, this );
   activeServer_->connectToServer();
 }
 
