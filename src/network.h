@@ -27,7 +27,6 @@ class Network
                    ~Network();
 
     static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
-    static Network *getNetwork( const std::string &name );
     static std::string toString(const Network *n);
 
     enum DisconnectReason {
@@ -68,7 +67,6 @@ class Network
                           Network( const std::string &name );
     Server               *activeServer_;
     const NetworkConfig  *config_;
-    static std::map<std::string,Network*> networks_;
     std::map<const ServerConfig*,int> undesirables_;
     User                 *me_;
     std::vector<std::string>        identifiedUsers_;

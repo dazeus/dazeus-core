@@ -12,8 +12,6 @@
 
 // #define DEBUG
 
-std::map<std::string, Network*> Network::networks_;
-
 std::string Network::toString(const Network *n)
 {
 	std::stringstream res;
@@ -36,10 +34,7 @@ Network::Network( const std::string &name )
 : activeServer_(0)
 , config_(0)
 , me_(0)
-{
-  assert( !contains(networks_, name) );
-  networks_[name] = this;
-}
+{}
 
 
 /**
@@ -48,8 +43,6 @@ Network::Network( const std::string &name )
 Network::~Network()
 {
   disconnectFromNetwork();
-  assert(contains(networks_, config_->name.toStdString()) && getNetwork( config_->name.toStdString() ) == this);
-  networks_.erase( config_->name.toStdString() );
 }
 
 
@@ -317,25 +310,12 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
  */
 Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
 {
-	if(contains(networks_, c->name.toStdString()))
-		return networks_[c->name.toStdString()];
-
 	Network *n = new Network( c->name.toStdString() );
 	n->config_ = c;
 	n->plugins_ = p;
 	return n;
 }
 
-
-/**
- * @brief Retrieve the Network with given name.
- */
-Network *Network::getNetwork( const std::string &name )
-{
-	if( !contains(networks_, name) )
-		return 0;
-	return networks_[name];
-}
 
 void Network::joinChannel( std::string channel )
 {
