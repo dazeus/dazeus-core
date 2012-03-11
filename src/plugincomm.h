@@ -147,14 +147,14 @@ class PluginComm : public QObject
   void dispatch(const QString &event, const QStringList &parameters);
   void init();
   void ircEvent(const std::string &event, const std::string &origin,
-                const std::vector<std::string> &params, Irc::Buffer *buffer );
+                const std::vector<std::string> &params, Network *n, Irc::Buffer *buffer );
   void run();
 
   private:
     void newTcpConnection();
     void newLocalConnection();
     void poll();
-    void messageReceived(const QString &origin, const QString &message, Irc::Buffer *buffer);
+    void messageReceived(const QString &origin, const QString &message, Network *n, Irc::Buffer *buffer);
 
     QList<int> tcpServers_;
     QList<int> localServers_;

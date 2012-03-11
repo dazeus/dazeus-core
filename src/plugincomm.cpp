@@ -376,8 +376,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 }
 
 void PluginComm::messageReceived( const QString &origin, const QString &message,
-                              Irc::Buffer *buffer ) {
-	Network *n = Network::fromBuffer(buffer);
+                  Network *n, Irc::Buffer *buffer ) {
 	Q_ASSERT(n != 0);
 
 	QString payload;
@@ -441,20 +440,19 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 	   << (n->isIdentified(origin.toStdString()) ? "true" : "false"));
 }
 
-void PluginComm::ircEvent(const std::string &e, const std::string &o, const std::vector<std::string> &p, Irc::Buffer *buffer) {
+void PluginComm::ircEvent(const std::string &e, const std::string &o, const std::vector<std::string> &p, Network *n, Irc::Buffer *buffer) {
 	QString event = QString::fromStdString(e);
 	QString origin = QString::fromStdString(o);
 	QStringList params;
 	for(unsigned int i = 0; i < p.size(); ++i ) {
 		params << QString::fromStdString(p[i]);
 	}
-	Network *n = Network::fromBuffer(buffer);
 	QString networkName = QString::fromStdString(n->networkName());
 	Q_ASSERT(n != 0);
 #define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event << ":" << params; return; }
 	if(event == "PRIVMSG") {
 		MIN(2);
-		messageReceived(origin, params[1], buffer);
+		messageReceived(origin, params[1], n, buffer);
 	} else if(event == "NOTICE") {
 		MIN(2);
 		dispatch("NOTICE", QStringList() << networkName << origin
