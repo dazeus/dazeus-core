@@ -25,20 +25,6 @@ std::string User::toString() const
   return "User[" + nickName() + "]";
 }
 
-/**
- * @brief Get the User object pointing to ourselves.
- *
- * This static method can be called from anywhere to indicate ourselves.
- * Since our user information can differ per network, a "User" object exists
- * for every network, so you have to give the network name for which you want
- * to get the User object.
- */
-User *User::getMe( const std::string &network )
-{
-  Network *n = Network::getNetwork( network );
-  return n->user();
-}
-
 
 const std::string &User::host() const
 {

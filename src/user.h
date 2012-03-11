@@ -32,7 +32,6 @@ class User {
     bool    isMe( const std::string &network ) const;
     bool    isSameUser( const User &other ) const;
 
-    static User *getMe( const std::string &network );
     static bool isSameUser( const User &one, const User &two );
     static bool isMe( const User &which, const std::string &network );
 
