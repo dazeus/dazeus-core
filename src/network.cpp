@@ -276,7 +276,7 @@ void Network::onFailedConnection()
   knownUsers_.clear();
 
   Irc::Buffer *b = new Irc::Buffer(activeServer_);
-  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), this, b);
+  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), this);
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
@@ -482,5 +482,5 @@ void Network::slotIrcEvent(const std::string &event, const std::string &origin, 
 	}
 #undef MIN
 	assert(plugins_ != 0);
-	plugins_->ircEvent(event, origin, params, this, buf);
+	plugins_->ircEvent(event, origin, params, this);
 }
