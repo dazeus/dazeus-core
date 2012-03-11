@@ -27,9 +27,9 @@ std::string Server::toString(const Server *s)
 	return res.str();
 }
 
-Server::Server()
-: config_( 0 )
-, network_(0)
+Server::Server( const ServerConfig *c, Network *n )
+: config_(c)
+, network_(n)
 , irc_(0)
 , whois_identified_(false)
 {
@@ -74,18 +74,6 @@ void Server::disconnectFromServer( Network::DisconnectReason reason )
 }
 
 
-/**
- * @brief Create a Server from a given ServerConfig.
- */
-Server *Server::fromServerConfig( const ServerConfig *c, Network *n )
-{
-	Server *s = new Server;
-	s->config_ = c;
-	s->network_ = n;
-	return s;
-}
-
-
 std::string Server::motd() const
 {
 	fprintf(stderr, "MOTD cannot be retrieved.\n");
@@ -116,7 +104,8 @@ void Server::join( const std::string &channel, const std::string &key ) {
 	irc_cmd_join(irc_, channel.c_str(), key.c_str());
 }
 
-void Server::part( const std::string &channel, const std::string &reason ) {
+void Server::part( const std::string &channel, const std::string &) {
+	// TODO: also use "reason" here (patch libircclient for this)
 	irc_cmd_part(irc_, channel.c_str());
 }
 
@@ -226,7 +215,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 
 	// for now, keep these std::strings:
 	std::string origin = std::string(o);
-	int exclamMark = origin.find('!');
+	size_t exclamMark = origin.find('!');
 	if(exclamMark != std::string::npos) {
 		origin = origin.substr(0, exclamMark);
 	}
@@ -269,8 +258,6 @@ void Server::connectToServer()
 	callbacks.event_channel = irc_callback;
 	callbacks.event_privmsg = irc_callback;
 	callbacks.event_notice = irc_callback;
-	// TODO
-	//callbacks.event_channel_notice = irc_callback;
 	callbacks.event_invite = irc_callback;
 	callbacks.event_ctcp_req = irc_callback;
 	callbacks.event_ctcp_rep = irc_callback;

@@ -24,12 +24,10 @@ struct ServerConfig;
 class Server
 {
 
-private:
-	   Server();
 
 public:
+	  Server(const ServerConfig *c, Network *n);
 	  ~Server();
-	static Server *fromServerConfig( const ServerConfig *c, Network *n );
 	const ServerConfig *config() const;
 	std::string motd() const;
 	void addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd);
