@@ -33,8 +33,6 @@ namespace Irc {
 		inline const std::string &receiver() const { return receiver_; }
 
 		Buffer(Server *s) : session_(s) {}
-
-		void message(const std::string &message);
 	};
 };
 

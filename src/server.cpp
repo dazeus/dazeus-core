@@ -142,10 +142,6 @@ void Server::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
 void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
 	irc_process_select_descriptors(irc_, in_set, out_set);
 }
-void Irc::Buffer::message(const std::string &message) {
-	assert(receiver_.length() > 0);
-	session_->message(receiver_, message);
-}
 
 void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 	const std::vector<std::string> &args, Irc::Buffer *buf )
