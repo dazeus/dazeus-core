@@ -144,9 +144,8 @@ void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
 }
 
 void Server::slotNumericMessageReceived( const std::string &origin, uint code,
-	const std::vector<std::string> &args, Irc::Buffer *buf )
+	const std::vector<std::string> &args )
 {
-	assert( buf != 0 );
 	assert( network_ != 0 );
 	assert( network_->activeServer() == this );
 	// Also send out some other interesting events
@@ -161,11 +160,11 @@ void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 	}
 	else if(code == 318)
 	{
-		network_->slotWhoisReceived( origin, in_whois_for_, whois_identified_, buf );
+		network_->slotWhoisReceived( origin, in_whois_for_, whois_identified_ );
 		std::vector<std::string> parameters;
 		parameters.push_back(in_whois_for_);
 		parameters.push_back(whois_identified_ ? "true" : "false");
-		network_->slotIrcEvent( "WHOIS", origin, parameters, buf );
+		network_->slotIrcEvent( "WHOIS", origin, parameters );
 		whois_identified_ = false;
 		in_whois_for_.clear();
 	}
@@ -181,13 +180,13 @@ void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 	}
 	else if(code == 366)
 	{
-		network_->slotNamesReceived( origin, args.at(1), in_names_, buf );
+		network_->slotNamesReceived( origin, args.at(1), in_names_, args.at(0) );
 		std::vector<std::string> parameters;
 		parameters.push_back(args.at(1));
 		foreach(std::string name, in_names_) {
 			parameters.push_back(name);
 		}
-		network_->slotIrcEvent( "NAMES", origin, parameters, buf );
+		network_->slotIrcEvent( "NAMES", origin, parameters );
 		in_names_.clear();
 	}
 	std::stringstream codestream;
@@ -197,7 +196,7 @@ void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 	foreach(std::string arg, args) {
 		params.push_back(arg);
 	}
-	network_->slotIrcEvent( "NUMERIC", origin, params, buf );
+	network_->slotIrcEvent( "NUMERIC", origin, params );
 }
 
 void Server::slotDisconnected()
@@ -205,12 +204,11 @@ void Server::slotDisconnected()
 	network_->onFailedConnection();
 }
 
-void Server::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &args, Irc::Buffer *buf)
+void Server::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &args)
 {
-	assert(buf != 0);
 	assert(network_ != 0);
 	assert(network_->activeServer() == this);
-	network_->slotIrcEvent(event, origin, args, buf);
+	network_->slotIrcEvent(event, origin, args);
 }
 
 void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *origin, const char **p, unsigned int count) {
@@ -220,8 +218,7 @@ void irc_eventcode_callback(irc_session_t *s, unsigned int event, const char *or
 	for(unsigned int i = 0; i < count; ++i) {
 		params.push_back(std::string(p[i]));
 	}
-	Irc::Buffer *b = new Irc::Buffer(server);
-	server->slotNumericMessageReceived(std::string(origin), event, params, b);
+	server->slotNumericMessageReceived(std::string(origin), event, params);
 }
 
 void irc_callback(irc_session_t *s, const char *e, const char *o, const char **params, unsigned int count) {
@@ -229,7 +226,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	assert(server->getIrc() == s);
 
 	std::string event(e);
-	Irc::Buffer *b = new Irc::Buffer(server);
 	// From libircclient docs, but CHANNEL_NOTICE is bullshit...
 	if(event == "CHANNEL_NOTICE") {
 		event = "NOTICE";
@@ -246,9 +242,6 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	for(unsigned int i = 0; i < count; ++i) {
 		arguments.push_back(std::string(params[i]));
 	}
-	if(arguments.size() >= 1) {
-		b->setReceiver(arguments[0]);
-	}
 
 #ifdef DEBUG
 	fprintf(stderr, "%s - %s from %s\n", server->toString().c_str, event.c_str(), origin.c_str());
@@ -262,7 +255,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 		printf("Connected to server: %s\n", Server::toString(server).c_str());
 	}
 
-	server->slotIrcEvent(event, origin, arguments, b);
+	server->slotIrcEvent(event, origin, arguments);
 }
 
 void Server::run()
