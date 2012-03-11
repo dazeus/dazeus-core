@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[])
 {
-    fprintf(stderr, "DaZeus version: %s", DAZEUS_VERSION_STR);
+    fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
     unsigned int high, low;
     irc_get_version(&high, &low);
     fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
