@@ -94,30 +94,24 @@ std::vector<std::string> Network::joinedChannels() const
  * links to via the NetworkConfig, if there is such a NetworkConfig object.
  * You must give two servers of the same Network.
  */
-bool serverNicenessLessThan( const ServerConfig *c1, const ServerConfig *c2 )
-{
-  int var1 = c1->priority;
-  int var2 = c2->priority;
+struct ServerSorter {
+	private:
+	Network *n_;
 
-  Network *n;
+	public:
+	ServerSorter(Network *n) : n_(n) {}
+	bool operator()(const ServerConfig *c1, const ServerConfig *c2) {
+		assert(c1->network == c2->network);
+		assert(c1->network == n_->config());
 
-  // if no network is configured for either, we're done
-  if( c1->network == 0 || c2->network == 0 )
-    goto ready;
+		int prio1 = c1->priority - n_->serverUndesirability(c1);
+		int prio2 = c2->priority - n_->serverUndesirability(c2);
 
-  // otherwise, look at server undesirability (failure rate) too
-  n = Network::fromNetworkConfig( c1->network, 0 );
-  assert( n == Network::fromNetworkConfig( c2->network, 0 ) );
-
-  var1 -= n->serverUndesirability( c1 );
-  var2 -= n->serverUndesirability( c2 );
-
-ready:
-  // If the priorities are equal, randomise the order.
-  if( var1 == var2 )
-    return (qrand() % 2) == 0 ? -1 : 1;
-  return var1 < var2;
-}
+		if( prio1 == prio2 ) // choose randomly
+			return (qrand() % 2) == 0 ? -1 : 1;
+		return prio1 < prio2;
+	}
+};
 
 const NetworkConfig *Network::config() const
 {
@@ -143,7 +137,7 @@ void Network::connectToNetwork( bool reconnect )
 
   // First, sort the list by priority and earlier failures
   std::vector<ServerConfig*> sortedServers = servers();
-  std::sort( sortedServers.begin(), sortedServers.end(), serverNicenessLessThan );
+  std::sort( sortedServers.begin(), sortedServers.end(), ServerSorter(this) );
 
   // Then, take the first one and create a Server around it
   ServerConfig *best = sortedServers[0];
