@@ -21,12 +21,12 @@
 struct ServerConfig;
 
 struct NetworkConfig {
-  QString name;
-  QString displayName;
-  QString nickName;
-  QString userName;
-  QString fullName;
-  QString password;
+  std::string name;
+  std::string displayName;
+  std::string nickName;
+  std::string userName;
+  std::string fullName;
+  std::string password;
   std::vector<ServerConfig*> servers;
   bool autoConnect;
 };

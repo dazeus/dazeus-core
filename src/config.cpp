@@ -197,19 +197,19 @@ const std::list<NetworkConfig*> &Config::networks()
       }
 
       NetworkConfig *nc = new NetworkConfig;
-      nc->name          = networkName;
+      nc->name          = networkName.toStdString();
       nc->displayName   = settings_->value(category + rw("/displayname"),
-                                           networkName).toString();
+                                           networkName).toString().toStdString();
       nc->autoConnect   = settings_->value(category + rw("/autoconnect"),
                                            false).toBool();
       nc->nickName      = settings_->value(category + rw("/nickname"),
-                                           defaultNickname).toString();
+                                           defaultNickname).toString().toStdString();
       nc->userName      = settings_->value(category + rw("/username"),
-                                           defaultUsername).toString();
+                                           defaultUsername).toString().toStdString();
       nc->fullName      = settings_->value(category + rw("/fullname"),
-                                           defaultFullname).toString();
+                                           defaultFullname).toString().toStdString();
       nc->password      = settings_->value(category + rw("/password"),
-                                           QString()).toString();
+                                           QString()).toString().toStdString();
 
       networks.insert(networkName, nc);
     }

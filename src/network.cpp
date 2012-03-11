@@ -20,7 +20,7 @@ std::string Network::toString(const Network *n)
 		res << "0";
 	} else {
 		const NetworkConfig *nc = n->config();
-		res << nc->displayName.toStdString() << ":" << Server::toString(n->activeServer());
+		res << nc->displayName << ":" << Server::toString(n->activeServer());
 	}
 	res << "]";
 
@@ -129,8 +129,8 @@ void Network::connectToNetwork( bool reconnect )
   // Check if there *is* a server to use
   if( servers().size() == 0 )
   {
-    qWarning() << "Trying to connect to network" << config_->displayName
-               << "but there are no servers to connect to!";
+    printf("Trying to connect to network '%s', but there are no servers to connect to!\n",
+      config_->displayName.c_str());
     return;
   }
 
@@ -339,7 +339,7 @@ User *Network::user()
 {
   if( me_ == 0 )
   {
-    me_ = new User( config_->nickName.toStdString(), config_->nickName.toStdString(),
+    me_ = new User( config_->nickName, config_->nickName,
                     "__local__", this );
   }
 
@@ -350,7 +350,7 @@ User *Network::user()
 
 std::string Network::networkName() const
 {
-  return config()->name.toStdString();
+  return config()->name;
 }
 
 
