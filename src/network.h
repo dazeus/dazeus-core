@@ -24,9 +24,9 @@ class Network
   friend class Server;
 
   public:
+                    Network( const NetworkConfig *c, PluginComm *p );
                    ~Network();
 
-    static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
     static std::string toString(const Network *n);
 
     enum DisconnectReason {
@@ -64,7 +64,6 @@ class Network
   private:
     void connectToServer( ServerConfig *conf, bool reconnect );
 
-                          Network( const std::string &name );
     Server               *activeServer_;
     const NetworkConfig  *config_;
     std::map<const ServerConfig*,int> undesirables_;
