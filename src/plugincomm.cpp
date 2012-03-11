@@ -33,6 +33,7 @@
 #include "config.h"
 #include "dazeus.h"
 #include "database.h"
+#include "utils.h"
 
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
@@ -332,7 +333,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		foreach(int i, sockets_.keys()) {
 			SocketInfo &info = sockets_[i];
 			if(info.commandMightNeedWhois(cmd->command)
-			&& !cmd->network.isIdentified(cmd->origin)) {
+			&& !cmd->network.isIdentified(cmd->origin.toStdString())) {
 				whoisRequired = true;
 			}
 		}
@@ -341,7 +342,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// command when the identified command comes in
 		if(whoisRequired && nick != cmd->origin) {
 			if(!cmd->whoisSent) {
-				cmd->network.sendWhois(cmd->origin);
+				cmd->network.sendWhois(cmd->origin.toStdString());
 				cmd->whoisSent = true;
 			}
 			continue;
@@ -350,18 +351,18 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// We either don't require whois for this command, or the
 		// whois status of the sender is known at this point (either
 		// saved in the network, or in the 'identified' variable).
-		Q_ASSERT(!whoisRequired || cmd->network.isIdentified(cmd->origin)
+		Q_ASSERT(!whoisRequired || cmd->network.isIdentified(cmd->origin.toStdString())
 		       || nick == cmd->origin);
 
 		QStringList parameters;
-		parameters << cmd->network.networkName() << cmd->origin
+		parameters << QString::fromStdString(cmd->network.networkName()) << cmd->origin
 		           << cmd->channel << cmd->command << cmd->fullArgs
 		           << cmd->args;
 
 		foreach(int i, sockets_.keys()) {
 			SocketInfo &info = sockets_[i];
 			if(!info.isSubscribedToCommand(cmd->command, cmd->channel, cmd->origin,
-				cmd->network.isIdentified(cmd->origin) || identified, cmd->network)) {
+				cmd->network.isIdentified(cmd->origin.toStdString()) || identified, cmd->network)) {
 				continue;
 			}
 
@@ -435,11 +436,20 @@ void PluginComm::messageReceived( const QString &origin, const QString &message,
 			flushCommandQueue();
 		}
 	}
-	dispatch("PRIVMSG", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message << (n->isIdentified(origin) ? "true" : "false"));
+	dispatch("PRIVMSG", QStringList() << QString::fromStdString(n->networkName()) << origin
+	   << QString::fromStdString(buffer->receiver()) << message
+	   << (n->isIdentified(origin.toStdString()) ? "true" : "false"));
 }
 
-void PluginComm::ircEvent(const QString &event, const QString &origin, const QStringList &params, Irc::Buffer *buffer) {
+void PluginComm::ircEvent(const std::string &e, const std::string &o, const std::vector<std::string> &p, Irc::Buffer *buffer) {
+	QString event = QString::fromStdString(e);
+	QString origin = QString::fromStdString(o);
+	QStringList params;
+	for(unsigned int i = 0; i < p.size(); ++i ) {
+		params << QString::fromStdString(p[i]);
+	}
 	Network *n = Network::fromBuffer(buffer);
+	QString networkName = QString::fromStdString(n->networkName());
 	Q_ASSERT(n != 0);
 #define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event << ":" << params; return; }
 	if(event == "PRIVMSG") {
@@ -447,81 +457,81 @@ void PluginComm::ircEvent(const QString &event, const QString &origin, const QSt
 		messageReceived(origin, params[1], buffer);
 	} else if(event == "NOTICE") {
 		MIN(2);
-		dispatch("NOTICE", QStringList() << n->networkName() << origin
+		dispatch("NOTICE", QStringList() << networkName << origin
 		   << QString::fromStdString(buffer->receiver()) << params[1]
-		   << (n->isIdentified(origin) ? "true" : "false"));
+		   << (n->isIdentified(origin.toStdString()) ? "true" : "false"));
 	} else if(event == "MODE" || event == "UMODE") {
 		MIN(1);
-		dispatch("MODE", QStringList() << n->networkName() << origin << params);
+		dispatch("MODE", QStringList() << networkName << origin << params);
 	} else if(event == "NICK") {
 		MIN(1);
-		dispatch("NICK", QStringList() << n->networkName() << origin << params[0]);
+		dispatch("NICK", QStringList() << networkName << origin << params[0]);
 	} else if(event == "JOIN") {
 		MIN(1);
-		dispatch("JOIN", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()));
+		dispatch("JOIN", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()));
 	} else if(event == "PART") {
 		MIN(1);
 		QString message;
 		if(params.size() == 2)
 			message = params[1];
-		dispatch("PART", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message);
+		dispatch("PART", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()) << message);
 	} else if(event == "KICK") {
 		MIN(2);
 		QString nick = params[1];
 		QString message;
 		if(params.size() == 3)
 			message = params[2];
-		dispatch("KICK", QStringList() << n->networkName() << origin << params[0] << nick << message);
+		dispatch("KICK", QStringList() << networkName << origin << params[0] << nick << message);
 	} else if(event == "INVITE") {
 		MIN(2);
 		QString channel  = params[1];
-		dispatch("INVITE", QStringList() << n->networkName() << origin << channel);
+		dispatch("INVITE", QStringList() << networkName << origin << channel);
 	} else if(event == "QUIT") {
 		QString message;
 		if(params.size() == 1)
 			message = params[0];
-		dispatch("QUIT", QStringList() << n->networkName() << origin << message);
+		dispatch("QUIT", QStringList() << networkName << origin << message);
 	} else if(event == "TOPIC") {
 		MIN(1);
 		QString topic;
 		if(params.size() > 1)
 			topic = params[1];
-		dispatch("TOPIC", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << topic);
+		dispatch("TOPIC", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()) << topic);
 	} else if(event == "CONNECT") {
-		dispatch("CONNECT", QStringList() << n->networkName());
+		dispatch("CONNECT", QStringList() << networkName);
 	} else if(event == "DISCONNECT") {
-		dispatch("DISCONNECT", QStringList() << n->networkName());
+		dispatch("DISCONNECT", QStringList() << networkName);
 	} else if(event == "CTCP_REQ" || event == "CTCP") {
 		MIN(1);
 		// TODO: libircclient does not seem to tell us where the ctcp
 		// request was sent (user or channel), so just assume it was
 		// sent to our nick
 		QString to = QString::fromStdString(n->user()->nick());
-		dispatch("CTCP", QStringList() << n->networkName() << origin << to << params[0]);
+		dispatch("CTCP", QStringList() << networkName << origin << to << params[0]);
 	} else if(event == "CTCP_REP") {
 		MIN(1);
 		// TODO: see above
 		QString to = QString::fromStdString(n->user()->nick());
-		dispatch("CTCP_REP", QStringList() << n->networkName() << origin << to << params[0]);
+		dispatch("CTCP_REP", QStringList() << networkName << origin << to << params[0]);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
 		MIN(1);
 		QString message;
 		if(params.size() >= 2)
 			message = params[1];
-		dispatch("ACTION", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << message);
+		dispatch("ACTION", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()) << message);
 	} else if(event == "WHOIS") {
 		MIN(2);
-		dispatch("WHOIS", QStringList() << n->networkName() << origin << params[0] << params[1]);
+		dispatch("WHOIS", QStringList() << networkName << origin << params[0] << params[1]);
 		flushCommandQueue(params[0], params[1] == "true");
 	} else if(event == "NAMES") {
 		MIN(2);
-		dispatch("NAMES", QStringList() << n->networkName() << origin << params);
+		dispatch("NAMES", QStringList() << networkName << origin << params);
 	} else if(event == "NUMERIC") {
 		MIN(1);
-		dispatch("NUMERIC", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << params);
+		dispatch("NUMERIC", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()) << params);
 	} else {
 		qDebug() << "Unknown event: " << n << event << origin << QString::fromStdString(buffer->receiver()) << params;
-		dispatch("UNKNOWN", QStringList() << n->networkName() << origin << QString::fromStdString(buffer->receiver()) << event << params);
+		dispatch("UNKNOWN", QStringList() << networkName << origin << QString::fromStdString(buffer->receiver()) << event << params);
 	}
 #undef MIN
 }
@@ -579,7 +589,7 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 		JSONNode nets(JSON_ARRAY);
 		nets.set_name("networks");
 		foreach(const Network *n, networks) {
-			nets.push_back(JSONNode("", libjson::to_json_string(n->networkName().toStdString())));
+			nets.push_back(JSONNode("", libjson::to_json_string(n->networkName())));
 		}
 		response.push_back(nets);
 	// REQUESTS ON A NETWORK
@@ -597,7 +607,7 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
 		Network *net = 0;
 		foreach(Network *n, networks) {
-			if(n->networkName() == network) {
+			if(n->networkName() == network.toStdString()) {
 				net = n; break;
 			}
 		}
@@ -609,9 +619,9 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 				response.push_back(JSONNode("success", true));
 				JSONNode chans(JSON_ARRAY);
 				chans.set_name("channels");
-				const QList<QString> &channels = net->joinedChannels();
-				Q_FOREACH(const QString &chan, channels) {
-					chans.push_back(JSONNode("", libjson::to_json_string(chan.toStdString())));
+				const std::vector<std::string> &channels = net->joinedChannels();
+				for(unsigned i = 0; i < channels.size(); ++i) {
+					chans.push_back(JSONNode("", libjson::to_json_string(channels[i])));
 				}
 				response.push_back(chans);
 			} else if(action == "whois" || action == "join" || action == "part") {
@@ -621,11 +631,11 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 				} else {
 					response.push_back(JSONNode("success", true));
 					if(action == "whois") {
-						net->sendWhois(params[1]);
+						net->sendWhois(params[1].toStdString());
 					} else if(action == "join") {
-						net->joinChannel(params[1]);
+						net->joinChannel(params[1].toStdString());
 					} else if(action == "part") {
-						net->leaveChannel(params[1]);
+						net->leaveChannel(params[1].toStdString());
 					} else {
 						Q_ASSERT(false);
 						return;
@@ -662,16 +672,16 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 
 		bool netfound = false;
 		foreach(Network *n, networks) {
-			if(n->networkName() == network) {
+			if(n->networkName() == network.toStdString()) {
 				netfound = true;
-				if(receiver.left(1) != "#" || n->joinedChannels().contains(receiver.toLower())) {
+				if(receiver.left(1) != "#" || contains(n->joinedChannels(), receiver.toLower().toStdString())) {
 					response.push_back(JSONNode("success", true));
 					if(action == "names") {
-						n->names(receiver);
+						n->names(receiver.toStdString());
 					} else if(action == "message") {
-						n->say(receiver, message);
+						n->say(receiver.toStdString(), message.toStdString());
 					} else {
-						n->action(receiver, message);
+						n->action(receiver.toStdString(), message.toStdString());
 					}
 				} else {
 					qWarning() << "Request for communication to network " << network
@@ -721,7 +731,7 @@ void PluginComm::handle(int dev, const QByteArray &line, SocketInfo &info) {
 			Network *net = 0;
 			if(params.size() > 0) {
 				foreach(Network *n, networks) {
-					if(n->networkName() == params.at(0)) {
+					if(n->networkName() == params.at(0).toStdString()) {
 						net = n; break;
 					}
 				}

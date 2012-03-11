@@ -10,6 +10,7 @@
 #include <QtCore/QString>
 #include <QtCore/QList>
 #include <QtCore/QSettings>
+#include <vector>
 
 /**
  * These structs are only for configuration as it is in the configuration
@@ -26,7 +27,7 @@ struct NetworkConfig {
   QString userName;
   QString fullName;
   QString password;
-  QList<ServerConfig*> servers;
+  std::vector<ServerConfig*> servers;
   bool autoConnect;
 };
 

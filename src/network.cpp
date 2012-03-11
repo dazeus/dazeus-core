@@ -12,38 +12,33 @@
 
 // #define DEBUG
 
-QHash<QString, Network*> Network::networks_;
+std::map<std::string, Network*> Network::networks_;
 
-QDebug operator<<(QDebug dbg, const Network &n)
+std::string Network::toString(const Network *n)
 {
-  return operator<<( dbg, &n );
-}
+	std::stringstream res;
+	res << "Network[";
+	if(n  == 0) {
+		res << "0";
+	} else {
+		const NetworkConfig *nc = n->config();
+		res << nc->displayName.toStdString() << ":" << Server::toString(n->activeServer());
+	}
+	res << "]";
 
-QDebug operator<<(QDebug dbg, const Network *n)
-{
-  dbg.nospace() << "Network[";
-  if( n == 0 ) {
-    dbg.nospace() << "0";
-  } else {
-    const NetworkConfig *nc = n->config();
-    dbg.nospace() << nc->displayName << "," << n->activeServer();
-  }
-  dbg.nospace() << "]";
-
-  return dbg.maybeSpace();
+	return res.str();
 }
 
 /**
  * @brief Constructor.
  */
-Network::Network( const QString &name )
-: QObject()
-, activeServer_(0)
+Network::Network( const std::string &name )
+: activeServer_(0)
 , config_(0)
 , me_(0)
 {
-  Q_ASSERT( !networks_.contains( name ) );
-  networks_.insert( name, this );
+  assert( !contains(networks_, name) );
+  networks_[name] = this;
 }
 
 
@@ -53,8 +48,8 @@ Network::Network( const QString &name )
 Network::~Network()
 {
   disconnectFromNetwork();
-  Q_ASSERT( networks_.contains( config_->name ) && getNetwork( config_->name.toStdString() ) == this );
-  networks_.remove( config_->name );
+  assert(contains(networks_, config_->name.toStdString()) && getNetwork( config_->name.toStdString() ) == this);
+  networks_.erase( config_->name.toStdString() );
 }
 
 
@@ -75,18 +70,28 @@ bool Network::autoConnectEnabled() const
   return config_->autoConnect;
 }
 
-void Network::action( QString destination, QString message )
+void Network::action( std::string destination, std::string message )
 {
   if( !activeServer_ )
     return;
-  activeServer_->ctcpAction( destination.toStdString(), message.toStdString() );
+  activeServer_->ctcpAction( destination, message );
 }
 
-void Network::names( QString channel )
+void Network::names( std::string channel )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->names( channel.toStdString() );
+  return activeServer_->names( channel );
+}
+
+std::vector<std::string> Network::joinedChannels() const
+{
+	std::vector<std::string> res;
+	std::map<std::string,std::vector<std::string> >::const_iterator it;
+	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
+		res.push_back(it->first);
+	}
+	return res;
 }
 
 /**
@@ -109,7 +114,7 @@ bool serverNicenessLessThan( const ServerConfig *c1, const ServerConfig *c2 )
 
   // otherwise, look at server undesirability (failure rate) too
   n = Network::fromNetworkConfig( c1->network, 0 );
-  Q_ASSERT( n == Network::fromNetworkConfig( c2->network, 0 ) );
+  assert( n == Network::fromNetworkConfig( c2->network, 0 ) );
 
   var1 -= n->serverUndesirability( c1 );
   var2 -= n->serverUndesirability( c2 );
@@ -131,10 +136,10 @@ void Network::connectToNetwork( bool reconnect )
   if( !reconnect && activeServer_ )
     return;
 
-  qDebug() << "Connecting to network: " << this;
+  printf("Connecting to network: %s\n", Network::toString(this).c_str());
 
   // Check if there *is* a server to use
-  if( servers().count() == 0 )
+  if( servers().size() == 0 )
   {
     qWarning() << "Trying to connect to network" << config_->displayName
                << "but there are no servers to connect to!";
@@ -144,8 +149,8 @@ void Network::connectToNetwork( bool reconnect )
   // Find the best server to use
 
   // First, sort the list by priority and earlier failures
-  QList<ServerConfig*> sortedServers = servers();
-  qSort( sortedServers.begin(), sortedServers.end(), serverNicenessLessThan );
+  std::vector<ServerConfig*> sortedServers = servers();
+  std::sort( sortedServers.begin(), sortedServers.end(), serverNicenessLessThan );
 
   // Then, take the first one and create a Server around it
   ServerConfig *best = sortedServers[0];
@@ -159,8 +164,8 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
 {
   if( !reconnect && activeServer_ )
     return;
-  Q_ASSERT(knownUsers_.isEmpty());
-  Q_ASSERT(identifiedUsers_.isEmpty());
+  assert(knownUsers_.size() == 0);
+  assert(identifiedUsers_.size() == 0);
 
   if( activeServer_ )
   {
@@ -173,45 +178,47 @@ void Network::connectToServer( ServerConfig *server, bool reconnect )
   activeServer_->connectToServer();
 }
 
-void Network::joinedChannel(const QString &user, Irc::Buffer *b)
+void Network::joinedChannel(const std::string &user, Irc::Buffer *b)
 {
-	User u(user.toStdString(), this);
-	if(u.isMe() && !knownUsers_.keys().contains(QString::fromStdString(strToLower(b->receiver())))) {
-		knownUsers_.insert(QString::fromStdString(strToLower(b->receiver())), QList<QString>());
+	User u(user, this);
+	if(u.isMe() && !contains(knownUsers_, strToLower(b->receiver()))) {
+		knownUsers_[strToLower(b->receiver())] = std::vector<std::string>();
 	}
-	if(!knownUsers_[QString::fromStdString(strToLower(b->receiver()))].contains(user.toLower()))
-		knownUsers_[QString::fromStdString(strToLower(b->receiver()))].append(user.toLower());
+	std::vector<std::string> users = knownUsers_[strToLower(b->receiver())];
+	if(!contains(users, strToLower(user)))
+		knownUsers_[strToLower(b->receiver())].push_back(strToLower(user));
 #ifdef DEBUG
-	qDebug() << "User " << user << " joined channel " << QString::fromStdString(b->receiver());
+	qDebug() << "User " << user << " joined channel " << b->receiver();
 	qDebug() << "knownUsers is now: " << knownUsers_;
 #endif
 }
 
-void Network::partedChannel(const QString &user, const QString &, Irc::Buffer *b)
+void Network::partedChannel(const std::string &user, const std::string &, Irc::Buffer *b)
 {
-	User u(user.toStdString(), this);
+	User u(user, this);
 	if(u.isMe()) {
-		knownUsers_.remove(QString::fromStdString(strToLower(b->receiver())));
+		knownUsers_.erase(strToLower(b->receiver()));
 	} else {
-		knownUsers_[QString::fromStdString(strToLower(b->receiver()))].removeAll(user.toLower());
+		erase(knownUsers_[strToLower(b->receiver())], strToLower(user));
 	}
 	if(!isKnownUser(u.nick())) {
-		identifiedUsers_.removeAll(QString::fromStdString(strToLower(u.nick())));
+		erase(identifiedUsers_, strToLower(u.nick()));
 	}
 #ifdef DEBUG
-	qDebug() << "User " << user << " left channel " << QString::fromStdString(b->receiver());
+	qDebug() << "User " << user << " left channel " << b->receiver();
 	qDebug() << "knownUsers is now: " << knownUsers_;
 	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
 #endif
 }
 
-void Network::slotQuit(const QString &origin, const QString&, Irc::Buffer *b)
+void Network::slotQuit(const std::string &origin, const std::string&, Irc::Buffer *b)
 {
-	foreach(const QString &channel, knownUsers_.keys()) {
-		knownUsers_[channel.toLower()].removeAll(origin.toLower());
+	std::map<std::string,std::vector<std::string> >::iterator it;
+	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
+		erase(it->second, strToLower(origin));
 	}
-	if(!isKnownUser(origin.toStdString())) {
-		identifiedUsers_.removeAll(origin.toLower());
+	if(!isKnownUser(origin)) {
+		erase(identifiedUsers_, strToLower(origin));
 	}
 #ifdef DEBUG
 	qDebug() << "User " << origin << " quit IRC.";
@@ -220,18 +227,20 @@ void Network::slotQuit(const QString &origin, const QString&, Irc::Buffer *b)
 #endif
 }
 
-void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer* )
+void Network::slotNickChanged( const std::string &origin, const std::string &nick, Irc::Buffer* )
 {
-	identifiedUsers_.removeAll(origin.toLower());
-	identifiedUsers_.removeAll(nick.toLower());
-	User u(origin.toStdString(), this);
+	erase(identifiedUsers_, strToLower(origin));
+	erase(identifiedUsers_, strToLower(nick));
+
+	User u(origin, this);
 	if(u.isMe()) {
-		user()->setNick(nick.toStdString());
+		user()->setNick(nick);
 	}
-	foreach(const QString &channel, knownUsers_.keys()) {
-		QStringList &users = knownUsers_[channel];
-		if(users.removeAll(origin.toLower())) {
-			users.append(nick.toLower());
+	std::map<std::string,std::vector<std::string> >::iterator it;
+	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
+		if(contains(it->second, strToLower(origin))) {
+			erase(it->second, strToLower(origin));
+			it->second.push_back(strToLower(nick));
 		}
 	}
 #ifdef DEBUG
@@ -241,19 +250,19 @@ void Network::slotNickChanged( const QString &origin, const QString &nick, Irc::
 #endif
 }
 
-void Network::kickedChannel(const QString&, const QString &user, const QString&, Irc::Buffer *b)
+void Network::kickedChannel(const std::string&, const std::string &user, const std::string&, Irc::Buffer *b)
 {
-	User u(user.toStdString(), this);
+	User u(user, this);
 	if(u.isMe()) {
-		knownUsers_.remove(QString::fromStdString(strToLower(b->receiver())));
+		knownUsers_.erase(strToLower(b->receiver()));
 	} else {
-		knownUsers_[QString::fromStdString(strToLower(b->receiver()))].removeAll(QString::fromStdString(strToLower(u.nick())));
+		erase(knownUsers_[strToLower(b->receiver())], strToLower(u.nick()));
 	}
 	if(!isKnownUser(u.nick())) {
-		identifiedUsers_.removeAll(QString::fromStdString(strToLower(u.nick())));
+		erase(identifiedUsers_, strToLower(u.nick()));
 	}
 #ifdef DEBUG
-	qDebug() << "User " << user << " was kicked from " << QString::fromStdString(b->receiver());
+	qDebug() << "User " << user << " was kicked from " << b->receiver();
 	qDebug() << "knownUsers is now: " << knownUsers_;
 	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
 #endif
@@ -267,7 +276,7 @@ void Network::onFailedConnection()
   knownUsers_.clear();
 
   Irc::Buffer *b = new Irc::Buffer(activeServer_);
-  plugins_->ircEvent("DISCONNECT", "", QStringList(), b);
+  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), b);
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
@@ -278,11 +287,11 @@ void Network::onFailedConnection()
 }
 
 
-void Network::ctcp( QString destination, QString message )
+void Network::ctcp( std::string destination, std::string message )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->ctcpAction( destination.toStdString(), message.toStdString() );
+  return activeServer_->ctcpAction( destination, message );
 }
 
 
@@ -309,16 +318,15 @@ void Network::disconnectFromNetwork( DisconnectReason reason )
  */
 Network *Network::fromBuffer( Irc::Buffer *b )
 {
-  // One of the Servers in one of the Networks in network_, is an
-  // Irc::Session that has created this buffer.
-  foreach( Network *n, networks_.values() )
-  {
-    if( n->activeServer() == b->session() )
-    {
-      return n;
-    }
-  }
-  return 0;
+	// One of the Servers in one of the Networks in network_, is an
+	// Irc::Session that has created this buffer.
+	std::map<std::string,Network*>::iterator it;
+	for(it = networks_.begin(); it != networks_.end(); ++it) {
+		if( it->second->activeServer() == b->session() ) {
+			return it->second;
+		}
+	}
+	return 0;
 }
 
 
@@ -327,13 +335,13 @@ Network *Network::fromBuffer( Irc::Buffer *b )
  */
 Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
 {
-  if( networks_.contains( c->name ) )
-    return networks_.value( c->name );
+	if(contains(networks_, c->name.toStdString()))
+		return networks_[c->name.toStdString()];
 
-  Network *n = new Network( c->name );
-  n->config_ = c;
-  n->plugins_ = p;
-  return n;
+	Network *n = new Network( c->name.toStdString() );
+	n->config_ = c;
+	n->plugins_ = p;
+	return n;
 }
 
 
@@ -342,41 +350,41 @@ Network *Network::fromNetworkConfig( const NetworkConfig *c, PluginComm *p )
  */
 Network *Network::getNetwork( const std::string &name )
 {
-  if( !networks_.contains( QString::fromStdString(name) ) )
-    return 0;
-  return networks_.value( QString::fromStdString(name) );
+	if( !contains(networks_, name) )
+		return 0;
+	return networks_[name];
 }
 
-void Network::joinChannel( QString channel )
+void Network::joinChannel( std::string channel )
 {
   if( !activeServer_ )
     return;
-  return activeServer_->join( channel.toStdString() );
+  return activeServer_->join( channel );
 }
 
 
-void Network::leaveChannel( QString channel )
+void Network::leaveChannel( std::string channel )
 {
   if( !activeServer_ )
     return;
-  activeServer_->part( channel.toStdString() );
+  activeServer_->part( channel );
 }
 
 
-void Network::say( QString destination, QString message )
+void Network::say( std::string destination, std::string message )
 {
   if( !activeServer_ )
     return;
-  activeServer_->message( destination.toStdString(), message.toStdString() );
+  activeServer_->message( destination, message );
 }
 
 
-void Network::sendWhois( QString destination )
+void Network::sendWhois( std::string destination )
 {
-  activeServer_->whois(destination.toStdString());
+  activeServer_->whois(destination);
 }
 
-const QList<ServerConfig*> &Network::servers() const
+const std::vector<ServerConfig*> &Network::servers() const
 {
   return config_->servers;
 }
@@ -395,37 +403,38 @@ User *Network::user()
 
 
 
-QString Network::networkName() const
+std::string Network::networkName() const
 {
-  return config()->name;
+  return config()->name.toStdString();
 }
 
 
 
 int Network::serverUndesirability( const ServerConfig *sc ) const
 {
-  return undesirables_.contains(sc) ? undesirables_.value(sc) : 0;
+	return contains(undesirables_, sc) ? undesirables_.find(sc)->second : 0;
 }
 
 void Network::flagUndesirableServer( const ServerConfig *sc )
 {
-  if( undesirables_.contains(sc) )
-    undesirables_.insert( sc, undesirables_.value(sc) + 1 );
-  undesirables_.insert( sc, 0 );
+	if(contains(undesirables_, sc))
+		undesirables_[sc] = undesirables_[sc] + 1;
+	undesirables_[sc] = 1;
 }
 
 void Network::serverIsActuallyOkay( const ServerConfig *sc )
 {
-  undesirables_.remove(sc);
+  undesirables_.erase(sc);
 }
 
-bool Network::isIdentified(const QString &user) const {
-	return identifiedUsers_.contains(user.toLower());
+bool Network::isIdentified(const std::string &user) const {
+	return contains(identifiedUsers_, strToLower(user));
 }
 
 bool Network::isKnownUser(const std::string &user) const {
-	foreach(const QString &chan, knownUsers_.keys()) {
-		if(knownUsers_[chan.toLower()].contains(QString::fromStdString(strToLower(user)))) {
+	std::map<std::string,std::vector<std::string> >::const_iterator it;
+	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
+		if(contains(it->second, strToLower(user))) {
 			return true;
 		}
 	}
@@ -434,19 +443,19 @@ bool Network::isKnownUser(const std::string &user) const {
 
 void Network::slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified, Irc::Buffer *buf) {
 	if(!identified) {
-		identifiedUsers_.removeAll(QString::fromStdString(strToLower(nick)));
-	} else if(identified && !identifiedUsers_.contains(QString::fromStdString(strToLower(nick))) && isKnownUser(nick)) {
-		identifiedUsers_.append(QString::fromStdString(strToLower(nick)));
+		erase(identifiedUsers_, strToLower(nick));
+	} else if(identified && !contains(identifiedUsers_, strToLower(nick)) && isKnownUser(nick)) {
+		identifiedUsers_.push_back(strToLower(nick));
 	}
 #ifdef DEBUG
-	qDebug() << "Whois received for"<< QString::fromStdString(nick) <<"; identifiedUsers_ is now:";
+	qDebug() << "Whois received for"<< nick <<"; identifiedUsers_ is now:";
 	qDebug() << identifiedUsers_;
 #endif
 }
 
 void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, Irc::Buffer *buf ) {
-	Q_ASSERT(knownUsers_.keys().contains(QString::fromStdString(strToLower(channel))));
-	QStringList &users = knownUsers_[QString::fromStdString(strToLower(channel))];
+	assert(contains(knownUsers_, strToLower(channel)));
+	std::vector<std::string> &users = knownUsers_[strToLower(channel)];
 	foreach(std::string n, names) {
 		unsigned int nickStart;
 		for(nickStart = 0; nickStart < n.length(); ++nickStart) {
@@ -456,45 +465,39 @@ void Network::slotNamesReceived(const std::string&, const std::string &channel, 
 			}
 		}
 		n = n.substr(nickStart);
-		if(!users.contains(QString::fromStdString(strToLower(n))))
-			users.append(QString::fromStdString(strToLower(n)));
+		if(!contains(users, strToLower(n)))
+			users.push_back(strToLower(n));
 	}
 #ifdef DEBUG
-	qDebug() << "Names received for" << QString::fromStdString(channel) << "; knownUsers_ is now:";
+	qDebug() << "Names received for" << channel << "; knownUsers_ is now:";
 	qDebug() << knownUsers_;
 #endif
 }
 
 void Network::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Irc::Buffer *buf) {
 #define MIN(a) if(params.size() < a) { fprintf(stderr, "Too few parameters for event %s\n", event.c_str()); return; }
-#define S(a) QString::fromStdString(a)
 	if(event == "CONNECT") {
 		serverIsActuallyOkay(activeServer_->config());
 	} else if(event == "JOIN") {
 		MIN(1);
-		joinedChannel(S(origin), buf);
+		joinedChannel(origin, buf);
 	} else if(event == "PART") {
 		MIN(1);
-		partedChannel(S(origin), QString(), buf);
+		partedChannel(origin, std::string(), buf);
 	} else if(event == "KICK") {
 		MIN(2);
-		kickedChannel(S(origin), S(params[1]), QString(), buf);
+		kickedChannel(origin, params[1], std::string(), buf);
 	} else if(event == "QUIT") {
-		QString message;
+		std::string message;
 		if(params.size() > 0) {
-			message = S(params[0]);
+			message = params[0];
 		}
-		slotQuit(S(origin), message, buf);
+		slotQuit(origin, message, buf);
 	} else if(event == "NICK") {
 		MIN(1);
-		slotNickChanged(S(origin), S(params[0]), buf);
+		slotNickChanged(origin, params[0], buf);
 	}
 #undef MIN
-	Q_ASSERT(plugins_ != 0);
-	QStringList qParams;
-	for(unsigned int i = 0; i < params.size(); ++i) {
-		qParams.append(S(params[i]));
-	}
-	plugins_->ircEvent(S(event), S(origin), qParams, buf);
-#undef S
+	assert(plugins_ != 0);
+	plugins_->ircEvent(event, origin, params, buf);
 }

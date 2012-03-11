@@ -52,7 +52,7 @@ DaZeus::~DaZeus()
   foreach( Network *n, networks_ )
   {
     n->disconnectFromNetwork( Network::ShutdownReason );
-    n->deleteLater();
+    delete n;
   }
   networks_.clear();
 

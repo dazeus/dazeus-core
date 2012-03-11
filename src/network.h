@@ -6,10 +6,6 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <QtCore/QObject>
-#include <QtCore/QList>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
 #include <QtCore/QHash>
 #include <QtCore/QMap>
 
@@ -24,17 +20,13 @@ class PluginComm;
 struct ServerConfig;
 struct NetworkConfig;
 
-QDebug operator<<(QDebug, const Network &);
-QDebug operator<<(QDebug, const Network *);
-
 namespace Irc
 {
   class Buffer;
 };
 
-class Network : public QObject
+class Network
 {
-  Q_OBJECT
 
   friend class Server;
 
@@ -44,6 +36,7 @@ class Network : public QObject
     static Network *fromNetworkConfig( const NetworkConfig *c, PluginComm *p );
     static Network *getNetwork( const std::string &name );
     static Network *fromBuffer( Irc::Buffer *b );
+    static std::string toString(const Network *n);
 
     enum DisconnectReason {
       UnknownReason,
@@ -55,55 +48,48 @@ class Network : public QObject
     };
 
     bool                        autoConnectEnabled() const;
-    const QList<ServerConfig*> &servers() const;
+    const std::vector<ServerConfig*> &servers() const;
     User                       *user();
     Server                     *activeServer() const;
     const NetworkConfig        *config() const;
     int                         serverUndesirability( const ServerConfig *sc ) const;
-    QString                     networkName() const;
-    QList<QString>              joinedChannels() const { return knownUsers_.keys(); }
-    bool                        isIdentified(const QString &user) const;
+    std::string                 networkName() const;
+    std::vector<std::string>    joinedChannels() const; // knownUsers_.keys()
+    bool                        isIdentified(const std::string &user) const;
     bool                        isKnownUser(const std::string &user) const;
 
     void connectToNetwork( bool reconnect = false );
     void disconnectFromNetwork( DisconnectReason reason = UnknownReason );
-    void joinChannel( QString channel );
-    void leaveChannel( QString channel );
-    void say( QString destination, QString message );
-    void action( QString destination, QString message );
-    void names( QString channel );
-    void ctcp( QString destination, QString message );
-    void sendWhois( QString destination );
+    void joinChannel( std::string channel );
+    void leaveChannel( std::string channel );
+    void say( std::string destination, std::string message );
+    void action( std::string destination, std::string message );
+    void names( std::string channel );
+    void ctcp( std::string destination, std::string message );
+    void sendWhois( std::string destination );
     void flagUndesirableServer( const ServerConfig *sc );
     void serverIsActuallyOkay( const ServerConfig *sc );
 
   private:
     void connectToServer( ServerConfig *conf, bool reconnect );
-    bool disconnect( const QObject *sender, const char *signal,
-      const QObject *receiver, const char *method )
-    { return QObject::disconnect( sender, signal, receiver, method ); }
-    bool connect( const QObject *sender, const char *signal,
-      const QObject *receiver, const char *method,
-      Qt::ConnectionType type = Qt::AutoConnection )
-    { return QObject::connect( sender, signal, receiver, method, type ); }
 
-                          Network( const QString &name );
+                          Network( const std::string &name );
     Server               *activeServer_;
     const NetworkConfig  *config_;
-    static QHash<QString,Network*> networks_;
-    QHash<const ServerConfig*,int> undesirables_;
+    static std::map<std::string,Network*> networks_;
+    std::map<const ServerConfig*,int> undesirables_;
     User                 *me_;
-    QList<QString>        identifiedUsers_;
-    QMap<QString,QStringList> knownUsers_;
+    std::vector<std::string>        identifiedUsers_;
+    std::map<std::string,std::vector<std::string> > knownUsers_;
     PluginComm           *plugins_;
 
     void onFailedConnection();
-    void joinedChannel(const QString &user, Irc::Buffer *b);
-    void kickedChannel(const QString &user, const QString&, const QString&, Irc::Buffer *b);
-    void partedChannel(const QString &user, const QString &, Irc::Buffer *b);
-    void slotQuit(const QString &origin, const QString&, Irc::Buffer*);
+    void joinedChannel(const std::string &user, Irc::Buffer *b);
+    void kickedChannel(const std::string &user, const std::string&, const std::string&, Irc::Buffer *b);
+    void partedChannel(const std::string &user, const std::string &, Irc::Buffer *b);
+    void slotQuit(const std::string &origin, const std::string&, Irc::Buffer*);
     void slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified, Irc::Buffer *buf);
-    void slotNickChanged( const QString &origin, const QString &nick, Irc::Buffer *buffer );
+    void slotNickChanged( const std::string &origin, const std::string &nick, Irc::Buffer *buffer );
     void slotNamesReceived(const std::string&, const std::string&, const std::vector<std::string> &names, Irc::Buffer *buf );
     void slotIrcEvent(const std::string&, const std::string&, const std::vector<std::string>&, Irc::Buffer *buf);
 };
