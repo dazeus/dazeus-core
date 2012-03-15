@@ -96,7 +96,7 @@ void PluginComm::run() {
 	timeout.tv_usec = 0;
 	int socks = select(highest + 1, &sockets, &out_sockets, NULL, &timeout);
 	if(socks < 0) {
-		qWarning() << "select() failed: " << strerror(errno);
+		fprintf(stderr, "select() failed: %s\n", strerror(errno));
 		return;
 	}
 	else if(socks == 0) {
@@ -193,13 +193,13 @@ void PluginComm::init() {
 			hints = 0;
 
 			if(s != 0) {
-				qWarning() << "(PluginComm) Failed to resolve TCP address: " << (char*)gai_strerror(s);
+				fprintf(stderr, "(PluginComm) Failed to resolve TCP address: %s\n", (char*)gai_strerror(s));
 				continue;
 			}
 
 			int server = ::socket(AF_INET, SOCK_STREAM, 0);
 			if(server <= 0) {
-				qWarning() << "(PluginComm) failed to create socket: " << strerror(errno);
+				fprintf(stderr, "(PluginComm) Failed to create socket: %s\n", strerror(errno));
 				continue;
 			}
 			NOTBLOCKING(server);
@@ -225,7 +225,7 @@ void PluginComm::newTcpConnection() {
 			int sock = accept(*it, NULL, NULL);
 			if(sock < 0) {
 				if(errno != EWOULDBLOCK)
-					qWarning() << "Error on listening socket: " << strerror(errno);
+					fprintf(stderr, "Error on listening socket: %s\n", strerror(errno));
 				break;
 			}
 			NOTBLOCKING(sock);
@@ -241,7 +241,7 @@ void PluginComm::newLocalConnection() {
 			int sock = accept(*it, NULL, NULL);
 			if(sock < 0) {
 				if(errno != EWOULDBLOCK)
-					qWarning() << "Error on listening socket: " << strerror(errno);
+					fprintf(stderr, "Error on listening socket: %s\n", strerror(errno));
 				break;
 			}
 			NOTBLOCKING(sock);
@@ -266,7 +266,7 @@ void PluginComm::poll() {
 				break;
 			} else if(r < 0) {
 				if(errno != EWOULDBLOCK) {
-					qWarning() << "Socket error: " << strerror(errno);
+					fprintf(stderr, "Socket error: %s\n", strerror(errno));
 					toRemove.push_back(dev);
 				}
 				free(readahead);
@@ -463,7 +463,7 @@ void PluginComm::ircEvent(const std::string &event, const std::string &origin, c
 	assert(n != 0);
 	std::vector<std::string> args;
 	args << n->networkName();
-#define MIN(a) if(params.size() < a) { fprintf(stderr, "Too few parameters for event %s (%lu)", event.c_str(), params.size()); return; }
+#define MIN(a) if(params.size() < a) { fprintf(stderr, "Too few parameters for event %s (%lu)\n", event.c_str(), params.size()); return; }
 	if(event == "PRIVMSG") {
 		MIN(2);
 		messageReceived(origin, params[1], params[0], n);
@@ -569,7 +569,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	try {
 		n = libjson::parse(line.c_str());
 	} catch(std::invalid_argument &exception) {
-		qWarning() << "Got incorrect JSON, ignoring";
+		fprintf(stderr, "Got incorrect JSON, ignoring\n");
 		return;
 	}
 	std::vector<std::string> params;
@@ -579,7 +579,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	while(i != n.end()) {
 		if(i->name() == "params") {
 			if(i->type() != JSON_ARRAY) {
-				qWarning() << "Got params, but not of array type";
+				fprintf(stderr, "Got params, but not of array type\n");
 				continue;
 			}
 			JSONNode::const_iterator j = i->begin();
@@ -590,7 +590,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			}
 		} else if(i->name() == "scope") {
 			if(i->type() != JSON_ARRAY) {
-				qWarning() << "Got scope, but not of array type";
+				fprintf(stderr, "Got scope, but not of array type\n");
 				continue;
 			}
 			JSONNode::const_iterator j = i->begin();
@@ -679,7 +679,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	} else if(action == "message" || action == "action" || action == "names") {
 		response.push_back(JSONNode("did", libjson::to_json_string(action)));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
-			qDebug() << "Wrong parameter size for message, skipping.";
+			fprintf(stderr, "Wrong parameter size for message, skipping.\n");
 			return;
 		}
 		std::string network = params[0];
@@ -868,7 +868,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	mstr << jsonMsg;
 	mstr << "\n";
 	if(write(dev, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
-		qWarning() << "Failed to write correct number of JSON bytes to client socket.";
+		fprintf(stderr, "Failed to write correct number of JSON bytes to client socket.\n");
 		close(dev);
 	}
 }
