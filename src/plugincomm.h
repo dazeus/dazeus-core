@@ -7,12 +7,13 @@
 #define SOCKETPLUGIN_H
 
 #include <QtCore/QMultiMap>
-#include <QtCore/QStringList>
 #include <QtCore/QDebug>
 
 #include <sstream>
 #include <libjson.h>
 #include <unistd.h>
+#include <assert.h>
+#include "utils.h"
 
 class Network;
 class Database;
@@ -20,17 +21,16 @@ class Server;
 class Config;
 class DaZeus;
 
-class PluginComm : public QObject
+class PluginComm
 {
-  Q_OBJECT
 
   struct Command {
     Network &network;
-    QString origin;
-    QString channel;
-    QString command;
-    QString fullArgs;
-    QStringList args;
+    std::string origin;
+    std::string channel;
+    std::string command;
+    std::string fullArgs;
+    std::vector<std::string> args;
     bool whoisSent;
     Command(Network &n) : network(n), whoisSent(false) {}
   };
@@ -40,8 +40,8 @@ class PluginComm : public QObject
     bool needsReceiver;
     bool needsSender;
     Network *wantedNetwork;
-    QString wantedReceiver;
-    QString wantedSender;
+    std::string wantedReceiver;
+    std::string wantedSender;
     // Constructor which allows anything
     RequirementInfo() : needsNetwork(false), needsReceiver(false),
         needsSender(false), wantedNetwork(0) {}
@@ -50,7 +50,7 @@ class PluginComm : public QObject
         needsSender(false), wantedNetwork(n) {}
     // Constructor which allows anything from a sender (isSender=true)
     // or to some receiver (isSender=false)
-    RequirementInfo(Network *n, QString obj, bool isSender) :
+    RequirementInfo(Network *n, std::string obj, bool isSender) :
         needsNetwork(true), wantedNetwork(n), needsReceiver(false),
         needsSender(false)
     {
@@ -64,21 +64,23 @@ class PluginComm : public QObject
 
   struct SocketInfo {
    public:
-    SocketInfo(QString t = QString()) : type(t), waitingSize(0) {}
-    bool isSubscribed(QString t) const {
-      return subscriptions.contains(t.toUpper());
+    SocketInfo(std::string t = std::string()) : type(t), waitingSize(0) {}
+    bool isSubscribed(std::string t) const {
+      return contains(subscriptions, strToUpper(t));
     }
-    bool unsubscribe(QString t) {
-      return subscriptions.removeOne(t.toUpper());
-    }
-    bool subscribe(QString t) {
-      if(isSubscribed(t))
-        return false;
-      subscriptions.append(t.toUpper());
+    bool unsubscribe(std::string t) {
+      if(!isSubscribed(t)) return false;
+      erase(subscriptions, strToUpper(t));
       return true;
     }
-    bool isSubscribedToCommand(const QString &cmd, const QString &recv,
-        const QString &sender, bool identified, const Network &network)
+    bool subscribe(std::string t) {
+      if(isSubscribed(t))
+        return false;
+      subscriptions.push_back(strToUpper(t));
+      return true;
+    }
+    bool isSubscribedToCommand(const std::string &cmd, const std::string &recv,
+        const std::string &sender, bool identified, const Network &network)
     {
         QList<RequirementInfo*> options = commands.values(cmd);
         foreach(const RequirementInfo *info, options) {
@@ -94,27 +96,27 @@ class PluginComm : public QObject
         }
         return false;
     }
-    bool commandMightNeedWhois(const QString &cmd) {
+    bool commandMightNeedWhois(const std::string &cmd) {
         QList<RequirementInfo*> options = commands.values(cmd);
         foreach(const RequirementInfo *info, options) {
             if(info->needsSender) return true;
         }
         return false;
     }
-    void subscribeToCommand(const QString &cmd, RequirementInfo *info) {
+    void subscribeToCommand(const std::string &cmd, RequirementInfo *info) {
         commands.insert(cmd, info);
     }
-    void dispatch(int d, QString event, QStringList parameters) {
-      Q_ASSERT(!event.contains(' '));
+    void dispatch(int d, std::string event, std::vector<std::string> parameters) {
+      assert(!contains(event, ' '));
 
       JSONNode params(JSON_ARRAY);
       params.set_name("params");
-      foreach(const QString &p, parameters) {
-        params.push_back(JSONNode("", libjson::to_json_string(p.toLatin1().constData())));
+      foreach(const std::string &p, parameters) {
+        params.push_back(JSONNode("", libjson::to_json_string(p.c_str())));
       }
 
       JSONNode n(JSON_NODE);
-      n.push_back(JSONNode("event", libjson::to_json_string(event.toLatin1().constData())));
+      n.push_back(JSONNode("event", libjson::to_json_string(event.c_str())));
       n.push_back(params);
 
       std::string jsonMsg = libjson::to_std_string(n.write());
@@ -127,9 +129,9 @@ class PluginComm : public QObject
         close(d);
       }
     }
-    QString type;
-    QStringList subscriptions;
-    QMultiMap<QString,RequirementInfo*> commands;
+    std::string type;
+    std::vector<std::string> subscriptions;
+    QMultiMap<std::string,RequirementInfo*> commands;
     int waitingSize;
     std::string readahead;
   };
@@ -137,7 +139,7 @@ class PluginComm : public QObject
   public:
             PluginComm( Database *d, Config *c, DaZeus *bot );
   virtual  ~PluginComm();
-  void dispatch(const QString &event, const QStringList &parameters);
+  void dispatch(const std::string &event, const std::vector<std::string> &parameters);
   void init();
   void ircEvent(const std::string &event, const std::string &origin,
                 const std::vector<std::string> &params, Network *n );
@@ -147,18 +149,18 @@ class PluginComm : public QObject
     void newTcpConnection();
     void newLocalConnection();
     void poll();
-    void messageReceived(const QString &origin, const QString &message, const QString &receiver, Network *n);
+    void messageReceived(const std::string &origin, const std::string &message, const std::string &receiver, Network *n);
 
-    QList<int> tcpServers_;
-    QList<int> localServers_;
-    QList<Command*> commandQueue_;
-    QMap<int,SocketInfo> sockets_;
+    std::vector<int> tcpServers_;
+    std::vector<int> localServers_;
+    std::vector<Command*> commandQueue_;
+    std::map<int,SocketInfo> sockets_;
     const char *readahead_;
     Database *database_;
     Config *config_;
     DaZeus *dazeus_;
     void handle(int dev, const std::string &line, SocketInfo &info);
-    void flushCommandQueue(const QString &nick = QString(), bool identified = false);
+    void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);
 };
 
 #endif
