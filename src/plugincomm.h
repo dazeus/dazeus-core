@@ -6,10 +6,9 @@
 #ifndef SOCKETPLUGIN_H
 #define SOCKETPLUGIN_H
 
-#include <QtCore/QMultiMap>
-#include <QtCore/QDebug>
-
 #include <sstream>
+#include <utility>
+#include <map>
 #include <libjson.h>
 #include <unistd.h>
 #include <assert.h>
@@ -82,14 +81,16 @@ class PluginComm
     bool isSubscribedToCommand(const std::string &cmd, const std::string &recv,
         const std::string &sender, bool identified, const Network &network)
     {
-        QList<RequirementInfo*> options = commands.values(cmd);
-        foreach(const RequirementInfo *info, options) {
-            if(info->needsNetwork && info->wantedNetwork != &network) {
+        std::multimap<std::string,RequirementInfo*>::iterator it;
+        for(it = commands.begin(); it != commands.end(); ++it) {
+            if(it->first != cmd) {
                 continue;
-            } else if(info->needsReceiver && info->wantedReceiver != recv) {
+            } else if(it->second->needsNetwork && it->second->wantedNetwork != &network) {
                 continue;
-            } else if(info->needsSender) {
-                if(!identified || info->wantedSender != sender)
+            } else if(it->second->needsReceiver && it->second->wantedReceiver != recv) {
+                continue;
+            } else if(it->second->needsSender) {
+                if(!identified || it->second->wantedSender != sender)
                     continue;
             }
             return true;
@@ -97,22 +98,27 @@ class PluginComm
         return false;
     }
     bool commandMightNeedWhois(const std::string &cmd) {
-        QList<RequirementInfo*> options = commands.values(cmd);
-        foreach(const RequirementInfo *info, options) {
-            if(info->needsSender) return true;
+        std::multimap<std::string,RequirementInfo*>::iterator it;
+        for(it = commands.begin(); it != commands.end(); ++it) {
+            if(it->first != cmd) {
+                continue;
+            } else if(it->second->needsSender) {
+                return true;
+            }
         }
         return false;
     }
     void subscribeToCommand(const std::string &cmd, RequirementInfo *info) {
-        commands.insert(cmd, info);
+        commands.insert(std::make_pair(cmd, info));
     }
     void dispatch(int d, std::string event, std::vector<std::string> parameters) {
       assert(!contains(event, ' '));
 
       JSONNode params(JSON_ARRAY);
       params.set_name("params");
-      foreach(const std::string &p, parameters) {
-        params.push_back(JSONNode("", libjson::to_json_string(p.c_str())));
+      std::vector<std::string>::iterator it;
+      for(it = parameters.begin(); it != parameters.end(); ++it) {
+        params.push_back(JSONNode("", libjson::to_json_string(it->c_str())));
       }
 
       JSONNode n(JSON_NODE);
@@ -125,13 +131,13 @@ class PluginComm
       mstr << jsonMsg;
       mstr << "\n";
       if(write(d, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
-        qWarning() << "Failed to write correct number of JSON bytes to client socket in dispatch().";
+        fprintf(stderr, "Failed to write correct number of JSON bytes to client socket in dispatch().\n");
         close(d);
       }
     }
     std::string type;
     std::vector<std::string> subscriptions;
-    QMultiMap<std::string,RequirementInfo*> commands;
+    std::multimap<std::string,RequirementInfo*> commands;
     int waitingSize;
     std::string readahead;
   };
