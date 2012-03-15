@@ -3,9 +3,6 @@
  * See LICENSE for license.
  */
 
-#include <QtCore/QList>
-#include <QtCore/QDebug>
-#include <QtCore/QFile>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <libjson.h>
@@ -26,6 +23,9 @@
 #include <time.h>
 #include <ctype.h>
 
+#include <string>
+#include <sstream>
+
 #include "plugincomm.h"
 #include "network.h"
 #include "config.h"
@@ -38,22 +38,23 @@
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
 PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
-: QObject()
-, database_(d)
+: database_(d)
 , config_(c)
 , dazeus_(bot)
 {
 }
 
 PluginComm::~PluginComm() {
-	foreach(int s, sockets_.keys()) {
-		close(s);
+	std::map<int,SocketInfo>::iterator it;
+	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
+		close(it->first);
 	}
-	foreach(int s, tcpServers_) {
-		close(s);
+	std::vector<int>::iterator it2;
+	for(it2 = tcpServers_.begin(); it2 != tcpServers_.end(); ++it2) {
+		close(*it2);
 	}
-	foreach(int s, localServers_) {
-		close(s);
+	for(it2 = localServers_.begin(); it2 != localServers_.end(); ++it2) {
+		close(*it2);
 	}
 }
 
@@ -63,20 +64,22 @@ void PluginComm::run() {
 	struct timeval timeout;
 	FD_ZERO(&sockets);
 	FD_ZERO(&out_sockets);
-	foreach(int tcpServer, tcpServers_) {
-		if(tcpServer > highest)
-			highest = tcpServer;
-		FD_SET(tcpServer, &sockets);
+	std::vector<int>::iterator it;
+	for(it = tcpServers_.begin(); it != tcpServers_.end(); ++it) {
+		if(*it > highest)
+			highest = *it;
+		FD_SET(*it, &sockets);
 	}
-	foreach(int localServer,localServers_) {
-		if(localServer > highest)
-			highest = localServer;
-		FD_SET(localServer, &sockets);
+	for(it = localServers_.begin(); it != localServers_.end(); ++it) {
+		if(*it > highest)
+			highest = *it;
+		FD_SET(*it, &sockets);
 	}
-	foreach(int socket, sockets_.keys()) {
-		if(socket > highest)
-			highest = socket;
-		FD_SET(socket, &sockets);
+	std::map<int,SocketInfo>::iterator it2;
+	for(it2 = sockets_.begin(); it2 != sockets_.end(); ++it2) {
+		if(it2->first > highest)
+			highest = it2->first;
+		FD_SET(it2->first, &sockets);
 	}
 	// and add the IRC descriptors
 	foreach(Network *n, dazeus_->networks()) {
@@ -99,20 +102,20 @@ void PluginComm::run() {
 	else if(socks == 0) {
 		return;
 	}
-	foreach(int tcpServer, tcpServers_) {
-		if(FD_ISSET(tcpServer, &sockets)) {
+	for(it = tcpServers_.begin(); it != tcpServers_.end(); ++it) {
+		if(FD_ISSET(*it, &sockets)) {
 			newTcpConnection();
 			break;
 		}
 	}
-	foreach(int localServer, localServers_) {
-		if(FD_ISSET(localServer, &sockets)) {
+	for(it = localServers_.begin(); it != localServers_.end(); ++it) {
+		if(FD_ISSET(*it, &sockets)) {
 			newLocalConnection();
 			break;
 		}
 	}
-	foreach(int socket, sockets_.keys()) {
-		if(FD_ISSET(socket, &sockets)) {
+	for(it2 = sockets_.begin(); it2 != sockets_.end(); ++it2) {
+		if(FD_ISSET(it2->first, &sockets)) {
 			poll();
 			break;
 		}
@@ -128,50 +131,53 @@ void PluginComm::run() {
 void PluginComm::init() {
 	int sockets = config_->groupConfig("sockets").value("sockets").toInt();
 	for(int i = 1; i <= sockets; ++i) {
-		QString socket = config_->groupConfig("sockets").value("socket" + QString::number(i)).toString();
-		int colon = socket.indexOf(':');
-		if(colon == -1) {
-			qWarning() << "(PluginComm) Did not understand socket option " << i << ":" << socket;
+		std::stringstream socketName;
+		socketName << "socket" << i;
+		std::string socket = config_->groupConfig("sockets").value(QString::fromStdString(socketName.str())).toString().toStdString();
+		size_t colon = socket.find(':');
+		if(colon == std::string::npos) {
+			fprintf(stderr, "(PluginComm) Did not understand socket option %d: %s\n", i, socket.c_str());
 			continue;
 		}
-		QString socketType = socket.left(colon);
-		socket = socket.mid(colon + 1);
+		std::string socketType = socket.substr(0, colon);
+		socket = socket.substr(colon + 1);
 		if(socketType == "unix") {
-			QFile::remove(socket);
+			unlink(socket.c_str());
 			int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
 			if(server <= 0) {
-				qWarning() << "(PluginComm) Failed to create socket for "
-				           << socket << ": " << strerror(errno);
+				fprintf(stderr, "(PluginComm) Failed to create socket for %s: %s\n", socket.c_str(), strerror(errno));
 				continue;
 			}
 			NOTBLOCKING(server);
 			struct sockaddr_un addr;
 			addr.sun_family = AF_UNIX;
-			strcpy(addr.sun_path, socket.toLatin1());
+			strcpy(addr.sun_path, socket.c_str());
 			if(bind(server, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
 				close(server);
-				qWarning() << "(PluginComm) Failed to start listening for local connections on "
-				           << socket << ": " << strerror(errno);
+				fprintf(stderr, "(PluginComm) Failed to start listening for local connections on %s: %s\n", socket.c_str(), strerror(errno));
+				continue;
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
-				QFile::remove(socket);
+				unlink(socket.c_str());
 			}
-			localServers_.append(server);
+			localServers_.push_back(server);
 		} else if(socketType == "tcp") {
-			colon = socket.indexOf(':');
-			QString tcpHost, tcpPort;
-			if(colon == -1) {
+			colon = socket.find(':');
+			std::string tcpHost, tcpPort;
+			if(colon == std::string::npos) {
 				tcpHost = "localhost";
 				tcpPort = socket;
 			} else {
-				tcpHost = socket.left(colon);
-				tcpPort = socket.mid(colon + 1);
+				tcpHost = socket.substr(0, colon);
+				tcpPort = socket.substr(colon + 1);
 			}
-			bool ok = false;
-			unsigned int port = tcpPort.toUInt(&ok);
-			if(!ok || port > UINT16_MAX) {
-				qWarning() << "(PluginComm) Invalid TCP port number for socket " << i;
+			unsigned int port;
+			std::stringstream ports;
+			ports << tcpPort;
+			ports >> port;
+			if(!ports || port > UINT16_MAX) {
+				fprintf(stderr, "(PluginComm) Invalid TCP port number for socket %d\n", i);
 				continue;
 			}
 
@@ -182,7 +188,7 @@ void PluginComm::init() {
 			hints->ai_socktype = SOCK_STREAM;
 			hints->ai_protocol = 0;
 
-			int s = getaddrinfo(tcpHost.toLatin1(), tcpPort.toLatin1(), hints, &result);
+			int s = getaddrinfo(tcpHost.c_str(), tcpPort.c_str(), hints, &result);
 			free(hints);
 			hints = 0;
 
@@ -199,70 +205,69 @@ void PluginComm::init() {
 			NOTBLOCKING(server);
 			if(bind(server, result->ai_addr, result->ai_addrlen) < 0) {
 				close(server);
-				qWarning() << "(PluginComm) Failed to start listening for local connections on "
-				           << socket << ": " << strerror(errno);
+				fprintf(stderr, "(PluginComm) Failed to start listening for TCP connections on %s: %s\n",
+					socket.c_str(), strerror(errno));
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
-				QFile::remove(socket);
 			}
-			tcpServers_.append(server);
+			tcpServers_.push_back(server);
 		} else {
-			qWarning() << "(PluginComm) Skipping socket " << i << ": unknown type " << socketType;
+			fprintf(stderr, "(PluginComm) Skipping socket %d: unknown type %s\n", i, socketType.c_str());
 		}
 	}
 }
 
 void PluginComm::newTcpConnection() {
-	for(int i = 0; i < tcpServers_.length(); ++i) {
-		int s = tcpServers_[i];
+	std::vector<int>::iterator it;
+	for(it = tcpServers_.begin(); it != tcpServers_.end(); ++it) {
 		while(1) {
-			int sock = accept(s, NULL, NULL);
+			int sock = accept(*it, NULL, NULL);
 			if(sock < 0) {
 				if(errno != EWOULDBLOCK)
 					qWarning() << "Error on listening socket: " << strerror(errno);
 				break;
 			}
 			NOTBLOCKING(sock);
-			sockets_.insert(sock, SocketInfo("tcp"));
+			sockets_[sock] = SocketInfo("tcp");
 		}
 	}
 }
 
 void PluginComm::newLocalConnection() {
-	for(int i = 0; i < localServers_.length(); ++i) {
-		int s = localServers_[i];
+	std::vector<int>::iterator it;
+	for(it = localServers_.begin(); it != localServers_.end(); ++it) {
 		while(1) {
-			int sock = accept(s, NULL, NULL);
+			int sock = accept(*it, NULL, NULL);
 			if(sock < 0) {
 				if(errno != EWOULDBLOCK)
 					qWarning() << "Error on listening socket: " << strerror(errno);
 				break;
 			}
 			NOTBLOCKING(sock);
-			sockets_.insert(sock, SocketInfo("unix"));
+			sockets_[sock] = SocketInfo("unix");
 		}
 	}
 }
 
 void PluginComm::poll() {
-	QList<int> toRemove_;
-	QList<int> socks = sockets_.keys();
-	for(int i = 0; i < socks.size(); ++i) {
-		int dev = socks[i];
-		SocketInfo info = sockets_[dev];
+	std::vector<int> toRemove;
+	std::map<int,SocketInfo>::iterator it;
+	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
+		int dev = it->first;
+		SocketInfo info = it->second;
 		bool appended = false;
 		while(1) {
 			char *readahead = (char*)malloc(512);
 			ssize_t r = read(dev, readahead, 512);
 			if(r == 0) {
 				// end-of-file
-				toRemove_.append(dev);
+				toRemove.push_back(dev);
 				break;
 			} else if(r < 0) {
 				if(errno != EWOULDBLOCK) {
 					qWarning() << "Socket error: " << strerror(errno);
-					toRemove_.append(dev);
+					toRemove.push_back(dev);
 				}
 				free(readahead);
 				break;
@@ -296,7 +301,7 @@ void PluginComm::poll() {
 						info.readahead = info.readahead.substr(j);
 				}
 				if(info.waitingSize != 0) {
-					if(info.readahead.length() >= info.waitingSize) {
+					if((signed)info.readahead.length() >= info.waitingSize) {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
 						info.readahead = info.readahead.substr(info.waitingSize + 1);
 						handle(dev, packet, info);
@@ -306,26 +311,28 @@ void PluginComm::poll() {
 				}
 			} while(parsedPacket);
 		}
-		sockets_[dev] = info;
+		it->second = info;
 	}
-	foreach(int i, toRemove_) {
-		sockets_.remove(i);
+	std::vector<int>::iterator toRemoveIt;
+	for(toRemoveIt = toRemove.begin(); toRemoveIt != toRemove.end(); ++toRemoveIt) {
+		sockets_.erase(*toRemoveIt);
 	}
 }
 
-void PluginComm::dispatch(const QString &event, const QStringList &parameters) {
-	foreach(int i, sockets_.keys()) {
-		SocketInfo &info = sockets_[i];
+void PluginComm::dispatch(const std::string &event, const std::vector<std::string> &parameters) {
+	std::map<int,SocketInfo>::iterator it;
+	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
+		SocketInfo &info = it->second;
 		if(info.isSubscribed(event)) {
-			info.dispatch(i, event, parameters);
+			info.dispatch(it->first, event, parameters);
 		}
 	}
 }
 
-void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
-	int i;
-	for(i = commandQueue_.length() - 1; i >= 0; --i) {
-		Command *cmd = commandQueue_.at(i);
+void PluginComm::flushCommandQueue(const std::string &nick, bool identified) {
+	std::vector<Command*>::iterator cit;
+	for(cit = commandQueue_.begin(); cit != commandQueue_.end(); ++cit) {
+		Command *cmd = *cit;
 		// If there is at least one plugin that does sender checking,
 		// and the sender is not already known as identified, a whois
 		// check is necessary to send it to those plugins.
@@ -334,10 +341,11 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// anyway.
 		// Check if we have all needed information
 		bool whoisRequired = false;
-		foreach(int i, sockets_.keys()) {
-			SocketInfo &info = sockets_[i];
+		std::map<int,SocketInfo>::iterator it;
+		for(it = sockets_.begin(); it != sockets_.end(); ++it) {
+			SocketInfo &info = it->second;
 			if(info.commandMightNeedWhois(cmd->command)
-			&& !cmd->network.isIdentified(cmd->origin.toStdString())) {
+			&& !cmd->network.isIdentified(cmd->origin)) {
 				whoisRequired = true;
 			}
 		}
@@ -346,7 +354,7 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// command when the identified command comes in
 		if(whoisRequired && nick != cmd->origin) {
 			if(!cmd->whoisSent) {
-				cmd->network.sendWhois(cmd->origin.toStdString());
+				cmd->network.sendWhois(cmd->origin);
 				cmd->whoisSent = true;
 			}
 			continue;
@@ -355,185 +363,201 @@ void PluginComm::flushCommandQueue(const QString &nick, bool identified) {
 		// We either don't require whois for this command, or the
 		// whois status of the sender is known at this point (either
 		// saved in the network, or in the 'identified' variable).
-		Q_ASSERT(!whoisRequired || cmd->network.isIdentified(cmd->origin.toStdString())
+		assert(!whoisRequired || cmd->network.isIdentified(cmd->origin)
 		       || nick == cmd->origin);
 
-		QStringList parameters;
-		parameters << QString::fromStdString(cmd->network.networkName()) << cmd->origin
-		           << cmd->channel << cmd->command << cmd->fullArgs
-		           << cmd->args;
+		std::vector<std::string> parameters;
+		parameters.push_back(cmd->network.networkName());
+		parameters.push_back(cmd->origin);
+		parameters.push_back(cmd->channel);
+		parameters.push_back(cmd->command);
+		parameters.push_back(cmd->fullArgs);
+		for(std::vector<std::string>::const_iterator itt = cmd->args.begin(); itt != cmd->args.end(); ++itt) {
+			parameters.push_back(*itt);
+		}
 
-		foreach(int i, sockets_.keys()) {
-			SocketInfo &info = sockets_[i];
+		for(it = sockets_.begin(); it != sockets_.end(); ++it) {
+			SocketInfo &info = it->second;
 			if(!info.isSubscribedToCommand(cmd->command, cmd->channel, cmd->origin,
-				cmd->network.isIdentified(cmd->origin.toStdString()) || identified, cmd->network)) {
+				cmd->network.isIdentified(cmd->origin) || identified, cmd->network)) {
 				continue;
 			}
 
 			// Receiver, sender, network matched; dispatch command to this plugin
-			info.dispatch(i, "COMMAND", parameters);
+			info.dispatch(it->first, "COMMAND", parameters);
 		}
 
-		commandQueue_.takeAt(i);
+		cit = commandQueue_.erase(cit);
+		cit--;
 		delete cmd;
 	}
 }
 
-void PluginComm::messageReceived( const QString &origin, const QString &message,
-                  const QString &receiver, Network *n ) {
-	Q_ASSERT(n != 0);
+void PluginComm::messageReceived( const std::string &origin, const std::string &message,
+                  const std::string &receiver, Network *n ) {
+	assert(n != 0);
 
-	QString payload;
-	QString highlightChar = config_->groupConfig("general").value("highlightCharacter").toString();
-	if(highlightChar.isNull())
+	std::string payload;
+	std::string highlightChar = config_->groupConfig("general").value("highlightCharacter").toString().toStdString();
+	if(highlightChar.length() == 0)
 		highlightChar = "}";
 
-	if( message.startsWith(QString::fromStdString(n->user()->nick()) + ":", Qt::CaseInsensitive)
-	 || message.startsWith(QString::fromStdString(n->user()->nick()) + ",", Qt::CaseInsensitive)) {
-		payload = message.mid(n->user()->nick().length() + 1).trimmed();
-	} else if(message.startsWith(highlightChar, Qt::CaseInsensitive)) {
-		payload = message.mid(highlightChar.length()).trimmed();
+	if( startsWith(message, n->user()->nick() + ":", true)
+	 || startsWith(message, n->user()->nick() + ",", true)) {
+		payload = trim(message.substr(n->user()->nick().length() + 1));
+	} else if(startsWith(message, highlightChar, true)) {
+		payload = trim(message.substr(highlightChar.length()));
 	}
 
-	if(!payload.isEmpty()) {
+	if(payload.length() != 0) {
 		// parse arguments from this string
 		bool inQuoteArg = false;
 		bool inEscape = false;
 		bool hasCommand = false;
-		QStringList args;
-		QString stringBuilder;
-		QString fullArgs;
+		std::vector<std::string> args;
+		std::string stringBuilder;
+		std::string fullArgs;
 		// loop through characters
-		for(int i = 0; i < payload.length(); ++i) {
+		for(unsigned i = 0; i < payload.length(); ++i) {
 			if(hasCommand)
-				fullArgs.append(payload.at(i));
+				fullArgs += payload.at(i);
 			if(inEscape) {
 				inEscape = false;
-				stringBuilder.append(payload.at(i));
+				stringBuilder += payload.at(i);
 			} else if(payload.at(i) == '\\') {
 				inEscape = true;
 			} else if(!inQuoteArg && payload.at(i) == ' ') {
 				// finish this word
-				args.append(stringBuilder);
+				args.push_back(stringBuilder);
 				stringBuilder.clear();
 				hasCommand = true;
 			} else if(payload.at(i) == '"') {
 				inQuoteArg = !inQuoteArg;
 			} else {
-				stringBuilder.append(payload.at(i));
+				stringBuilder += payload.at(i);
 			}
 		}
-		if(!stringBuilder.isEmpty())
-			args.append(stringBuilder);
+		if(stringBuilder.length() != 0)
+			args.push_back(stringBuilder);
 
-		if(args.length() > 0) {
-			const QString &command = args.takeFirst();
+		if(args.size() > 0) {
+			const std::string &command = args.front();
+			args.erase(args.begin());
 
 			Command *cmd = new Command(*n);
 			cmd->origin = origin;
 			cmd->channel = receiver;
 			cmd->command = command;
-			cmd->fullArgs = fullArgs.trimmed();
+			cmd->fullArgs = trim(fullArgs);
 			cmd->args = args;
-			commandQueue_.append(cmd);
+			commandQueue_.push_back(cmd);
 			flushCommandQueue();
 		}
 	}
-	dispatch("PRIVMSG", QStringList() << QString::fromStdString(n->networkName()) << origin
-	   << receiver << message
-	   << (n->isIdentified(origin.toStdString()) ? "true" : "false"));
+	std::vector<std::string> args;
+	args << n->networkName() << origin << receiver << message << (n->isIdentified(origin) ? "true" : "false");
+	dispatch("PRIVMSG", args);
 }
 
-void PluginComm::ircEvent(const std::string &e, const std::string &o, const std::vector<std::string> &p, Network *n) {
-	QString event = QString::fromStdString(e);
-	QString origin = QString::fromStdString(o);
-	QStringList params;
-	for(unsigned int i = 0; i < p.size(); ++i ) {
-		params << QString::fromStdString(p[i]);
-	}
-	QString networkName = QString::fromStdString(n->networkName());
-	Q_ASSERT(n != 0);
-#define MIN(a) if(params.size() < a) { qWarning() << "Too few parameters for event " << event << ":" << params; return; }
+void PluginComm::ircEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Network *n) {
+	assert(n != 0);
+	std::vector<std::string> args;
+	args << n->networkName();
+#define MIN(a) if(params.size() < a) { fprintf(stderr, "Too few parameters for event %s (%lu)", event.c_str(), params.size()); return; }
 	if(event == "PRIVMSG") {
 		MIN(2);
 		messageReceived(origin, params[1], params[0], n);
 	} else if(event == "NOTICE") {
 		MIN(2);
-		dispatch("NOTICE", QStringList() << networkName << origin
-		   << params[0] << params[1]
-		   << (n->isIdentified(origin.toStdString()) ? "true" : "false"));
+		args << origin << params[0] << params[1] << (n->isIdentified(origin) ? "true" : "false");
+		dispatch("NOTICE", args);
 	} else if(event == "MODE" || event == "UMODE") {
 		MIN(1);
-		dispatch("MODE", QStringList() << networkName << origin << params);
+		args << origin << params;
+		dispatch("MODE", args);
 	} else if(event == "NICK") {
 		MIN(1);
-		dispatch("NICK", QStringList() << networkName << origin << params[0]);
+		args << origin << params[0];
+		dispatch("NICK", args);
 	} else if(event == "JOIN") {
 		MIN(1);
-		dispatch("JOIN", QStringList() << networkName << origin << params[0]);
+		args << origin << params[0];
+		dispatch("JOIN", args);
 	} else if(event == "PART") {
 		MIN(1);
-		QString message;
+		std::string message;
 		if(params.size() == 2)
 			message = params[1];
-		dispatch("PART", QStringList() << networkName << origin << params[0] << message);
+		args << origin << params[0] << message;
+		dispatch("PART", args);
 	} else if(event == "KICK") {
 		MIN(2);
-		QString nick = params[1];
-		QString message;
+		std::string nick = params[1];
+		std::string message;
 		if(params.size() == 3)
 			message = params[2];
-		dispatch("KICK", QStringList() << networkName << origin << params[0] << nick << message);
+		args << origin << params[0] << nick << message;
+		dispatch("KICK", args);
 	} else if(event == "INVITE") {
 		MIN(2);
-		QString channel  = params[1];
-		dispatch("INVITE", QStringList() << networkName << origin << channel);
+		std::string channel  = params[1];
+		args << origin << channel;
+		dispatch("INVITE", args);
 	} else if(event == "QUIT") {
-		QString message;
+		std::string message;
 		if(params.size() == 1)
 			message = params[0];
-		dispatch("QUIT", QStringList() << networkName << origin << message);
+		args << origin << message;
+		dispatch("QUIT", args);
 	} else if(event == "TOPIC") {
 		MIN(1);
-		QString topic;
+		std::string topic;
 		if(params.size() > 1)
 			topic = params[1];
-		dispatch("TOPIC", QStringList() << networkName << origin << params[0] << topic);
+		args << origin << params[0] << topic;
+		dispatch("TOPIC", args);
 	} else if(event == "CONNECT") {
-		dispatch("CONNECT", QStringList() << networkName);
+		dispatch("CONNECT", args);
 	} else if(event == "DISCONNECT") {
-		dispatch("DISCONNECT", QStringList() << networkName);
+		dispatch("DISCONNECT", args);
 	} else if(event == "CTCP_REQ" || event == "CTCP") {
 		MIN(1);
 		// TODO: libircclient does not seem to tell us where the ctcp
 		// request was sent (user or channel), so just assume it was
 		// sent to our nick
-		QString to = QString::fromStdString(n->user()->nick());
-		dispatch("CTCP", QStringList() << networkName << origin << to << params[0]);
+		std::string to = n->user()->nick();
+		args << origin << to << params[0];
+		dispatch("CTCP", args);
 	} else if(event == "CTCP_REP") {
 		MIN(1);
 		// TODO: see above
-		QString to = QString::fromStdString(n->user()->nick());
-		dispatch("CTCP_REP", QStringList() << networkName << origin << to << params[0]);
+		std::string to = n->user()->nick();
+		args << origin << to << params[0];
+		dispatch("CTCP_REP", args);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
 		MIN(1);
-		QString message;
+		std::string message;
 		if(params.size() >= 2)
 			message = params[1];
-		dispatch("ACTION", QStringList() << networkName << origin << params[0] << message);
+		args << origin << params[0] << message;
+		dispatch("ACTION", args);
 	} else if(event == "WHOIS") {
 		MIN(2);
-		dispatch("WHOIS", QStringList() << networkName << origin << params[0] << params[1]);
+		args << origin << params[0] << params[1];
+		dispatch("WHOIS", args);
 		flushCommandQueue(params[0], params[1] == "true");
 	} else if(event == "NAMES") {
 		MIN(2);
-		dispatch("NAMES", QStringList() << networkName << origin << params);
+		args << origin << params;
+		dispatch("NAMES", args);
 	} else if(event == "NUMERIC") {
 		MIN(1);
-		dispatch("NUMERIC", QStringList() << networkName << origin << params[0] << params);
+		args << origin << params[0] << params;
+		dispatch("NUMERIC", args);
 	} else {
-		qDebug() << "Unknown event: " << n << event << origin << params[0] << params;
-		dispatch("UNKNOWN", QStringList() << networkName << origin << params[0] << event << params);
+		fprintf(stderr, "Unknown event: \"%s\" \"%s\" \"%s\"\n", Network::toString(n).c_str(), event.c_str(), origin.c_str());
+		args << origin << params[0] << event << params;
+		dispatch("UNKNOWN", args);
 	}
 #undef MIN
 }
@@ -548,10 +572,10 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		qWarning() << "Got incorrect JSON, ignoring";
 		return;
 	}
-	QStringList params;
-	QStringList scope;
+	std::vector<std::string> params;
+	std::vector<std::string> scope;
 	JSONNode::const_iterator i = n.begin();
-	QString action;
+	std::string action;
 	while(i != n.end()) {
 		if(i->name() == "params") {
 			if(i->type() != JSON_ARRAY) {
@@ -561,7 +585,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			JSONNode::const_iterator j = i->begin();
 			while(j != i->end()) {
 				std::string s = libjson::to_std_string(j->as_string());
-				params << QString::fromUtf8(s.c_str(), s.length());
+				params.push_back(s);
 				j++;
 			}
 		} else if(i->name() == "scope") {
@@ -572,13 +596,13 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			JSONNode::const_iterator j = i->begin();
 			while(j != i->end()) {
 				std::string s = libjson::to_std_string(j->as_string());
-				scope << QString::fromUtf8(s.c_str(), s.length());
+				scope.push_back(s);
 				j++;
 			}
 		} else if(i->name() == "get") {
-			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
+			action = libjson::to_std_string(i->as_string());
 		} else if(i->name() == "do") {
-			action = QString::fromStdString(libjson::to_std_string(i->as_string()));
+			action = libjson::to_std_string(i->as_string());
 		}
 		i++;
 	}
@@ -598,18 +622,18 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	} else if(action == "channels" || action == "whois" || action == "join" || action == "part"
 	       || action == "nick") {
 		if(action == "channels" || action == "nick") {
-			response.push_back(JSONNode("got", libjson::to_json_string(action.toStdString())));
+			response.push_back(JSONNode("got", libjson::to_json_string(action)));
 		} else {
-			response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
+			response.push_back(JSONNode("did", libjson::to_json_string(action)));
 		}
-		QString network = "";
+		std::string network = "";
 		if(params.size() > 0) {
 			network = params[0];
 		}
-		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
+		response.push_back(JSONNode("network", libjson::to_json_string(network)));
 		Network *net = 0;
 		foreach(Network *n, networks) {
-			if(n->networkName() == network.toStdString()) {
+			if(n->networkName() == network) {
 				net = n; break;
 			}
 		}
@@ -633,13 +657,13 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				} else {
 					response.push_back(JSONNode("success", true));
 					if(action == "whois") {
-						net->sendWhois(params[1].toStdString());
+						net->sendWhois(params[1]);
 					} else if(action == "join") {
-						net->joinChannel(params[1].toStdString());
+						net->joinChannel(params[1]);
 					} else if(action == "part") {
-						net->leaveChannel(params[1].toStdString());
+						net->leaveChannel(params[1]);
 					} else {
-						Q_ASSERT(false);
+						assert(false);
 						return;
 					}
 				}
@@ -647,47 +671,47 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				response.push_back(JSONNode("success", true));
 				response.push_back(JSONNode("nick", libjson::to_json_string(net->user()->nick())));
 			} else {
-				Q_ASSERT(false);
+				assert(false);
 				return;
 			}
 		}
 	// REQUESTS ON A CHANNEL
 	} else if(action == "message" || action == "action" || action == "names") {
-		response.push_back(JSONNode("did", libjson::to_json_string(action.toStdString())));
+		response.push_back(JSONNode("did", libjson::to_json_string(action)));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
 			qDebug() << "Wrong parameter size for message, skipping.";
 			return;
 		}
-		QString network = params[0];
-		QString receiver = params[1];
-		QString message;
+		std::string network = params[0];
+		std::string receiver = params[1];
+		std::string message;
 		if(action != "names") {
 			message = params[2];
 		}
-		response.push_back(JSONNode("network", libjson::to_json_string(network.toStdString())));
+		response.push_back(JSONNode("network", libjson::to_json_string(network)));
 		if(action == "names") {
-			response.push_back(JSONNode("channel", libjson::to_json_string(receiver.toStdString())));
+			response.push_back(JSONNode("channel", libjson::to_json_string(receiver)));
 		} else {
-			response.push_back(JSONNode("receiver", libjson::to_json_string(receiver.toStdString())));
-			response.push_back(JSONNode("message", libjson::to_json_string(message.toStdString())));
+			response.push_back(JSONNode("receiver", libjson::to_json_string(receiver)));
+			response.push_back(JSONNode("message", libjson::to_json_string(message)));
 		}
 
 		bool netfound = false;
 		foreach(Network *n, networks) {
-			if(n->networkName() == network.toStdString()) {
+			if(n->networkName() == network) {
 				netfound = true;
-				if(receiver.left(1) != "#" || contains(n->joinedChannels(), receiver.toLower().toStdString())) {
+				if(receiver.substr(0, 1) != "#" || contains(n->joinedChannels(), strToLower(receiver))) {
 					response.push_back(JSONNode("success", true));
 					if(action == "names") {
-						n->names(receiver.toStdString());
+						n->names(receiver);
 					} else if(action == "message") {
-						n->say(receiver.toStdString(), message.toStdString());
+						n->say(receiver, message);
 					} else {
-						n->action(receiver.toStdString(), message.toStdString());
+						n->action(receiver, message);
 					}
 				} else {
-					qWarning() << "Request for communication to network " << network
-					           << " receiver " << receiver << ", but not in that channel; dropping";
+					fprintf(stderr, "Request for communication to network %s receiver %s, but not in that channel, dropping\n",
+						network.c_str(), receiver.c_str());
 					response.push_back(JSONNode("success", false));
 					response.push_back(JSONNode("error", "Not in that chanel"));
 				}
@@ -695,7 +719,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			}
 		}
 		if(!netfound) {
-			qWarning() << "Request for communication to network " << network << ", but that network isn't joined, dropping";
+			fprintf(stderr, "Request for communication to network %s, but that network isn't joined, dropping\n", network.c_str());
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Not on that network"));
 		}
@@ -704,7 +728,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("did", "subscribe"));
 		response.push_back(JSONNode("success", true));
 		int added = 0;
-		foreach(const QString &event, params) {
+		foreach(const std::string &event, params) {
 			if(info.subscribe(event))
 				++added;
 		}
@@ -713,7 +737,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("did", "unsubscribe"));
 		response.push_back(JSONNode("success", true));
 		int removed = 0;
-		foreach(const QString &event, params) {
+		foreach(const std::string &event, params) {
 			if(info.unsubscribe(event))
 				++removed;
 		}
@@ -728,12 +752,13 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else {
-			QString commandName = params.takeFirst();
+			std::string commandName = params.front();
+			params.erase(params.begin());
 			RequirementInfo *req = 0;
 			Network *net = 0;
 			if(params.size() > 0) {
 				foreach(Network *n, networks) {
-					if(n->networkName() == params.at(0).toStdString()) {
+					if(n->networkName() == params.at(0)) {
 						net = n; break;
 					}
 				}
@@ -760,7 +785,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	} else if(action == "property") {
 		response.push_back(JSONNode("did", "property"));
 
-		QString network, receiver, sender;
+		std::string network, receiver, sender;
 		switch(scope.size()) {
 		// fall-throughs
 		case 3: sender   = scope[2];
@@ -773,9 +798,10 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else if(params[0] == "get") {
-			QVariant value = database_->property(params[1], network, receiver, sender);
+#define Q(x) QString::fromStdString(x)
+			QVariant value = database_->property(Q(params[1]), Q(network), Q(receiver), Q(sender));
 			response.push_back(JSONNode("success", true));
-			response.push_back(JSONNode("variable", libjson::to_json_string(params[1].toStdString())));
+			response.push_back(JSONNode("variable", libjson::to_json_string(params[1])));
 			if(!value.isNull()) {
 				response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
 			}
@@ -784,7 +810,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				database_->setProperty(params[1], params[2], network, receiver, sender);
+				database_->setProperty(Q(params[1]), Q(params[2]), Q(network), Q(receiver), Q(sender));
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "unset") {
@@ -792,18 +818,24 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				database_->setProperty(params[1], QVariant(), network, receiver, sender);
+				database_->setProperty(Q(params[1]), QVariant(), Q(network), Q(receiver), Q(sender));
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
-			QStringList qKeys = database_->propertyKeys(params[1], network, receiver, sender);
+			QStringList qKeys = database_->propertyKeys(Q(params[1]), Q(network), Q(receiver), Q(sender));
+			std::vector<std::string> dKeys;
+			foreach(const QString &k, qKeys) {
+				dKeys.push_back(k.toStdString());
+			}
 			JSONNode keys(JSON_ARRAY);
 			keys.set_name("keys");
-			foreach(const QString &k, qKeys) {
-				keys.push_back(JSONNode("", libjson::to_json_string(k.toStdString())));
+			std::vector<std::string>::iterator kit;
+			for(kit = dKeys.begin(); kit != dKeys.end(); ++kit) {
+				keys.push_back(JSONNode("", libjson::to_json_string(*kit)));
 			}
 			response.push_back(keys);
 			response.push_back(JSONNode("success", true));
+#undef Q
 		} else {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Did not understand request"));
@@ -813,13 +845,14 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else {
-			QStringList parts = params[0].split('.');
-			QString group = parts.takeFirst();
-			QString name = parts.join(".");
+			std::vector<std::string> parts = split(params[0], ".");
+			std::string group = parts.front();
+			parts.erase(parts.begin());
+			std::string name = join(parts, ".");
 			// TODO get plugin group name for this plugin
-			QVariant conf = config_->groupConfig("plugin " + group).value(name);
+			QVariant conf = config_->groupConfig("plugin " + QString::fromStdString(group)).value(QString::fromStdString(name));
 			response.push_back(JSONNode("success", true));
-			response.push_back(JSONNode("variable", libjson::to_json_string(params[0].toStdString())));
+			response.push_back(JSONNode("variable", libjson::to_json_string(params[0])));
 			if(!conf.isNull()) {
 				response.push_back(JSONNode("value", libjson::to_json_string(conf.toString().toStdString())));
 			}
