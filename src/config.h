@@ -6,11 +6,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <QtCore/QObject>
-#include <QtCore/QString>
-#include <QtCore/QList>
-#include <QtCore/QSettings>
 #include <vector>
+#include <string>
+#include <map>
+#include <list>
 
 /**
  * These structs are only for configuration as it is in the configuration
@@ -40,33 +39,33 @@ struct ServerConfig {
 };
 
 struct DatabaseConfig {
-  QString type;
-  QString hostname;
-  quint16 port;
-  QString username;
-  QString password;
-  QString database;
-  QString options;
+  std::string type;
+  std::string hostname;
+  uint16_t port;
+  std::string username;
+  std::string password;
+  std::string database;
+  std::string options;
 };
 
-class Config : public QObject
-{
-  Q_OBJECT
+class QSettings;
 
+class Config
+{
   public:
         Config();
        ~Config();
   bool  loadFromFile( std::string fileName );
 
   const std::list<NetworkConfig*> &networks();
-  const QString               &lastError();
-  const DatabaseConfig        *databaseConfig() const;
-  const QMap<QString,QVariant> groupConfig(QString plugin) const;
+  const std::string               &lastError();
+  const DatabaseConfig            *databaseConfig() const;
+  const std::map<std::string,std::string> groupConfig(std::string plugin) const;
 
   private:
   std::list<NetworkConfig*> oldNetworks_;
   std::list<NetworkConfig*> networks_;
-  QString               error_;
+  std::string               error_;
   QSettings            *settings_;
   DatabaseConfig       *databaseConfig_;
 };

@@ -3,13 +3,12 @@
  * See LICENSE for license.
  */
 
+#include <QtCore/QSettings>
+#include <fstream>
+#include <sstream>
+#include <assert.h>
 #include "config.h"
 #include "database.h"
-
-#include <QtCore/QFile>
-#include <QtCore/QDebug>
-#include <QtCore/QStringList>
-#include <QtSql/QSqlDatabase>
 
 // #define DEBUG
 
@@ -22,9 +21,7 @@
  * but will not contain any networks or servers.
  */
 Config::Config()
-: QObject()
-, error_( QString() )
-, settings_( 0 )
+: settings_( 0 )
 , databaseConfig_( 0 )
 {
 }
@@ -56,17 +53,17 @@ const DatabaseConfig *Config::databaseConfig() const
  * configuration file. Currently, you *must* call networks() before calling
  * this method. This is considered a bug.
  */
-const QMap<QString,QVariant> Config::groupConfig(QString group) const
+const std::map<std::string,std::string> Config::groupConfig(std::string group) const
 {
-	QMap<QString,QVariant> configuration;
-	Q_ASSERT(settings_);
+	std::map<std::string,std::string> configuration;
+	assert(settings_);
 
 	if(group.length() == 0)
 		return configuration;
 
 	bool found = false;
 	foreach(const QString &g, settings_->childGroups()) {
-		if(g == group) {
+		if(g.toStdString() == group) {
 			found = true;
 			break;
 		}
@@ -75,9 +72,9 @@ const QMap<QString,QVariant> Config::groupConfig(QString group) const
 	if(!found)
 		return configuration;
 
-	settings_->beginGroup(group);
+	settings_->beginGroup(QString::fromStdString(group));
 	foreach(const QString &key, settings_->childKeys()) {
-		configuration[key] = settings_->value(key);
+		configuration[key.toStdString()] = settings_->value(key).toString().toStdString();
 	}
 	settings_->endGroup();
 
@@ -89,7 +86,7 @@ const QMap<QString,QVariant> Config::groupConfig(QString group) const
  *
  * If there was no error, returns an empty string.
  */
-const QString &Config::lastError()
+const std::string &Config::lastError()
 {
   return error_;
 }
@@ -111,22 +108,22 @@ bool Config::loadFromFile( std::string fileName )
 
   // load!
   error_.clear();
-  if( !QFile::exists(QString::fromStdString(fileName)) )
-  {
-    error_ = rw("Configuration file does not exist: ") + QString::fromStdString(fileName);
+  std::ifstream ifile(fileName.c_str());
+  if(!ifile) {
+    error_ = "Configuration file does not exist or is unreadable: " + fileName;
   }
-  if( error_.isEmpty() )
+  if( error_.length() == 0 )
   {
     settings_ = new QSettings(QString::fromStdString(fileName), QSettings::IniFormat);
     if( settings_->status() != QSettings::NoError )
     {
-      error_ = rw("Could not read configuration file: ") + QString::fromStdString(fileName);
+      error_ = "Could not read configuration file: " + fileName;
     }
   }
 
-  if( !error_.isEmpty() )
+  if( error_.length() != 0 )
   {
-    qWarning() << "Error: " << error_;
+    fprintf(stderr, "Error: %s\n", error_.c_str());
     delete settings_;
     settings_ = 0;
     return false;
@@ -137,33 +134,34 @@ bool Config::loadFromFile( std::string fileName )
 
 const std::list<NetworkConfig*> &Config::networks()
 {
-  Q_ASSERT( settings_ != 0 );
+  assert( settings_ != 0 );
   // TODO remove later
   if( networks_.size() > 0 )
     return networks_;
 
   // Database settings
-  bool valid = true;
   settings_->beginGroup(rw("database"));
   DatabaseConfig *dbc = new DatabaseConfig;
-  dbc->type     = settings_->value(rw("type")).toString();
-  dbc->hostname = settings_->value(rw("hostname")).toString();
-  QString dbRawPort = settings_->value(rw("port")).toString();
-  dbc->port     = dbRawPort.isEmpty() ? 0 : dbRawPort.toUInt(&valid);
-  dbc->username = settings_->value(rw("username")).toString();
-  dbc->password = settings_->value(rw("password")).toString();
-  dbc->database = settings_->value(rw("database")).toString();
-  dbc->options  = settings_->value(rw("options")).toString();
+  dbc->type     = settings_->value(rw("type")).toString().toStdString();
+  dbc->hostname = settings_->value(rw("hostname")).toString().toStdString();
+  std::string dbRawPort = settings_->value(rw("port")).toString().toStdString();
+  std::stringstream portStr;
+  portStr << dbRawPort;
+  portStr >> dbc->port;
+  dbc->username = settings_->value(rw("username")).toString().toStdString();
+  dbc->password = settings_->value(rw("password")).toString().toStdString();
+  dbc->database = settings_->value(rw("database")).toString().toStdString();
+  dbc->options  = settings_->value(rw("options")).toString().toStdString();
 
-  if(!valid) {
-    qWarning() << "Database port is not a valid number: " << dbRawPort;
-    qWarning() << "Assuming default port.";
+  if(!portStr) {
+    fprintf(stderr, "Database port is not a valid numer: %s\n", dbRawPort.c_str());
+    fprintf(stderr, "Assuming default port.\n");
     dbc->port = 0;
   }
 
-  if( !QSqlDatabase::isDriverAvailable( Database::typeToQtPlugin(dbc->type) )) {
-    qWarning() << "No Qt plugin loaded for database type " << dbc->type;
-    qWarning() << "You will likely get database errors later.";
+  if( !QSqlDatabase::isDriverAvailable(Database::typeToQtPlugin(QString::fromStdString(dbc->type)))) {
+    fprintf(stderr, "No Qt plugin loaded for database type %s\n", dbc->type.c_str());
+    fprintf(stderr, "You will likely get database error later.\n");
   }
 
   delete databaseConfig_;
@@ -183,17 +181,15 @@ const std::list<NetworkConfig*> &Config::networks()
       QString networkName = category.mid(8).toLower();
       if( networkName.length() > 50 )
       {
-        qWarning() << "Max network name length is 50. " << networkName;
+        fprintf(stderr, "Max network name length is 50. %s\n", networkName.toUtf8().constData());
         networkName = networkName.left(50);
       }
 #ifdef DEBUG
-      qDebug() << "Network: " << networkName;
+      fprintf(stderr, "Network: %s\n", networkName.toUtf8().constData());
 #endif
       if( servers.contains(networkName) )
       {
-        qWarning() << "Warning: Two network blocks for " << networkName
-                   << "exist in your configuration file."
-                      " Behaviour is undefined.";
+        fprintf(stderr, "Warning: Two network blocks for network %s exist in your configuration file. Behaviour is undefined.\n", networkName.toUtf8().constData());
       }
 
       NetworkConfig *nc = new NetworkConfig;
@@ -219,8 +215,7 @@ const std::list<NetworkConfig*> &Config::networks()
 
       if( !networks.contains(networkName) )
       {
-        qWarning() << "Warning: Server block for " << networkName
-                   << "exists, but no network block found yet. Ignoring block.";
+        fprintf(stderr, "Warning: Server block for network %s exists, but no network block found yet. Ignoring block.", networkName.toUtf8().constData());
         continue;
       }
 
@@ -233,7 +228,7 @@ const std::list<NetworkConfig*> &Config::networks()
       networks[networkName]->servers.push_back( sc );
 
 #ifdef DEBUG
-      qDebug() << "Server for network: " << networkName;
+      fprintf(stderr, "Server for network: %s\n", networkName.toUtf8().constData());
 #endif
     }
     else if( category.toLower() != rw("generic")
@@ -241,8 +236,7 @@ const std::list<NetworkConfig*> &Config::networks()
           && category.toLower() != rw("sockets")
           && !category.toLower().startsWith(rw("plugin")) )
     {
-      qWarning() << "Warning: Configuration category name not recognized: "
-                 << category;
+      fprintf(stderr, "Warning: Configuration category name not recognized: %s\n", category.toUtf8().constData());
     }
   }
 
@@ -252,8 +246,7 @@ const std::list<NetworkConfig*> &Config::networks()
     i.next();
     if( i.value()->servers.size() == 0 )
     {
-      qWarning() << "Warning: Network block for " << i.key()
-                 << " exists, but no server block found. Ignoring block.";
+      fprintf(stderr, "Warning: Network block for %s exists, but no server block found. Ignoring block.\n", i.key().toUtf8().constData());
       continue;
     }
   }

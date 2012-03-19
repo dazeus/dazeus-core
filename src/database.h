@@ -8,6 +8,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
+#include <QtCore/QVariant>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlError>
 
