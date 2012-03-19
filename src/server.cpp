@@ -125,7 +125,7 @@ void Server::processDescriptors(fd_set *in_set, fd_set *out_set) {
 	irc_process_select_descriptors(irc_, in_set, out_set);
 }
 
-void Server::slotNumericMessageReceived( const std::string &origin, uint code,
+void Server::slotNumericMessageReceived( const std::string &origin, unsigned int code,
 	const std::vector<std::string> &args )
 {
 	assert( network_ != 0 );
@@ -165,8 +165,9 @@ void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 		network_->slotNamesReceived( origin, args.at(1), in_names_, args.at(0) );
 		std::vector<std::string> parameters;
 		parameters.push_back(args.at(1));
-		foreach(std::string name, in_names_) {
-			parameters.push_back(name);
+		std::vector<std::string>::const_iterator it;
+		for(it = in_names_.begin(); it != in_names_.end(); ++it) {
+			parameters.push_back(*it);
 		}
 		network_->slotIrcEvent( "NAMES", origin, parameters );
 		in_names_.clear();
@@ -175,8 +176,9 @@ void Server::slotNumericMessageReceived( const std::string &origin, uint code,
 	codestream << code;
 	std::vector<std::string> params;
 	params.push_back(codestream.str());
-	foreach(std::string arg, args) {
-		params.push_back(arg);
+	std::vector<std::string>::const_iterator it;
+	for(it = args.begin(); it != args.end(); ++it) {
+		params.push_back(*it);
 	}
 	network_->slotIrcEvent( "NUMERIC", origin, params );
 }
