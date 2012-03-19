@@ -109,7 +109,7 @@ struct ServerSorter {
 		int prio2 = c2->priority - n_->serverUndesirability(c2);
 
 		if( prio1 == prio2 ) // choose randomly
-			return (qrand() % 2) == 0 ? -1 : 1;
+			return (rand() % 2) == 0 ? -1 : 1;
 		return prio1 < prio2;
 	}
 };
@@ -401,7 +401,9 @@ void Network::slotWhoisReceived(const std::string &origin, const std::string &ni
 void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, const std::string &receiver ) {
 	assert(contains(knownUsers_, strToLower(channel)));
 	std::vector<std::string> &users = knownUsers_[strToLower(channel)];
-	foreach(std::string n, names) {
+	std::vector<std::string>::const_iterator it;
+	for(it = names.begin(); it != names.end(); ++it) {
+		std::string n = *it;
 		unsigned int nickStart;
 		for(nickStart = 0; nickStart < n.length(); ++nickStart) {
 			if(n[nickStart] != '@' && n[nickStart] != '~' && n[nickStart] != '+'
