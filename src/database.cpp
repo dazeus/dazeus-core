@@ -45,9 +45,11 @@ Database::~Database()
 Database *Database::fromConfig(const DatabaseConfig *dbc)
 {
 #warning network is empty?
-  return new Database( QString(), dbc->type, dbc->database, dbc->username,
-                           dbc->password, dbc->hostname, dbc->port,
-                           dbc->options );
+#define Q(x) QString::fromStdString(x)
+  return new Database( QString(), Q(dbc->type), Q(dbc->database), Q(dbc->username),
+                           Q(dbc->password), Q(dbc->hostname), dbc->port,
+                           Q(dbc->options) );
+#undef Q
 }
 
 /**

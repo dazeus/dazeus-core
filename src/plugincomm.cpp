@@ -129,11 +129,32 @@ void PluginComm::run() {
 }
 
 void PluginComm::init() {
-	int sockets = config_->groupConfig("sockets").value("sockets").toInt();
-	for(int i = 1; i <= sockets; ++i) {
-		std::stringstream socketName;
-		socketName << "socket" << i;
-		std::string socket = config_->groupConfig("sockets").value(QString::fromStdString(socketName.str())).toString().toStdString();
+	std::stringstream socketStr;
+	std::map<std::string,std::string> sockets = config_->groupConfig("sockets");
+
+	std::map<std::string,std::string>::iterator sockIt = sockets.find("sockets");
+	if(sockIt == sockets.end()) {
+		fprintf(stderr, "Warning: Configuration file contains no sockets to open.\n");
+		return;
+	}
+
+	socketStr << sockIt->second;
+	int numSockets;
+	socketStr >> numSockets;
+	if(!socketStr) {
+		fprintf(stderr, "Could not read how many sockets to read, aborting.\n");
+		abort();
+	}
+	for(int i = 1; i <= numSockets; ++i) {
+		socketStr.clear();
+		socketStr.str(std::string());
+		socketStr << "socket" << i;
+		sockIt = sockets.find(socketStr.str());
+		if(sockIt == sockets.end()) {
+			fprintf(stderr, "Warning: Socket %d declared, but not defined, skipping\n", i);
+			continue;
+		}
+		std::string socket = sockIt->second;
 		size_t colon = socket.find(':');
 		if(colon == std::string::npos) {
 			fprintf(stderr, "(PluginComm) Did not understand socket option %d: %s\n", i, socket.c_str());
@@ -397,10 +418,14 @@ void PluginComm::messageReceived( const std::string &origin, const std::string &
                   const std::string &receiver, Network *n ) {
 	assert(n != 0);
 
+	std::map<std::string,std::string> config = config_->groupConfig("general");
+	std::map<std::string,std::string>::iterator configIt;
+
 	std::string payload;
-	std::string highlightChar = config_->groupConfig("general").value("highlightCharacter").toString().toStdString();
-	if(highlightChar.length() == 0)
-		highlightChar = "}";
+	std::string highlightChar = "}";
+	configIt = config.find("highlightCharacter");
+	if(configIt != config.end())
+		highlightChar = configIt->second;
 
 	if( startsWith(message, n->user()->nick() + ":", true)
 	 || startsWith(message, n->user()->nick() + ",", true)) {
@@ -849,12 +874,15 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			std::string group = parts.front();
 			parts.erase(parts.begin());
 			std::string name = join(parts, ".");
-			// TODO get plugin group name for this plugin
-			QVariant conf = config_->groupConfig("plugin " + QString::fromStdString(group)).value(QString::fromStdString(name));
+
+			std::stringstream configName;
+			configName << "plugin " << group;
+			std::map<std::string,std::string> groupConfig = config_->groupConfig(configName.str());
+			std::map<std::string,std::string>::iterator configIt = groupConfig.find(name);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[0])));
-			if(!conf.isNull()) {
-				response.push_back(JSONNode("value", libjson::to_json_string(conf.toString().toStdString())));
+			if(configIt != groupConfig.end()) {
+				response.push_back(JSONNode("value", libjson::to_json_string(configIt->second)));
 			}
 		}
 	} else {
