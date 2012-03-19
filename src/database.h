@@ -6,7 +6,6 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include <QtCore/QObject>
 #include <QtCore/QStringList>
 #include <QtCore/QVariant>
 #include <QtSql/QSqlDatabase>
@@ -29,10 +28,8 @@ struct DatabaseConfig;
  *
  * @see setProperty()
  */
-class Database : public QObject
+class Database
 {
-  Q_OBJECT
-
   public:
           Database( const QString &network, const QString &dbType,
                     const QString &databaseName, const QString &username,
