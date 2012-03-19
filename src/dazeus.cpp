@@ -93,6 +93,10 @@ void DaZeus::autoConnect()
 }
 
 
+std::string DaZeus::configFileName() const {
+	return configFileName_;
+}
+
 /**
  * @brief Returns whether the configuration is loaded.
  */
@@ -218,4 +222,8 @@ void DaZeus::run()
 	while(1) {
 		plugins_->run();
 	}
+}
+
+void DaZeus::setConfigFileName(std::string filename) {
+	configFileName_ = filename;
 }
