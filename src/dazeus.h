@@ -6,8 +6,8 @@
 #ifndef DAZEUS_H
 #define DAZEUS_H
 
-#include <QString>
 #include <list>
+#include <string>
 
 class Config;
 class PluginComm;
@@ -20,7 +20,7 @@ class DaZeus
              DaZeus( std::string configFileName = std::string() );
             ~DaZeus();
     void     setConfigFileName( std::string fileName );
-    QString  configFileName() const;
+    std::string configFileName() const;
     bool     configLoaded() const;
 
     Database *database() const;
