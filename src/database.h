@@ -31,7 +31,7 @@ struct DatabaseConfig;
 class Database
 {
   public:
-          Database( const QString &network, const QString &dbType,
+          Database( const QString &dbType,
                     const QString &databaseName, const QString &username,
                     const QString &password, const QString &hostname,
                     int port, const QString &options );
@@ -40,7 +40,6 @@ class Database
     static Database *fromConfig(const DatabaseConfig *dbc);
     static QLatin1String typeToQtPlugin(const QString &type);
 
-    const QString  &network() const;
     bool            open();
     void            checkDatabaseConnection();
 
@@ -63,7 +62,6 @@ class Database
                               const QString &senderScope   = QString() );
 
   private:
-    QString network_;
     QSqlDatabase db_;
 
 };
