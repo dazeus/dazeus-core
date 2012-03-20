@@ -16,12 +16,11 @@
 /**
  * @brief Constructor.
  */
-Database::Database( const QString &network, const QString &dbType,
+Database::Database( const QString &dbType,
                     const QString &databaseName, const QString &username,
                     const QString &password, const QString &hostname,
                     int port, const QString &options )
-: network_(network.toLower())
-, db_(QSqlDatabase::addDatabase(typeToQtPlugin(dbType)))
+: db_(QSqlDatabase::addDatabase(typeToQtPlugin(dbType)))
 {
   db_.setDatabaseName( databaseName );
   db_.setUserName( username );
@@ -44,9 +43,8 @@ Database::~Database()
  */
 Database *Database::fromConfig(const DatabaseConfig *dbc)
 {
-#warning network is empty?
 #define Q(x) QString::fromStdString(x)
-  return new Database( QString(), Q(dbc->type), Q(dbc->database), Q(dbc->username),
+  return new Database( Q(dbc->type), Q(dbc->database), Q(dbc->username),
                            Q(dbc->password), Q(dbc->hostname), dbc->port,
                            Q(dbc->options) );
 #undef Q
@@ -58,14 +56,6 @@ Database *Database::fromConfig(const DatabaseConfig *dbc)
 QSqlError Database::lastError() const
 {
   return db_.lastError();
-}
-
-/**
- * @brief Returns the network for which this Database was created.
- */
-const QString &Database::network() const
-{
-  return network_;
 }
 
 bool Database::open()
