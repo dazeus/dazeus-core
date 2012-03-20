@@ -8,8 +8,6 @@
 
 #include <QtCore/QStringList>
 #include <QtCore/QVariant>
-#include <QtSql/QSqlDatabase>
-#include <QtSql/QSqlError>
 
 class QVariant;
 struct DatabaseConfig;
