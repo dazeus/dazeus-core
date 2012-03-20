@@ -35,14 +35,8 @@ class Database
                     int port, const QString &options );
          ~Database();
 
-    static Database *fromConfig(const DatabaseConfig *dbc);
-    static QLatin1String typeToQtPlugin(const QString &type);
-
     bool            open();
-    void            checkDatabaseConnection();
 
-    bool            createTable();
-    bool            tableExists();
     QSqlError       lastError() const;
 
     QVariant    property( const QString &variable,
