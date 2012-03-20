@@ -38,18 +38,6 @@ Database::~Database()
 }
 
 /**
- * @brief Create a Database from database configuration.
- */
-Database *Database::fromConfig(const DatabaseConfig *dbc)
-{
-#define Q(x) QString::fromStdString(x)
-  return new Database( Q(dbc->type), Q(dbc->database), Q(dbc->username),
-                           Q(dbc->password), Q(dbc->hostname), dbc->port,
-                           Q(dbc->options) );
-#undef Q
-}
-
-/**
  * @brief Returns the last error in the QSqlDatabase object.
  */
 QSqlError Database::lastError() const
@@ -289,69 +277,4 @@ void Database::setProperty( const QString &variable,
   {
     qWarning() << "Set property failed: " << data.lastError();
   }
-}
-
-/**
- * This method checks whether there is still an active database connection, by
- * executing a simple 'dummy query' (SELECT 1).
- * 
- * By calling this function before most other functions in this file, a failed
- * connection can be detected, and maybe even fixed, before any data is lost.
- */
-void Database::checkDatabaseConnection()
-{
-#ifdef DEBUG
-  qDebug() << "Check database connection:" << db_.isOpen();
-#endif
-
-  QSqlQuery query(QLatin1String("SELECT 1"), db_);
-  if( !query.exec() )
-  {
-    qWarning() << "Database ping failed: " << query.lastError();
-    bool res = db_.open();
-    qWarning() << "Trying to revive: " << res;
-  }
-}
-
-bool Database::createTable()
-{
-  checkDatabaseConnection();
-  if( tableExists() )
-    return true; // database already exists
-
-  QSqlQuery data(db_);
-  QLatin1String idrow( "INT(10) PRIMARY KEY AUTO_INCREMENT" );
-  if( db_.driverName().toLower().startsWith(QLatin1String("qsqlite")) )
-  {
-    idrow = QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT");
-  }
-  bool ok = data.exec(QString(QLatin1String("CREATE TABLE properties ("
-                   "  id      %1,"
-                   "  variable VARCHAR(150),"
-                   "  network VARCHAR(50)," // enforced limit in config.cpp
-                   "  receiver VARCHAR(50)," // usually, max = 9 or 30
-                   "  sender VARCHAR(50)," //  usually, max = 9 or 30
-                   "  value TEXT"
-                   ");")).arg(idrow));
-  if( !ok )
-  {
-    qWarning() << data.lastError();
-  }
-  return ok;
-}
-bool Database::tableExists()
-{
-  checkDatabaseConnection();
-  return db_.record(QLatin1String("properties")).count() > 0;
-}
-
-QLatin1String Database::typeToQtPlugin(const QString &type)
-{
-  if( type.toLower() == QLatin1String("sqlite") )
-    return QLatin1String("QSQLITE");
-  if( type.toLower() == QLatin1String("mysql") )
-    return QLatin1String("QMYSQL");
-
-  qWarning() << "typeToQtPlugin: Unknown type: " << type;
-  return QLatin1String("");
 }
