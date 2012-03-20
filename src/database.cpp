@@ -7,9 +7,8 @@
 #include "config.h"
 #include <QtCore/QVariant>
 #include <QtCore/QDebug>
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
-#include <QtSql/QSqlRecord>
+#include <mongo.h>
+#include <cerrno>
 
 // #define DEBUG
 
