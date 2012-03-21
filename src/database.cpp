@@ -236,6 +236,9 @@ QVariant Database::property( const QString &variable,
 	const char *value;
 	if(!bson_cursor_get_string(c, &value)) {
 		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
 		mongo_sync_cursor_free(cursor);
 		bson_cursor_free(c);
 		return QVariant();
