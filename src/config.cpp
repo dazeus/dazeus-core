@@ -159,9 +159,9 @@ const std::list<NetworkConfig*> &Config::networks()
     dbc->port = 0;
   }
 
-  if( !QSqlDatabase::isDriverAvailable(Database::typeToQtPlugin(QString::fromStdString(dbc->type)))) {
-    fprintf(stderr, "No Qt plugin loaded for database type %s\n", dbc->type.c_str());
-    fprintf(stderr, "You will likely get database error later.\n");
+  if( dbc->type != "mongo") {
+    fprintf(stderr, "No support loaded for database type %s\n", dbc->type.c_str());
+    fprintf(stderr, "Currently, only mongo is supported.\n");
   }
 
   delete databaseConfig_;
