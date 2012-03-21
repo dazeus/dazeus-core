@@ -2,19 +2,21 @@
 use strict;
 use warnings;
 use DaZeus;
+use Data::Dumper;
 
-my ($socket, $namespace) = @ARGV;
+my ($socket, $namespace, $network, $receiver, $sender) = @ARGV;
 if(!$namespace) {
-	die "Usage: $0 socket namespace\n";
+	die "Usage: $0 socket namespace [network [receiver [sender]]]\n";
 }
 
 my $dazeus = DaZeus->connect($socket);
 
-my $keys = $dazeus->getPropertyKeys($namespace);
+my $keys = $dazeus->getPropertyKeys($namespace, $network, $receiver, $sender);
 foreach(@$keys) {
-	print "$_: ";
+	print "= $_ =\n";
 	my $value = $dazeus->getProperty($namespace . "." . $_);
-	print "$value\n";
+	print Dumper($value);
+	print "\n";
 }
 
 print scalar(@$keys) . " keys listed.\n";
