@@ -24,5 +24,5 @@ HEADERS += src/database.h src/plugincomm.h src/utils.h
 
 INCLUDEPATH += src
 
-LIBS += -lircclient -ljson
-QMAKE_CXXFLAGS += "-I/usr/include/libircclient -I/usr/include/libjson"
+LIBS += -lircclient -ljson -lmongo-client
+QMAKE_CXXFLAGS += "-I/usr/include/libircclient -I/usr/include/libjson -I/usr/include/mongo-client -I/usr/include/glib-2.0"

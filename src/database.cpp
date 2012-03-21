@@ -7,27 +7,27 @@
 #include "config.h"
 #include <QtCore/QVariant>
 #include <QtCore/QDebug>
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
-#include <QtSql/QSqlRecord>
+#include <mongo.h>
+#include <cerrno>
+#include <cassert>
+#include <sstream>
 
 // #define DEBUG
+
+#define M (mongo_sync_connection*)m_
+#define PROPERTIES std::string(databaseName_ + ".properties").c_str()
 
 /**
  * @brief Constructor.
  */
-Database::Database( const QString &dbType,
-                    const QString &databaseName, const QString &username,
-                    const QString &password, const QString &hostname,
-                    int port, const QString &options )
-: db_(QSqlDatabase::addDatabase(typeToQtPlugin(dbType)))
+Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
+: m_(0)
 {
-  db_.setDatabaseName( databaseName );
-  db_.setUserName( username );
-  db_.setPassword( password );
-  db_.setHostName( hostname );
-  db_.setPort( port );
-  db_.setConnectOptions( options );
+	hostName_ = hostname;
+	port_ = port;
+	databaseName_ = database;
+	username_ = username;
+	password_ = password;
 }
 
 
@@ -36,31 +36,52 @@ Database::Database( const QString &dbType,
  */
 Database::~Database()
 {
-}
-
-/**
- * @brief Create a Database from database configuration.
- */
-Database *Database::fromConfig(const DatabaseConfig *dbc)
-{
-#define Q(x) QString::fromStdString(x)
-  return new Database( Q(dbc->type), Q(dbc->database), Q(dbc->username),
-                           Q(dbc->password), Q(dbc->hostname), dbc->port,
-                           Q(dbc->options) );
-#undef Q
+	if(m_)
+		mongo_sync_disconnect(M);
 }
 
 /**
  * @brief Returns the last error in the QSqlDatabase object.
  */
-QSqlError Database::lastError() const
+std::string Database::lastError() const
 {
-  return db_.lastError();
+	return lastError_;
 }
 
 bool Database::open()
 {
-  return db_.open();
+	m_ = (void*)mongo_sync_connect(hostName_.c_str(), port_, TRUE);
+	if(!m_) {
+		lastError_ = strerror(errno);
+		return false;
+	}
+	if(!mongo_sync_conn_set_auto_reconnect(M, TRUE)) {
+		lastError_ = strerror(errno);
+		mongo_sync_disconnect(M);
+		return false;
+	}
+
+	bson *index = bson_build(
+		BSON_TYPE_INT32, "network", 1,
+		BSON_TYPE_INT32, "receiver", 1,
+		BSON_TYPE_INT32, "sender", 1,
+		BSON_TYPE_NONE
+	);
+	bson_finish(index);
+
+	if(!mongo_sync_cmd_index_create(M, PROPERTIES, index,
+	  MONGO_INDEX_UNIQUE | MONGO_INDEX_DROP_DUPS | MONGO_INDEX_BACKGROUND))
+	{
+#ifdef DEBUG
+		fprintf(stderr, "Index create error: %s\n", strerror(errno));
+#endif
+		lastError_ = strerror(errno);
+		bson_free(index);
+		return false;
+	}
+
+	bson_free(index);
+	return true;
 }
 
 /**
@@ -77,50 +98,82 @@ bool Database::open()
 QStringList Database::propertyKeys( const QString &ns, const QString &networkScope,
  const QString &receiverScope, const QString &senderScope )
 {
-  checkDatabaseConnection();
+	std::stringstream regexStr;
+	regexStr << "^\\Q" << ns.toStdString() << "\\E\\.";
+	std::string regex = regexStr.str();
 
-  QString nsQuery = ns + ".%";
-  QSqlQuery data(db_);
-  data.prepare(QLatin1String("SELECT variable,network,receiver,sender"
-    " FROM properties WHERE variable LIKE ?"));
-  data.addBindValue(nsQuery);
+	bson *selector = bson_new();
+	bson_append_regex(selector, "variable", regex.c_str(), "");
+	if(networkScope.length() > 0) {
+		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+		if(receiverScope.length() > 0) {
+			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+			if(senderScope.length() > 0) {
+				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+			} else {
+				bson_append_null(selector, "sender");
+			}
+		} else {
+			bson_append_null(selector, "receiver");
+			bson_append_null(selector, "sender");
+		}
+	} else {
+		bson_append_null(selector, "network");
+		bson_append_null(selector, "receiver");
+		bson_append_null(selector, "sender");
+	}
+	bson_finish(selector);
 
-  QStringList k;
-  if( !data.exec() )
-  {
-    qWarning() << "Property retrieve keys failed: " << data.lastError();
-    return k;
-  }
+	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 0, selector, NULL /* TODO: variable only? */);
 
-  // index the results
-  while( data.next() )
-  {
-    // Check if the name really matches
-    QString actualName = data.value(0).toString();
-    if( !actualName.startsWith(ns + '.') )
-       continue;
-    actualName = actualName.mid(ns.length() + 1);
+	bson_free(selector);
 
-    if( data.value(3).isNull() )
-    {
-      if( data.value(2).isNull() )
-      {
-        if( data.value(1).isNull() )
-          k.append(actualName);
-        else if( data.value(1).toString() == networkScope )
-          k.append(actualName);
-      }
-      else if( data.value(1).toString() == networkScope
-            && data.value(2).toString() == receiverScope )
-        k.append(actualName);
-    }
-    else if( data.value(1).toString() == networkScope
-          && data.value(2).toString() == receiverScope
-          && data.value(3).toString() == senderScope )
-      k.append(actualName);
-  }
+	if(!p) {
+		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+		return QStringList();
+	}
 
-  return k;
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
+	if(!cursor) {
+		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+		return QStringList();
+	}
+
+	QStringList res;
+	while(mongo_sync_cursor_next(cursor)) {
+		bson *result = mongo_sync_cursor_get_data(cursor);
+		if(!result) {
+			lastError_ = strerror(errno);
+#ifdef DEBUG
+			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+			mongo_sync_cursor_free(cursor);
+			return res;
+		}
+
+		bson_cursor *c = bson_find(result, "variable");
+		const char *value;
+		if(!bson_cursor_get_string(c, &value)) {
+			lastError_ = strerror(errno);
+#ifdef DEBUG
+			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+			mongo_sync_cursor_free(cursor);
+			bson_cursor_free(c);
+			return res;
+		}
+
+		value += ns.length() + 1;
+		res << value;
+	}
+
+	return res;
 }
 
 /**
@@ -139,220 +192,182 @@ QVariant Database::property( const QString &variable,
  const QString &networkScope, const QString &receiverScope,
  const QString &senderScope )
 {
-  checkDatabaseConnection();
+	// variable, [networkScope, [receiverScope, [senderScope]]]
+	// (empty if not given)
 
-  // retrieve from database
-  QSqlQuery data(db_);
-  data.prepare(QLatin1String("SELECT value,network,receiver,sender"
-     " FROM properties WHERE variable=?"));
-  data.addBindValue(variable);
-  if( !data.exec() )
-  {
-    qWarning() << "Property retrieve query failed: " << data.lastError();
-    return QVariant();
-  }
+	// db.c.
+	//   find() // for everything
+	//   find({network:{$in: ['NETWORKNAME',null]}}) // for network scope
+	//   find({network:{$in: ['NETWORKNAME',null]}, receiver:{$in: ['RECEIVER',null]}}) // for receiver scope
+	//   find({network:..., receiver:..., sender:{$in: ['SENDER',null]}}) // for sender scope
+	// .sort({'a':-1,'b':-1,'c':-1}).limit(1)
+	// Reverse sort and limit(1) will make sure we only receive the most
+	// specific result. This works, as long as the assumption is true that
+	// no specific fields are set without their less specific fields also
+	// being set (i.e. receiver can't be empty if sender is non-empty).
 
-  // index the results
-  QVariant global, network, receiver, sender;
-  while( data.next() )
-  {
-    if( data.value(3).isNull() )
-    {
-      if( data.value(2).isNull() )
-      {
-        if( data.value(1).isNull() )
-          global = data.value(0);
-        else if( data.value(1).toString() == networkScope )
-          network = data.value(0);
-      }
-      else if( data.value(1).toString() == networkScope
-            && data.value(2).toString() == receiverScope )
-        receiver = data.value(0);
-    }
-    else if( data.value(1).toString() == networkScope
-          && data.value(2).toString() == receiverScope
-          && data.value(3).toString() == senderScope )
-      sender = data.value(0);
-  }
+	bson *query = bson_build_full(
+		BSON_TYPE_DOCUMENT, "$orderby", TRUE,
+		bson_build(BSON_TYPE_INT32, "network", -1, BSON_TYPE_INT32, "receiver", -1, BSON_TYPE_INT32, "sender", -1, BSON_TYPE_NONE),
+		BSON_TYPE_NONE
+	);
 
+	/*
+		'$query':{
+			'variable':'foo',
+			'network':{'$in':['bla',null]},
+			'receiver':{'$in':['moo', null]},
+		}
+	*/
+
+	bson *selector = bson_new();
+	bson *network = 0, *receiver = 0, *sender = 0;
+	bson_append_string(selector, "variable", variable.toUtf8().constData(), -1);
+	if(networkScope.length() > 0) {
+		network = bson_build_full(
+			BSON_TYPE_ARRAY, "$in", TRUE,
+			bson_build(BSON_TYPE_STRING, "1", networkScope.toUtf8().constData(), -1,
+			           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+			BSON_TYPE_NONE );
+		bson_finish(network);
+		bson_append_document(selector, "network", network);
+		if(receiverScope.length() > 0) {
+			receiver = bson_build_full(
+				BSON_TYPE_ARRAY, "$in", TRUE,
+				bson_build(BSON_TYPE_STRING, "1", receiverScope.toUtf8().constData(), -1,
+				           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+				BSON_TYPE_NONE );
+			bson_finish(receiver);
+			bson_append_document(selector, "receiver", receiver);
+			if(senderScope.length() > 0) {
+				sender = bson_build_full(
+					BSON_TYPE_ARRAY, "$in", TRUE,
+					bson_build(BSON_TYPE_STRING, "1", senderScope.toUtf8().constData(), -1,
+						   BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+					BSON_TYPE_NONE );
+				bson_finish(sender);
+				bson_append_document(selector, "sender", sender);
+			}
+		}
+	}
+	bson_finish(selector);
+	bson_append_document(query, "$query", selector);
+	bson_finish(query);
+
+	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 1, query, NULL /* TODO: value only? */);
+
+	bson_free(query);
+	bson_free(selector);
+	if(network) bson_free(network);
+	if(receiver) bson_free(receiver);
+	if(sender) bson_free(sender);
+
+	if(!p) {
+		lastError_ = strerror(errno);
+		return QVariant();
+	}
+
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
+	if(!cursor) {
+		lastError_ = strerror(errno);
+		return QVariant();
+	}
+
+	if(!mongo_sync_cursor_next(cursor)) {
 #ifdef DEBUG
-  qDebug() << "For variable " << variable;
-  qDebug() << "Global: " << global;
-  qDebug() << "Network: " << network;
-  qDebug() << "Receiver: " << receiver;
-  qDebug() << "Sender: " << sender;
+		fprintf(stderr, "Variable %s not found within given scope.\n", variable.toUtf8().constData());
 #endif
+	}
 
-  if( !sender.isNull() )
-    return sender;
-  if( !receiver.isNull() )
-    return receiver;
-  if( !network.isNull() )
-    return network;
-  return global;
+	bson *result = mongo_sync_cursor_get_data(cursor);
+	if(!result) {
+		lastError_ = strerror(errno);
+		mongo_sync_cursor_free(cursor);
+		return QVariant();
+	}
+
+	bson_cursor *c = bson_find(result, "value");
+	const char *value;
+	if(!bson_cursor_get_string(c, &value)) {
+		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+		mongo_sync_cursor_free(cursor);
+		bson_cursor_free(c);
+		return QVariant();
+	}
+
+	QVariant res(value);
+
+	bson_free(result);
+	bson_cursor_free(c);
+
+	// only one result
+	assert(!mongo_sync_cursor_next(cursor));
+
+	mongo_sync_cursor_free(cursor);
+	return res;
 }
 
 void Database::setProperty( const QString &variable,
  const QVariant &value, const QString &networkScope,
  const QString &receiverScope, const QString &senderScope )
 {
+	/**
+		selector: {network:'foo',receiver:'bar',sender:null,variable:'bla.blob'}
+		object:   {'$set':{ 'value': 'bla'}}
+	*/
+	bson *object = bson_build_full(
+		BSON_TYPE_DOCUMENT, "$set", TRUE,
+		bson_build(
+			BSON_TYPE_STRING, "value", value.toString().toUtf8().constData(), -1,
+			BSON_TYPE_NONE),
+		BSON_TYPE_NONE);
+	bson_finish(object);
+	bson *selector = bson_build(
+		BSON_TYPE_STRING, "variable", variable.toUtf8().constData(), -1,
+		BSON_TYPE_NONE);
+	if(networkScope.length() > 0) {
+		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+
+		if(receiverScope.length() > 0) {
+			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+
+			if(senderScope.length() > 0) {
+				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+			} else {
+				bson_append_null(selector, "sender");
+			}
+		} else {
+			bson_append_null(selector, "receiver");
+			bson_append_null(selector, "sender");
+		}
+	} else {
+		bson_append_null(selector, "network");
+		bson_append_null(selector, "receiver");
+		bson_append_null(selector, "sender");
+	}
+	bson_finish(selector);
+
+	// if the value length is zero, run a delete instead
+	if(value.toString().length() == 0) {
+		if(!mongo_sync_cmd_delete(M, PROPERTIES,
+			0, selector))
+		{
+			lastError_ = strerror(errno);
 #ifdef DEBUG
-  qDebug() << "Setting property " << variable << "to" << value;
+			fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
-  checkDatabaseConnection();
-
-  // first, select it from the database, to see whether to update or insert
-  // (not all database engines support "on duplicate key update".)
-  QSqlQuery finder(db_);
-  // because size() always returns -1 on an SQLite backend, we use COUNT.
-  finder.prepare(
-      QString(QLatin1String("SELECT id,COUNT(id) FROM properties WHERE "
-                "variable=? AND network %1 AND receiver %2 AND sender %3"))
-      .arg( QLatin1String(networkScope.isEmpty()  ? "IS NULL" : "=?") )
-      .arg( QLatin1String(receiverScope.isEmpty() ? "IS NULL" : "=?") )
-      .arg( QLatin1String(senderScope.isEmpty()   ? "IS NULL" : "=?") )
-  );
-  // This ugly hack seems necessary as MySQL does not allow =NULL, requires IS NULL.
-  finder.addBindValue(variable);
-  if( !networkScope.isEmpty() )
-    finder.addBindValue(networkScope);
-  if( !receiverScope.isEmpty() )
-    finder.addBindValue(receiverScope);
-  if( !senderScope.isEmpty() )
-    finder.addBindValue(senderScope);
-
-  if( !finder.exec() )
-  {
-    qWarning() << "Select property before setting failed: " << finder.lastError();
-    return;
-  }
-
-  if( !finder.next() )
-  {
-    qWarning() << "Could not select first value row before setting: " << finder.lastError();
-    return;
-  }
-
-  int resultSize = finder.value(1).isValid() ? finder.value(1).toInt() : 0;
-  int returnedId = finder.value(0).isValid() ? finder.value(0).toInt() : -1;
-
-  if( resultSize > 1 )
-    qWarning() << "*** WARNING: More than one result to variable retrieve! This is a bug. ***";
-
-  QSqlQuery data(db_);
-
-  if( !resultSize )
-  {
-    // insert
-    if( !value.isValid() )
-    {
-      // Don't insert null values.
-      return;
-    }
+		}
+	} else if(!mongo_sync_cmd_update(M, PROPERTIES,
+		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, object))
+	{
+		lastError_ = strerror(errno);
 #ifdef DEBUG
-    qDebug() << "Seeing property " << variable << "for the first time, inserting.";
-    qDebug() << finder.executedQuery();
-    QList<QVariant> list = finder.boundValues().values();
-    for (int i = 0; i < list.size(); ++i)
-      qDebug() << i << ": " << list.at(i).toString().toAscii().data() << endl;
+		fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
-    data.prepare(QLatin1String("INSERT INTO properties (variable,value,"
-                "network,receiver,sender) VALUES (?, ?, ?, ?, ?)"));
-    data.addBindValue(variable);
-    data.addBindValue(value);
-    data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
-    data.addBindValue(receiverScope.isEmpty() ? QVariant() : receiverScope);
-    data.addBindValue(senderScope.isEmpty()   ? QVariant() : senderScope);
-  }
-  else
-  {
-    // update
-    if( !value.isValid() )
-    {
-      // Don't insert null values - delete the old one
-      data.prepare(QLatin1String("DELETE FROM properties WHERE id=?"));
-    }
-    else
-    {
-      // update the old one
-      data.prepare(QLatin1String("UPDATE properties SET value=? WHERE id=?"));
-      data.addBindValue(value);
-    }
-    data.addBindValue(returnedId);
-  }
-
-#ifdef DEBUG
-  qDebug() << "Executing data query: " << data.lastQuery();
-  qDebug() << "Bound data query values: " << data.boundValues();
-#endif
-
-  if( !data.exec() )
-  {
-    qWarning() << "Set property failed: " << data.lastError();
-  }
-}
-
-/**
- * This method checks whether there is still an active database connection, by
- * executing a simple 'dummy query' (SELECT 1).
- * 
- * By calling this function before most other functions in this file, a failed
- * connection can be detected, and maybe even fixed, before any data is lost.
- */
-void Database::checkDatabaseConnection()
-{
-#ifdef DEBUG
-  qDebug() << "Check database connection:" << db_.isOpen();
-#endif
-
-  QSqlQuery query(QLatin1String("SELECT 1"), db_);
-  if( !query.exec() )
-  {
-    qWarning() << "Database ping failed: " << query.lastError();
-    bool res = db_.open();
-    qWarning() << "Trying to revive: " << res;
-  }
-}
-
-bool Database::createTable()
-{
-  checkDatabaseConnection();
-  if( tableExists() )
-    return true; // database already exists
-
-  QSqlQuery data(db_);
-  QLatin1String idrow( "INT(10) PRIMARY KEY AUTO_INCREMENT" );
-  if( db_.driverName().toLower().startsWith(QLatin1String("qsqlite")) )
-  {
-    idrow = QLatin1String("INTEGER PRIMARY KEY AUTOINCREMENT");
-  }
-  bool ok = data.exec(QString(QLatin1String("CREATE TABLE properties ("
-                   "  id      %1,"
-                   "  variable VARCHAR(150),"
-                   "  network VARCHAR(50)," // enforced limit in config.cpp
-                   "  receiver VARCHAR(50)," // usually, max = 9 or 30
-                   "  sender VARCHAR(50)," //  usually, max = 9 or 30
-                   "  value TEXT"
-                   ");")).arg(idrow));
-  if( !ok )
-  {
-    qWarning() << data.lastError();
-  }
-  return ok;
-}
-bool Database::tableExists()
-{
-  checkDatabaseConnection();
-  return db_.record(QLatin1String("properties")).count() > 0;
-}
-
-QLatin1String Database::typeToQtPlugin(const QString &type)
-{
-  if( type.toLower() == QLatin1String("sqlite") )
-    return QLatin1String("QSQLITE");
-  if( type.toLower() == QLatin1String("mysql") )
-    return QLatin1String("QMYSQL");
-
-  qWarning() << "typeToQtPlugin: Unknown type: " << type;
-  return QLatin1String("");
+	}
+	bson_free(object);
+	bson_free(selector);
 }
