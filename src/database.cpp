@@ -12,21 +12,19 @@
 
 // #define DEBUG
 
+#define M (mongo_sync_connection*)m_
+
 /**
  * @brief Constructor.
  */
-Database::Database( const QString &dbType,
-                    const QString &databaseName, const QString &username,
-                    const QString &password, const QString &hostname,
-                    int port, const QString &options )
-: db_(QSqlDatabase::addDatabase(typeToQtPlugin(dbType)))
+Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
+: m_(0)
 {
-  db_.setDatabaseName( databaseName );
-  db_.setUserName( username );
-  db_.setPassword( password );
-  db_.setHostName( hostname );
-  db_.setPort( port );
-  db_.setConnectOptions( options );
+	hostName_ = hostname;
+	port_ = port;
+	databaseName_ = database;
+	username_ = username;
+	password_ = password;
 }
 
 
@@ -40,9 +38,9 @@ Database::~Database()
 /**
  * @brief Returns the last error in the QSqlDatabase object.
  */
-QSqlError Database::lastError() const
+std::string Database::lastError() const
 {
-  return db_.lastError();
+	return lastError_;
 }
 
 bool Database::open()
