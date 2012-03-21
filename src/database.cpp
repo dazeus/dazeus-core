@@ -45,7 +45,18 @@ std::string Database::lastError() const
 
 bool Database::open()
 {
-  return db_.open();
+	m_ = (void*)mongo_sync_connect(hostName_.c_str(), port_, TRUE);
+	if(!m_) {
+		lastError_ = strerror(errno);
+		return false;
+	}
+	if(!mongo_sync_conn_set_auto_reconnect(M, TRUE)) {
+		lastError_ = strerror(errno);
+		mongo_sync_disconnect(M);
+		return false;
+	}
+#warning TODO: db.properties.ensureIndex({'network':1,'receiver':1,'sender':1})
+	return true;
 }
 
 /**
