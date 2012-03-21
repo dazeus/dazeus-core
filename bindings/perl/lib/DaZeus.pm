@@ -246,8 +246,8 @@ sub unsetProperty {
 }
 
 sub getPropertyKeys {
-	my ($self, $name, $value, @scope) = @_;
-	$self->_send({do => "property", params => ["keys", $name, $value], _addScope(@scope)});
+	my ($self, $name, @scope) = @_;
+	$self->_send({do => "property", params => ["keys", $name], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
 		return $response->{keys};
