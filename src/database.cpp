@@ -14,6 +14,7 @@
 // #define DEBUG
 
 #define M (mongo_sync_connection*)m_
+#define PROPERTIES std::string(databaseName_ + ".properties").c_str()
 
 /**
  * @brief Constructor.
@@ -200,7 +201,7 @@ QVariant Database::property( const QString &variable,
 	bson_append_document(query, "$query", selector);
 	bson_finish(query);
 
-	mongo_packet *p = mongo_sync_cmd_query(M, std::string(databaseName_ + ".properties").c_str(), 0, 0, 1, query, NULL /* TODO: value only? */);
+	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 1, query, NULL /* TODO: value only? */);
 
 	bson_free(query);
 	bson_free(selector);
@@ -213,7 +214,7 @@ QVariant Database::property( const QString &variable,
 		return QVariant();
 	}
 
-	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, std::string(databaseName_ + ".properties").c_str(), p);
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
 	if(!cursor) {
 		lastError_ = strerror(errno);
 		return QVariant();
@@ -298,8 +299,7 @@ void Database::setProperty( const QString &variable,
 
 	// if the value length is zero, run a delete instead
 	if(value.toString().length() == 0) {
-		if(!mongo_sync_cmd_delete(M,
-			std::string(databaseName_ + ".properties").c_str(),
+		if(!mongo_sync_cmd_delete(M, PROPERTIES,
 			0, selector))
 		{
 			lastError_ = strerror(errno);
@@ -307,8 +307,7 @@ void Database::setProperty( const QString &variable,
 			fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
 		}
-	} else if(!mongo_sync_cmd_update(M,
-		std::string(databaseName_ + ".properties").c_str(),
+	} else if(!mongo_sync_cmd_update(M, PROPERTIES,
 		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, object))
 	{
 		lastError_ = strerror(errno);
