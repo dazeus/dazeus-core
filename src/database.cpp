@@ -59,7 +59,27 @@ bool Database::open()
 		mongo_sync_disconnect(M);
 		return false;
 	}
-#warning TODO: db.properties.ensureIndex({'network':1,'receiver':1,'sender':1})
+
+	bson *index = bson_build(
+		BSON_TYPE_INT32, "network", 1,
+		BSON_TYPE_INT32, "receiver", 1,
+		BSON_TYPE_INT32, "sender", 1,
+		BSON_TYPE_NONE
+	);
+	bson_finish(index);
+
+	if(!mongo_sync_cmd_index_create(M, PROPERTIES, index,
+	  MONGO_INDEX_UNIQUE | MONGO_INDEX_DROP_DUPS | MONGO_INDEX_BACKGROUND))
+	{
+#ifdef DEBUG
+		fprintf(stderr, "Index create error: %s\n", strerror(errno));
+#endif
+		lastError_ = strerror(errno);
+		bson_free(index);
+		return false;
+	}
+
+	bson_free(index);
 	return true;
 }
 
