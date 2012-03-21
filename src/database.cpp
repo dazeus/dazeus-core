@@ -255,98 +255,62 @@ void Database::setProperty( const QString &variable,
  const QVariant &value, const QString &networkScope,
  const QString &receiverScope, const QString &senderScope )
 {
+	/**
+		selector: {network:'foo',receiver:'bar',sender:null,variable:'bla.blob'}
+		object:   {'$set':{ 'value': 'bla'}}
+	*/
+	bson *object = bson_build_full(
+		BSON_TYPE_DOCUMENT, "$set", TRUE,
+		bson_build(
+			BSON_TYPE_STRING, "value", value.toString().toUtf8().constData(), -1,
+			BSON_TYPE_NONE),
+		BSON_TYPE_NONE);
+	bson_finish(object);
+	bson *selector = bson_build(
+		BSON_TYPE_STRING, "variable", variable.toUtf8().constData(), -1,
+		BSON_TYPE_NONE);
+	if(networkScope.length() > 0) {
+		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+
+		if(receiverScope.length() > 0) {
+			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+
+			if(senderScope.length() > 0) {
+				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+			} else {
+				bson_append_null(selector, "sender");
+			}
+		} else {
+			bson_append_null(selector, "receiver");
+			bson_append_null(selector, "sender");
+		}
+	} else {
+		bson_append_null(selector, "network");
+		bson_append_null(selector, "receiver");
+		bson_append_null(selector, "sender");
+	}
+	bson_finish(selector);
+
+	// if the value length is zero, run a delete instead
+	if(value.toString().length() == 0) {
+		if(!mongo_sync_cmd_delete(M,
+			std::string(databaseName_ + ".properties").c_str(),
+			0, selector))
+		{
+			lastError_ = strerror(errno);
 #ifdef DEBUG
-  qDebug() << "Setting property " << variable << "to" << value;
+			fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
-  checkDatabaseConnection();
-
-  // first, select it from the database, to see whether to update or insert
-  // (not all database engines support "on duplicate key update".)
-  QSqlQuery finder(db_);
-  // because size() always returns -1 on an SQLite backend, we use COUNT.
-  finder.prepare(
-      QString(QLatin1String("SELECT id,COUNT(id) FROM properties WHERE "
-                "variable=? AND network %1 AND receiver %2 AND sender %3"))
-      .arg( QLatin1String(networkScope.isEmpty()  ? "IS NULL" : "=?") )
-      .arg( QLatin1String(receiverScope.isEmpty() ? "IS NULL" : "=?") )
-      .arg( QLatin1String(senderScope.isEmpty()   ? "IS NULL" : "=?") )
-  );
-  // This ugly hack seems necessary as MySQL does not allow =NULL, requires IS NULL.
-  finder.addBindValue(variable);
-  if( !networkScope.isEmpty() )
-    finder.addBindValue(networkScope);
-  if( !receiverScope.isEmpty() )
-    finder.addBindValue(receiverScope);
-  if( !senderScope.isEmpty() )
-    finder.addBindValue(senderScope);
-
-  if( !finder.exec() )
-  {
-    qWarning() << "Select property before setting failed: " << finder.lastError();
-    return;
-  }
-
-  if( !finder.next() )
-  {
-    qWarning() << "Could not select first value row before setting: " << finder.lastError();
-    return;
-  }
-
-  int resultSize = finder.value(1).isValid() ? finder.value(1).toInt() : 0;
-  int returnedId = finder.value(0).isValid() ? finder.value(0).toInt() : -1;
-
-  if( resultSize > 1 )
-    qWarning() << "*** WARNING: More than one result to variable retrieve! This is a bug. ***";
-
-  QSqlQuery data(db_);
-
-  if( !resultSize )
-  {
-    // insert
-    if( !value.isValid() )
-    {
-      // Don't insert null values.
-      return;
-    }
+		}
+	} else if(!mongo_sync_cmd_update(M,
+		std::string(databaseName_ + ".properties").c_str(),
+		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, object))
+	{
+		lastError_ = strerror(errno);
 #ifdef DEBUG
-    qDebug() << "Seeing property " << variable << "for the first time, inserting.";
-    qDebug() << finder.executedQuery();
-    QList<QVariant> list = finder.boundValues().values();
-    for (int i = 0; i < list.size(); ++i)
-      qDebug() << i << ": " << list.at(i).toString().toAscii().data() << endl;
+		fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
-    data.prepare(QLatin1String("INSERT INTO properties (variable,value,"
-                "network,receiver,sender) VALUES (?, ?, ?, ?, ?)"));
-    data.addBindValue(variable);
-    data.addBindValue(value);
-    data.addBindValue(networkScope.isEmpty()  ? QVariant() : networkScope);
-    data.addBindValue(receiverScope.isEmpty() ? QVariant() : receiverScope);
-    data.addBindValue(senderScope.isEmpty()   ? QVariant() : senderScope);
-  }
-  else
-  {
-    // update
-    if( !value.isValid() )
-    {
-      // Don't insert null values - delete the old one
-      data.prepare(QLatin1String("DELETE FROM properties WHERE id=?"));
-    }
-    else
-    {
-      // update the old one
-      data.prepare(QLatin1String("UPDATE properties SET value=? WHERE id=?"));
-      data.addBindValue(value);
-    }
-    data.addBindValue(returnedId);
-  }
-
-#ifdef DEBUG
-  qDebug() << "Executing data query: " << data.lastQuery();
-  qDebug() << "Bound data query values: " << data.boundValues();
-#endif
-
-  if( !data.exec() )
-  {
-    qWarning() << "Set property failed: " << data.lastError();
-  }
+	}
+	bson_free(object);
+	bson_free(selector);
 }
