@@ -4,6 +4,7 @@
  */
 
 #include <QtCore/QSettings>
+#include <QtCore/QStringList>
 #include <fstream>
 #include <sstream>
 #include <assert.h>
