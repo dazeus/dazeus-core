@@ -9,7 +9,6 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <list>
 
 /**
  * These structs are only for configuration as it is in the configuration
@@ -57,14 +56,14 @@ class Config
        ~Config();
   bool  loadFromFile( std::string fileName );
 
-  const std::list<NetworkConfig*> &networks();
+  const std::vector<NetworkConfig*> &networks();
   const std::string               &lastError();
   const DatabaseConfig            *databaseConfig() const;
   const std::map<std::string,std::string> groupConfig(std::string plugin) const;
 
   private:
-  std::list<NetworkConfig*> oldNetworks_;
-  std::list<NetworkConfig*> networks_;
+  std::vector<NetworkConfig*> oldNetworks_;
+  std::vector<NetworkConfig*> networks_;
   std::string               error_;
   QSettings            *settings_;
   DatabaseConfig       *databaseConfig_;

@@ -82,8 +82,9 @@ void PluginComm::run() {
 		FD_SET(it2->first, &sockets);
 	}
 	// and add the IRC descriptors
-	foreach(Network *n, dazeus_->networks()) {
-		Server *active = n->activeServer();
+	std::vector<Network*>::const_iterator nit;
+	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+		Server *active = (*nit)->activeServer();
 		if(active) {
 			int ircmaxfd = 0;
 			active->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
@@ -120,8 +121,8 @@ void PluginComm::run() {
 			break;
 		}
 	}
-	foreach(Network *n, dazeus_->networks()) {
-		Server *active = n->activeServer();
+	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+		Server *active = (*nit)->activeServer();
 		if(active) {
 			active->processDescriptors(&sockets, &out_sockets);
 		}
@@ -588,7 +589,8 @@ void PluginComm::ircEvent(const std::string &event, const std::string &origin, c
 }
 
 void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
-	const std::list<Network*> &networks = dazeus_->networks();
+	const std::vector<Network*> &networks = dazeus_->networks();
+	std::vector<Network*>::const_iterator nit;
 
 	JSONNode n;
 	try {
@@ -639,8 +641,8 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("success", true));
 		JSONNode nets(JSON_ARRAY);
 		nets.set_name("networks");
-		foreach(const Network *n, networks) {
-			nets.push_back(JSONNode("", libjson::to_json_string(n->networkName())));
+		for(nit = networks.begin(); nit != networks.end(); ++nit) {
+			nets.push_back(JSONNode("", libjson::to_json_string((*nit)->networkName())));
 		}
 		response.push_back(nets);
 	// REQUESTS ON A NETWORK
@@ -657,9 +659,9 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		}
 		response.push_back(JSONNode("network", libjson::to_json_string(network)));
 		Network *net = 0;
-		foreach(Network *n, networks) {
-			if(n->networkName() == network) {
-				net = n; break;
+		for(nit = networks.begin(); nit != networks.end(); ++nit) {
+			if((*nit)->networkName() == network) {
+				net = *nit; break;
 			}
 		}
 		if(net == 0) {
@@ -722,7 +724,8 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		}
 
 		bool netfound = false;
-		foreach(Network *n, networks) {
+		for(nit = networks.begin(); nit != networks.end(); ++nit) {
+			Network *n = *nit;
 			if(n->networkName() == network) {
 				netfound = true;
 				if(receiver.substr(0, 1) != "#" || contains(n->joinedChannels(), strToLower(receiver))) {
@@ -782,9 +785,9 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			RequirementInfo *req = 0;
 			Network *net = 0;
 			if(params.size() > 0) {
-				foreach(Network *n, networks) {
-					if(n->networkName() == params.at(0)) {
-						net = n; break;
+				for(nit = networks.begin(); nit != networks.end(); ++nit) {
+					if((*nit)->networkName() == params.at(0)) {
+						net = *nit; break;
 					}
 				}
 			}

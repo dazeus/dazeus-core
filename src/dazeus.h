@@ -6,7 +6,7 @@
 #ifndef DAZEUS_H
 #define DAZEUS_H
 
-#include <list>
+#include <vector>
 #include <string>
 
 class Config;
@@ -24,7 +24,7 @@ class DaZeus
     bool     configLoaded() const;
 
     Database *database() const;
-    const std::list<Network*> &networks() const { return networks_; }
+    const std::vector<Network*> &networks() const { return networks_; }
 
     void     run();
     bool     loadConfig();
@@ -39,7 +39,7 @@ class DaZeus
     std::string      configFileName_;
     PluginComm      *plugins_;
     Database        *database_;
-    std::list<Network*>  networks_;
+    std::vector<Network*>  networks_;
 };
 
 #endif
