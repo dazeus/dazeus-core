@@ -34,6 +34,8 @@ Database::Database( const std::string &hostname, uint16_t port, const std::strin
  */
 Database::~Database()
 {
+	if(m_)
+		mongo_sync_disconnect(M);
 }
 
 /**
