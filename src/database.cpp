@@ -9,6 +9,7 @@
 #include <QtCore/QDebug>
 #include <mongo.h>
 #include <cerrno>
+#include <cassert>
 
 // #define DEBUG
 
@@ -135,57 +136,117 @@ QVariant Database::property( const QString &variable,
  const QString &networkScope, const QString &receiverScope,
  const QString &senderScope )
 {
-  checkDatabaseConnection();
+	// variable, [networkScope, [receiverScope, [senderScope]]]
+	// (empty if not given)
 
-  // retrieve from database
-  QSqlQuery data(db_);
-  data.prepare(QLatin1String("SELECT value,network,receiver,sender"
-     " FROM properties WHERE variable=?"));
-  data.addBindValue(variable);
-  if( !data.exec() )
-  {
-    qWarning() << "Property retrieve query failed: " << data.lastError();
-    return QVariant();
-  }
+	// db.c.
+	//   find() // for everything
+	//   find({network:{$in: ['NETWORKNAME',null]}}) // for network scope
+	//   find({network:{$in: ['NETWORKNAME',null]}, receiver:{$in: ['RECEIVER',null]}}) // for receiver scope
+	//   find({network:..., receiver:..., sender:{$in: ['SENDER',null]}}) // for sender scope
+	// .sort({'a':-1,'b':-1,'c':-1}).limit(1)
+	// Reverse sort and limit(1) will make sure we only receive the most
+	// specific result. This works, as long as the assumption is true that
+	// no specific fields are set without their less specific fields also
+	// being set (i.e. receiver can't be empty if sender is non-empty).
 
-  // index the results
-  QVariant global, network, receiver, sender;
-  while( data.next() )
-  {
-    if( data.value(3).isNull() )
-    {
-      if( data.value(2).isNull() )
-      {
-        if( data.value(1).isNull() )
-          global = data.value(0);
-        else if( data.value(1).toString() == networkScope )
-          network = data.value(0);
-      }
-      else if( data.value(1).toString() == networkScope
-            && data.value(2).toString() == receiverScope )
-        receiver = data.value(0);
-    }
-    else if( data.value(1).toString() == networkScope
-          && data.value(2).toString() == receiverScope
-          && data.value(3).toString() == senderScope )
-      sender = data.value(0);
-  }
+	bson *query = bson_build_full(
+		BSON_TYPE_DOCUMENT, "$orderby", TRUE,
+		bson_build(BSON_TYPE_INT32, "network", -1, BSON_TYPE_INT32, "receiver", -1, BSON_TYPE_INT32, "sender", -1, BSON_TYPE_NONE),
+		BSON_TYPE_NONE
+	);
 
+	/*
+		'$query':{
+			'variable':'foo',
+			'network':{'$in':['bla',null]},
+			'receiver':{'$in':['moo', null]},
+		}
+	*/
+
+	bson *selector = bson_new();
+	bson *network = 0, *receiver = 0, *sender = 0;
+	bson_append_string(selector, "variable", variable.toUtf8().constData(), -1);
+	if(networkScope.length() > 0) {
+		network = bson_build_full(
+			BSON_TYPE_ARRAY, "$in", TRUE,
+			bson_build(BSON_TYPE_STRING, "1", networkScope.toUtf8().constData(), -1,
+			           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+			BSON_TYPE_NONE );
+		bson_finish(network);
+		bson_append_document(selector, "network", network);
+		if(receiverScope.length() > 0) {
+			receiver = bson_build_full(
+				BSON_TYPE_ARRAY, "$in", TRUE,
+				bson_build(BSON_TYPE_STRING, "1", receiverScope.toUtf8().constData(), -1,
+				           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+				BSON_TYPE_NONE );
+			bson_finish(receiver);
+			bson_append_document(selector, "receiver", receiver);
+			if(senderScope.length() > 0) {
+				sender = bson_build_full(
+					BSON_TYPE_ARRAY, "$in", TRUE,
+					bson_build(BSON_TYPE_STRING, "1", senderScope.toUtf8().constData(), -1,
+						   BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
+					BSON_TYPE_NONE );
+				bson_finish(sender);
+				bson_append_document(selector, "sender", sender);
+			}
+		}
+	}
+	bson_finish(selector);
+	bson_append_document(query, "$query", selector);
+	bson_finish(query);
+
+	mongo_packet *p = mongo_sync_cmd_query(M, std::string(databaseName_ + ".properties").c_str(), 0, 0, 1, query, NULL /* TODO: value only? */);
+
+	bson_free(query);
+	bson_free(selector);
+	if(network) bson_free(network);
+	if(receiver) bson_free(receiver);
+	if(sender) bson_free(sender);
+
+	if(!p) {
+		lastError_ = strerror(errno);
+		return QVariant();
+	}
+
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, std::string(databaseName_ + ".properties").c_str(), p);
+	if(!cursor) {
+		lastError_ = strerror(errno);
+		return QVariant();
+	}
+
+	if(!mongo_sync_cursor_next(cursor)) {
 #ifdef DEBUG
-  qDebug() << "For variable " << variable;
-  qDebug() << "Global: " << global;
-  qDebug() << "Network: " << network;
-  qDebug() << "Receiver: " << receiver;
-  qDebug() << "Sender: " << sender;
+		fprintf(stderr, "Variable %s not found within given scope.\n", variable.toUtf8().constData());
 #endif
+	}
 
-  if( !sender.isNull() )
-    return sender;
-  if( !receiver.isNull() )
-    return receiver;
-  if( !network.isNull() )
-    return network;
-  return global;
+	bson *result = mongo_sync_cursor_get_data(cursor);
+	if(!result) {
+		lastError_ = strerror(errno);
+		mongo_sync_cursor_free(cursor);
+		return QVariant();
+	}
+
+	bson_cursor *c = bson_find(result, "value");
+	const char *value;
+	if(!bson_cursor_get_string(c, &value)) {
+		lastError_ = strerror(errno);
+		mongo_sync_cursor_free(cursor);
+		bson_cursor_free(c);
+		return QVariant();
+	}
+
+	bson_free(result);
+	bson_cursor_free(c);
+
+	// only one result
+	assert(!mongo_sync_cursor_next(cursor));
+
+	mongo_sync_cursor_free(cursor);
+	return QVariant(value);
 }
 
 void Database::setProperty( const QString &variable,
