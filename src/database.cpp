@@ -244,6 +244,8 @@ QVariant Database::property( const QString &variable,
 		return QVariant();
 	}
 
+	QVariant res(value);
+
 	bson_free(result);
 	bson_cursor_free(c);
 
@@ -251,7 +253,7 @@ QVariant Database::property( const QString &variable,
 	assert(!mongo_sync_cursor_next(cursor));
 
 	mongo_sync_cursor_free(cursor);
-	return QVariant(value);
+	return res;
 }
 
 void Database::setProperty( const QString &variable,
