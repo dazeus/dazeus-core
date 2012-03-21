@@ -756,8 +756,9 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("did", "subscribe"));
 		response.push_back(JSONNode("success", true));
 		int added = 0;
-		foreach(const std::string &event, params) {
-			if(info.subscribe(event))
+		std::vector<std::string>::const_iterator pit;
+		for(pit = params.begin(); pit != params.end(); ++pit) {
+			if(info.subscribe(*pit))
 				++added;
 		}
 		response.push_back(JSONNode("added", added));
@@ -765,8 +766,9 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("did", "unsubscribe"));
 		response.push_back(JSONNode("success", true));
 		int removed = 0;
-		foreach(const std::string &event, params) {
-			if(info.unsubscribe(event))
+		std::vector<std::string>::const_iterator pit;
+		for(pit = params.begin(); pit != params.end(); ++pit) {
+			if(info.unsubscribe(*pit))
 				++removed;
 		}
 		response.push_back(JSONNode("removed", removed));
