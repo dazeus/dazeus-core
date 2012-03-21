@@ -29,15 +29,12 @@ struct DatabaseConfig;
 class Database
 {
   public:
-          Database( const QString &dbType,
-                    const QString &databaseName, const QString &username,
-                    const QString &password, const QString &hostname,
-                    int port, const QString &options );
+          Database( const std::string &hostname, uint16_t port, const std::string &database = std::string("dazeus"), const std::string &username = std::string(), const std::string &password = std::string() );
          ~Database();
 
     bool            open();
 
-    QSqlError       lastError() const;
+    std::string     lastError() const;
 
     QVariant    property( const QString &variable,
                           const QString &networkScope  = QString(),
@@ -54,7 +51,13 @@ class Database
                               const QString &senderScope   = QString() );
 
   private:
-    QSqlDatabase db_;
+    void *m_;
+    std::string lastError_;
+    std::string hostName_;
+    std::string databaseName_;
+    uint16_t    port_;
+    std::string username_;
+    std::string password_;
 
 };
 
