@@ -114,18 +114,11 @@ bool DaZeus::configLoaded() const
 bool DaZeus::connectDatabase()
 {
   const DatabaseConfig *dbc = config_->databaseConfig();
-  database_ = Database::fromConfig(dbc);
+  database_ = new Database(dbc->hostname, dbc->port);
 
   if( !database_->open() )
   {
-    fprintf(stderr, "Could not connect to database: %s\n", database_->lastError().text().toUtf8().constData());
-    return false;
-  }
-
-  // create it if it doesn't exist yet
-  if( !database_->createTable() )
-  {
-    fprintf(stderr, "Could not create table: %s\n", database_->lastError().text().toUtf8().constData());
+    fprintf(stderr, "Could not connect to database: %s\n", database_->lastError().c_str());
     return false;
   }
 
