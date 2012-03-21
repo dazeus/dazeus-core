@@ -132,7 +132,7 @@ bool Config::loadFromFile( std::string fileName )
   return true;
 }
 
-const std::list<NetworkConfig*> &Config::networks()
+const std::vector<NetworkConfig*> &Config::networks()
 {
   assert( settings_ != 0 );
   // TODO remove later

@@ -54,10 +54,11 @@ DaZeus::DaZeus( std::string configFileName )
  */
 DaZeus::~DaZeus()
 {
-  foreach( Network *n, networks_ )
+  std::vector<Network*>::iterator it;
+  for(it = networks_.begin(); it != networks_.end(); ++it)
   {
-    n->disconnectFromNetwork( Network::ShutdownReason );
-    delete n;
+    (*it)->disconnectFromNetwork( Network::ShutdownReason );
+    delete *it;
   }
   networks_.clear();
 
@@ -77,8 +78,10 @@ void DaZeus::autoConnect()
 #ifdef DEBUG
   fprintf(stderr, "DaZeus::autoConnect() called: looking for networks to connect to\n");
 #endif
-  foreach( Network *n, networks_ )
+  std::vector<Network*>::iterator it;
+  for(it = networks_.begin(); it != networks_.end(); ++it)
   {
+    Network *n = *it;
     if( n->autoConnectEnabled() )
     {
 #ifdef DEBUG
@@ -173,16 +176,17 @@ bool DaZeus::loadConfig()
   if( !config_ )
     return false;
 
-  const std::list<NetworkConfig*> &networks = config_->networks();
+  const std::vector<NetworkConfig*> &networks = config_->networks();
 
   if(!connectDatabase())
     return false;
 
   plugins_ = new PluginComm( database_, config_, this );
 
-  foreach( NetworkConfig *netconf, networks )
+  std::vector<NetworkConfig*>::const_iterator it;
+  for(it = networks.begin(); it != networks.end(); ++it)
   {
-    Network *net = new Network( netconf, plugins_ );
+    Network *net = new Network( *it, plugins_ );
     if( net == 0 ) {
       resetConfig();
       return false;
