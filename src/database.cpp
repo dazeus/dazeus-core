@@ -5,8 +5,7 @@
 
 #include "database.h"
 #include "config.h"
-#include <QtCore/QVariant>
-#include <QtCore/QDebug>
+#include "utils.h"
 #include <mongo.h>
 #include <cerrno>
 #include <cassert>
@@ -95,21 +94,21 @@ bool Database::open()
  * return the correct value of that key given that network, receiver and
  * sender scope are the same.
  */
-QStringList Database::propertyKeys( const QString &ns, const QString &networkScope,
- const QString &receiverScope, const QString &senderScope )
+std::vector<std::string> Database::propertyKeys( const std::string &ns, const std::string &networkScope,
+ const std::string &receiverScope, const std::string &senderScope )
 {
 	std::stringstream regexStr;
-	regexStr << "^\\Q" << ns.toStdString() << "\\E\\.";
+	regexStr << "^\\Q" << ns << "\\E\\.";
 	std::string regex = regexStr.str();
 
 	bson *selector = bson_new();
 	bson_append_regex(selector, "variable", regex.c_str(), "");
 	if(networkScope.length() > 0) {
-		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+		bson_append_string(selector, "network", networkScope.c_str(), -1);
 		if(receiverScope.length() > 0) {
-			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+			bson_append_string(selector, "receiver", receiverScope.c_str(), -1);
 			if(senderScope.length() > 0) {
-				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+				bson_append_string(selector, "sender", senderScope.c_str(), -1);
 			} else {
 				bson_append_null(selector, "sender");
 			}
@@ -133,7 +132,7 @@ QStringList Database::propertyKeys( const QString &ns, const QString &networkSco
 #ifdef DEBUG
 		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
 #endif
-		return QStringList();
+		return std::vector<std::string>();
 	}
 
 	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
@@ -142,10 +141,10 @@ QStringList Database::propertyKeys( const QString &ns, const QString &networkSco
 #ifdef DEBUG
 		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
 #endif
-		return QStringList();
+		return std::vector<std::string>();
 	}
 
-	QStringList res;
+	std::vector<std::string> res;
 	while(mongo_sync_cursor_next(cursor)) {
 		bson *result = mongo_sync_cursor_get_data(cursor);
 		if(!result) {
@@ -170,7 +169,7 @@ QStringList Database::propertyKeys( const QString &ns, const QString &networkSco
 		}
 
 		value += ns.length() + 1;
-		res << value;
+		res.push_back(value);
 	}
 
 	return res;
@@ -188,9 +187,9 @@ QStringList Database::propertyKeys( const QString &ns, const QString &networkSco
  * could use:
  * <code>net.jondoe.myfirstplugin.foo</code>
  */
-QVariant Database::property( const QString &variable,
- const QString &networkScope, const QString &receiverScope,
- const QString &senderScope )
+std::string Database::property( const std::string &variable,
+ const std::string &networkScope, const std::string &receiverScope,
+ const std::string &senderScope )
 {
 	// variable, [networkScope, [receiverScope, [senderScope]]]
 	// (empty if not given)
@@ -222,11 +221,11 @@ QVariant Database::property( const QString &variable,
 
 	bson *selector = bson_new();
 	bson *network = 0, *receiver = 0, *sender = 0;
-	bson_append_string(selector, "variable", variable.toUtf8().constData(), -1);
+	bson_append_string(selector, "variable", variable.c_str(), -1);
 	if(networkScope.length() > 0) {
 		network = bson_build_full(
 			BSON_TYPE_ARRAY, "$in", TRUE,
-			bson_build(BSON_TYPE_STRING, "1", networkScope.toUtf8().constData(), -1,
+			bson_build(BSON_TYPE_STRING, "1", networkScope.c_str(), -1,
 			           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
 			BSON_TYPE_NONE );
 		bson_finish(network);
@@ -234,7 +233,7 @@ QVariant Database::property( const QString &variable,
 		if(receiverScope.length() > 0) {
 			receiver = bson_build_full(
 				BSON_TYPE_ARRAY, "$in", TRUE,
-				bson_build(BSON_TYPE_STRING, "1", receiverScope.toUtf8().constData(), -1,
+				bson_build(BSON_TYPE_STRING, "1", receiverScope.c_str(), -1,
 				           BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
 				BSON_TYPE_NONE );
 			bson_finish(receiver);
@@ -242,7 +241,7 @@ QVariant Database::property( const QString &variable,
 			if(senderScope.length() > 0) {
 				sender = bson_build_full(
 					BSON_TYPE_ARRAY, "$in", TRUE,
-					bson_build(BSON_TYPE_STRING, "1", senderScope.toUtf8().constData(), -1,
+					bson_build(BSON_TYPE_STRING, "1", senderScope.c_str(), -1,
 						   BSON_TYPE_NULL, "2", BSON_TYPE_NONE),
 					BSON_TYPE_NONE );
 				bson_finish(sender);
@@ -264,18 +263,18 @@ QVariant Database::property( const QString &variable,
 
 	if(!p) {
 		lastError_ = strerror(errno);
-		return QVariant();
+		return std::string();
 	}
 
 	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
 	if(!cursor) {
 		lastError_ = strerror(errno);
-		return QVariant();
+		return std::string();
 	}
 
 	if(!mongo_sync_cursor_next(cursor)) {
 #ifdef DEBUG
-		fprintf(stderr, "Variable %s not found within given scope.\n", variable.toUtf8().constData());
+		fprintf(stderr, "Variable %s not found within given scope.\n", variable.c_str());
 #endif
 	}
 
@@ -283,7 +282,7 @@ QVariant Database::property( const QString &variable,
 	if(!result) {
 		lastError_ = strerror(errno);
 		mongo_sync_cursor_free(cursor);
-		return QVariant();
+		return std::string();
 	}
 
 	bson_cursor *c = bson_find(result, "value");
@@ -295,10 +294,10 @@ QVariant Database::property( const QString &variable,
 #endif
 		mongo_sync_cursor_free(cursor);
 		bson_cursor_free(c);
-		return QVariant();
+		return std::string();
 	}
 
-	QVariant res(value);
+	std::string res(value);
 
 	bson_free(result);
 	bson_cursor_free(c);
@@ -310,9 +309,9 @@ QVariant Database::property( const QString &variable,
 	return res;
 }
 
-void Database::setProperty( const QString &variable,
- const QVariant &value, const QString &networkScope,
- const QString &receiverScope, const QString &senderScope )
+void Database::setProperty( const std::string &variable,
+ const std::string &value, const std::string &networkScope,
+ const std::string &receiverScope, const std::string &senderScope )
 {
 	/**
 		selector: {network:'foo',receiver:'bar',sender:null,variable:'bla.blob'}
@@ -321,21 +320,21 @@ void Database::setProperty( const QString &variable,
 	bson *object = bson_build_full(
 		BSON_TYPE_DOCUMENT, "$set", TRUE,
 		bson_build(
-			BSON_TYPE_STRING, "value", value.toString().toUtf8().constData(), -1,
+			BSON_TYPE_STRING, "value", value.c_str(), -1,
 			BSON_TYPE_NONE),
 		BSON_TYPE_NONE);
 	bson_finish(object);
 	bson *selector = bson_build(
-		BSON_TYPE_STRING, "variable", variable.toUtf8().constData(), -1,
+		BSON_TYPE_STRING, "variable", variable.c_str(), -1,
 		BSON_TYPE_NONE);
 	if(networkScope.length() > 0) {
-		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+		bson_append_string(selector, "network", networkScope.c_str(), -1);
 
 		if(receiverScope.length() > 0) {
-			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+			bson_append_string(selector, "receiver", receiverScope.c_str(), -1);
 
 			if(senderScope.length() > 0) {
-				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+				bson_append_string(selector, "sender", senderScope.c_str(), -1);
 			} else {
 				bson_append_null(selector, "sender");
 			}
@@ -351,7 +350,7 @@ void Database::setProperty( const QString &variable,
 	bson_finish(selector);
 
 	// if the value length is zero, run a delete instead
-	if(value.toString().length() == 0) {
+	if(value.length() == 0) {
 		if(!mongo_sync_cmd_delete(M, PROPERTIES,
 			0, selector))
 		{

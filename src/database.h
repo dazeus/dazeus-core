@@ -6,10 +6,9 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include <QtCore/QStringList>
-#include <QtCore/QVariant>
+#include <vector>
+#include <string>
 
-class QVariant;
 struct DatabaseConfig;
 
 /**
@@ -29,26 +28,28 @@ struct DatabaseConfig;
 class Database
 {
   public:
-          Database( const std::string &hostname, uint16_t port, const std::string &database = std::string("dazeus"), const std::string &username = std::string(), const std::string &password = std::string() );
+          Database( const std::string &hostname, uint16_t port,
+                    const std::string &database = std::string("dazeus"),
+                    const std::string &username = std::string(),
+                    const std::string &password = std::string() );
          ~Database();
 
     bool            open();
-
     std::string     lastError() const;
 
-    QVariant    property( const QString &variable,
-                          const QString &networkScope  = QString(),
-                          const QString &receiverScope = QString(),
-                          const QString &senderScope   = QString() );
-    void        setProperty( const QString &variable,
-                             const QVariant &value,
-                             const QString &networkScope  = QString(),
-                             const QString &receiverScope = QString(),
-                             const QString &senderScope   = QString());
-    QStringList propertyKeys( const QString &ns,
-                              const QString &networkScope  = QString(),
-                              const QString &receiverScope = QString(),
-                              const QString &senderScope   = QString() );
+    std::string     property( const std::string &variable,
+                              const std::string &networkScope  = std::string(),
+                              const std::string &receiverScope = std::string(),
+                              const std::string &senderScope   = std::string() );
+    void            setProperty( const std::string &variable,
+                                 const std::string &value,
+                                 const std::string &networkScope  = std::string(),
+                                 const std::string &receiverScope = std::string(),
+                                 const std::string &senderScope   = std::string());
+    std::vector<std::string> propertyKeys( const std::string &ns,
+                                  const std::string &networkScope  = std::string(),
+                                  const std::string &receiverScope = std::string(),
+                                  const std::string &senderScope   = std::string() );
 
   private:
     void *m_;
@@ -58,7 +59,6 @@ class Database
     uint16_t    port_;
     std::string username_;
     std::string password_;
-
 };
 
 #endif
