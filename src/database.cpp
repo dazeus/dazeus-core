@@ -10,6 +10,7 @@
 #include <mongo.h>
 #include <cerrno>
 #include <cassert>
+#include <sstream>
 
 // #define DEBUG
 
@@ -97,50 +98,82 @@ bool Database::open()
 QStringList Database::propertyKeys( const QString &ns, const QString &networkScope,
  const QString &receiverScope, const QString &senderScope )
 {
-  checkDatabaseConnection();
+	std::stringstream regexStr;
+	regexStr << "^\\Q" << ns.toStdString() << "\\E\\.";
+	std::string regex = regexStr.str();
 
-  QString nsQuery = ns + ".%";
-  QSqlQuery data(db_);
-  data.prepare(QLatin1String("SELECT variable,network,receiver,sender"
-    " FROM properties WHERE variable LIKE ?"));
-  data.addBindValue(nsQuery);
+	bson *selector = bson_new();
+	bson_append_regex(selector, "variable", regex.c_str(), "");
+	if(networkScope.length() > 0) {
+		bson_append_string(selector, "network", networkScope.toUtf8().constData(), -1);
+		if(receiverScope.length() > 0) {
+			bson_append_string(selector, "receiver", receiverScope.toUtf8().constData(), -1);
+			if(senderScope.length() > 0) {
+				bson_append_string(selector, "sender", senderScope.toUtf8().constData(), -1);
+			} else {
+				bson_append_null(selector, "sender");
+			}
+		} else {
+			bson_append_null(selector, "receiver");
+			bson_append_null(selector, "sender");
+		}
+	} else {
+		bson_append_null(selector, "network");
+		bson_append_null(selector, "receiver");
+		bson_append_null(selector, "sender");
+	}
+	bson_finish(selector);
 
-  QStringList k;
-  if( !data.exec() )
-  {
-    qWarning() << "Property retrieve keys failed: " << data.lastError();
-    return k;
-  }
+	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 0, selector, NULL /* TODO: variable only? */);
 
-  // index the results
-  while( data.next() )
-  {
-    // Check if the name really matches
-    QString actualName = data.value(0).toString();
-    if( !actualName.startsWith(ns + '.') )
-       continue;
-    actualName = actualName.mid(ns.length() + 1);
+	bson_free(selector);
 
-    if( data.value(3).isNull() )
-    {
-      if( data.value(2).isNull() )
-      {
-        if( data.value(1).isNull() )
-          k.append(actualName);
-        else if( data.value(1).toString() == networkScope )
-          k.append(actualName);
-      }
-      else if( data.value(1).toString() == networkScope
-            && data.value(2).toString() == receiverScope )
-        k.append(actualName);
-    }
-    else if( data.value(1).toString() == networkScope
-          && data.value(2).toString() == receiverScope
-          && data.value(3).toString() == senderScope )
-      k.append(actualName);
-  }
+	if(!p) {
+		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+		return QStringList();
+	}
 
-  return k;
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
+	if(!cursor) {
+		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+		return QStringList();
+	}
+
+	QStringList res;
+	while(mongo_sync_cursor_next(cursor)) {
+		bson *result = mongo_sync_cursor_get_data(cursor);
+		if(!result) {
+			lastError_ = strerror(errno);
+#ifdef DEBUG
+			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+			mongo_sync_cursor_free(cursor);
+			return res;
+		}
+
+		bson_cursor *c = bson_find(result, "variable");
+		const char *value;
+		if(!bson_cursor_get_string(c, &value)) {
+			lastError_ = strerror(errno);
+#ifdef DEBUG
+			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
+#endif
+			mongo_sync_cursor_free(cursor);
+			bson_cursor_free(c);
+			return res;
+		}
+
+		value += ns.length() + 1;
+		res << value;
+	}
+
+	return res;
 }
 
 /**
