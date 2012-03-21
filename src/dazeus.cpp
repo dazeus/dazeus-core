@@ -9,6 +9,7 @@
 #include "config.h"
 #include "plugincomm.h"
 #include <cassert>
+#include <sstream>
 
 // #define DEBUG
 #define VERBOSE
@@ -30,9 +31,13 @@ DaZeus::DaZeus( std::string configFileName )
 
   // Pretty number of initialisations viewer -- and also an immediate database
   // check.
-  int numInits = database_->property("dazeus.numinits").toInt();
+  std::stringstream numInitsStr;
+  numInitsStr << database_->property("dazeus.numinits");
+  int numInits;
+  numInitsStr >> numInits;
   ++numInits;
-  database_->setProperty("dazeus.numinits", numInits);
+  numInitsStr << numInits;
+  database_->setProperty("dazeus.numinits", numInitsStr.str());
   const char *suffix = "th";
   if(numInits%100 == 11 ) ;
   else if(numInits%100 == 12) ;
