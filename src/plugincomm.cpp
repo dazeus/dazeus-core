@@ -826,19 +826,16 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else if(params[0] == "get") {
-#define Q(x) QString::fromStdString(x)
-			QVariant value = database_->property(Q(params[1]), Q(network), Q(receiver), Q(sender));
+			std::string value = database_->property(params[1], network, receiver, sender);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1])));
-			if(!value.isNull()) {
-				response.push_back(JSONNode("value", libjson::to_json_string(value.toString().toStdString())));
-			}
+			response.push_back(JSONNode("value", libjson::to_json_string(value)));
 		} else if(params[0] == "set") {
 			if(params.size() < 3) {
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				database_->setProperty(Q(params[1]), Q(params[2]), Q(network), Q(receiver), Q(sender));
+				database_->setProperty(params[1], params[2], network, receiver, sender);
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "unset") {
@@ -846,24 +843,19 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				response.push_back(JSONNode("success", false));
 				response.push_back(JSONNode("error", "Missing parameters"));
 			} else {
-				database_->setProperty(Q(params[1]), QVariant(), Q(network), Q(receiver), Q(sender));
+				database_->setProperty(params[1], std::string(), network, receiver, sender);
 				response.push_back(JSONNode("success", true));
 			}
 		} else if(params[0] == "keys") {
-			QStringList qKeys = database_->propertyKeys(Q(params[1]), Q(network), Q(receiver), Q(sender));
-			std::vector<std::string> dKeys;
-			foreach(const QString &k, qKeys) {
-				dKeys.push_back(k.toStdString());
-			}
+			std::vector<std::string> pKeys = database_->propertyKeys(params[1], network, receiver, sender);
 			JSONNode keys(JSON_ARRAY);
 			keys.set_name("keys");
 			std::vector<std::string>::iterator kit;
-			for(kit = dKeys.begin(); kit != dKeys.end(); ++kit) {
+			for(kit = pKeys.begin(); kit != pKeys.end(); ++kit) {
 				keys.push_back(JSONNode("", libjson::to_json_string(*kit)));
 			}
 			response.push_back(keys);
 			response.push_back(JSONNode("success", true));
-#undef Q
 		} else {
 			response.push_back(JSONNode("success", false));
 			response.push_back(JSONNode("error", "Did not understand request"));
