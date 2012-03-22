@@ -131,34 +131,15 @@ void PluginComm::run() {
 
 void PluginComm::init() {
 	std::stringstream socketStr;
-	std::map<std::string,std::string> sockets = config_->groupConfig("sockets");
+	std::vector<std::string>::const_iterator it;
 
-	std::map<std::string,std::string>::iterator sockIt = sockets.find("sockets");
-	if(sockIt == sockets.end()) {
-		fprintf(stderr, "Warning: Configuration file contains no sockets to open.\n");
-		return;
-	}
-
-	socketStr << sockIt->second;
-	int numSockets;
-	socketStr >> numSockets;
-	if(!socketStr) {
-		fprintf(stderr, "Could not read how many sockets to read, aborting.\n");
-		abort();
-	}
-	for(int i = 1; i <= numSockets; ++i) {
+	for(it = config_->sockets().begin(); it != config_->sockets().end(); ++it) {
 		socketStr.clear();
 		socketStr.str(std::string());
-		socketStr << "socket" << i;
-		sockIt = sockets.find(socketStr.str());
-		if(sockIt == sockets.end()) {
-			fprintf(stderr, "Warning: Socket %d declared, but not defined, skipping\n", i);
-			continue;
-		}
-		std::string socket = sockIt->second;
+		std::string socket = *it;
 		size_t colon = socket.find(':');
 		if(colon == std::string::npos) {
-			fprintf(stderr, "(PluginComm) Did not understand socket option %d: %s\n", i, socket.c_str());
+			fprintf(stderr, "(PluginComm) Did not understand socket option: %s\n", socket.c_str());
 			continue;
 		}
 		std::string socketType = socket.substr(0, colon);
@@ -199,7 +180,7 @@ void PluginComm::init() {
 			ports << tcpPort;
 			ports >> port;
 			if(!ports || port > UINT16_MAX) {
-				fprintf(stderr, "(PluginComm) Invalid TCP port number for socket %d\n", i);
+				fprintf(stderr, "(PluginComm) Invalid TCP port number for socket %s\n", socket.c_str());
 				continue;
 			}
 
@@ -235,7 +216,7 @@ void PluginComm::init() {
 			}
 			tcpServers_.push_back(server);
 		} else {
-			fprintf(stderr, "(PluginComm) Skipping socket %d: unknown type %s\n", i, socketType.c_str());
+			fprintf(stderr, "(PluginComm) Skipping socket %s: unknown type %s\n", socket.c_str(), socketType.c_str());
 		}
 	}
 }
@@ -873,7 +854,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			std::string name = join(parts, ".");
 
 			std::stringstream configName;
-			configName << "plugin " << group;
+			configName << "plugin_" << group;
 			std::map<std::string,std::string> groupConfig = config_->groupConfig(configName.str());
 			std::map<std::string,std::string>::iterator configIt = groupConfig.find(name);
 			response.push_back(JSONNode("success", true));
