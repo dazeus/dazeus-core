@@ -36,6 +36,7 @@ DaZeus::DaZeus( std::string configFileName )
   int numInits;
   numInitsStr >> numInits;
   ++numInits;
+  numInitsStr.str(""); numInitsStr.clear();
   numInitsStr << numInits;
   database_->setProperty("dazeus.numinits", numInitsStr.str());
   const char *suffix = "th";
