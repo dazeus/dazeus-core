@@ -12,6 +12,7 @@
 
 std::string strToLower(const std::string &f);
 std::string strToUpper(const std::string &f);
+std::string strToIdentifier(const std::string &f);
 std::string trim(const std::string &s);
 std::vector<std::string> split(const std::string &s, const std::string &sep);
 bool contains(std::string x, char v);

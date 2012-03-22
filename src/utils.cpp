@@ -23,6 +23,16 @@ std::string strToUpper(const std::string &f) {
 	return res;
 }
 
+std::string strToIdentifier(const std::string &f) {
+	std::string res;
+	res.reserve(f.length());
+	for(unsigned i = 0; i < f.length(); ++i) {
+		if(isalpha(f[i])) continue;
+		res.push_back(toupper(f[i]));
+	}
+	return res;
+}
+
 std::string trim(const std::string &s) {
 	std::string str;
 	bool alpha = true;
