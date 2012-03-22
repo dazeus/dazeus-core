@@ -3,17 +3,25 @@
  * See LICENSE for license.
  */
 
-#include <QtCore/QSettings>
-#include <QtCore/QStringList>
 #include <fstream>
 #include <sstream>
 #include <assert.h>
+#include <libjson.h>
 #include "config.h"
 #include "database.h"
+#include "utils.h"
 
 // #define DEBUG
 
-#define rw(x) QLatin1String(x)
+class ConfigPrivate {
+public:
+	ConfigPrivate(JSONNode s) : s_(s) {}
+	JSONNode &s() { return s_; }
+private:
+	JSONNode s_;
+};
+
+#define S settings_->s()
 
 /**
  * @brief Constructor
@@ -32,7 +40,7 @@ Config::Config()
  */
 Config::~Config()
 {
-  delete settings_;
+	reset();
 }
 
 
@@ -44,7 +52,7 @@ Config::~Config()
  */
 const DatabaseConfig *Config::databaseConfig() const
 {
-  return databaseConfig_;
+	return databaseConfig_;
 }
 
 /**
@@ -62,22 +70,13 @@ const std::map<std::string,std::string> Config::groupConfig(std::string group) c
 	if(group.length() == 0)
 		return configuration;
 
-	bool found = false;
-	foreach(const QString &g, settings_->childGroups()) {
-		if(g.toStdString() == group) {
-			found = true;
-			break;
-		}
-	}
-
-	if(!found)
+	JSONNode::const_iterator it = S.find_nocase(libjson::to_json_string(group));
+	if(it == S.end())
 		return configuration;
 
-	settings_->beginGroup(QString::fromStdString(group));
-	foreach(const QString &key, settings_->childKeys()) {
-		configuration[key.toStdString()] = settings_->value(key).toString().toStdString();
+	for(JSONNode::const_iterator nit = it->begin(); nit != it->end(); ++nit) {
+		configuration[strToLower(libjson::to_std_string(nit->name()))] = libjson::to_std_string(nit->as_string()).c_str();
 	}
-	settings_->endGroup();
 
 	return configuration;
 }
@@ -89,7 +88,18 @@ const std::map<std::string,std::string> Config::groupConfig(std::string group) c
  */
 const std::string &Config::lastError()
 {
-  return error_;
+	return error_;
+}
+
+void Config::reset()
+{
+	networks_.clear();
+	sockets_.clear();
+	error_.clear();
+	delete settings_;
+	settings_ = 0;
+	delete databaseConfig_;
+	databaseConfig_ = 0;
 }
 
 /**
@@ -100,162 +110,167 @@ const std::string &Config::lastError()
  */
 bool Config::loadFromFile( std::string fileName )
 {
-  // TODO do this properly in reset()!
-  oldNetworks_ = networks_;
-  networks_.clear();
-  error_.clear();
-  delete settings_;
-  settings_ = 0;
+	reset();
+	std::ifstream ifile(fileName.c_str());
+	if(!ifile) {
+		error_ = "Configuration file does not exist or is unreadable: " + fileName;
+		return false;
+	}
 
-  // load!
-  error_.clear();
-  std::ifstream ifile(fileName.c_str());
-  if(!ifile) {
-    error_ = "Configuration file does not exist or is unreadable: " + fileName;
-  }
-  if( error_.length() == 0 )
-  {
-    settings_ = new QSettings(QString::fromStdString(fileName), QSettings::IniFormat);
-    if( settings_->status() != QSettings::NoError )
-    {
-      error_ = "Could not read configuration file: " + fileName;
-    }
-  }
+	std::stringstream configstr;
+	configstr << ifile.rdbuf();
+	std::string configjson = configstr.str();
 
-  if( error_.length() != 0 )
-  {
-    fprintf(stderr, "Error: %s\n", error_.c_str());
-    delete settings_;
-    settings_ = 0;
-    return false;
-  }
+	JSONNode config;
+	try {
+		config = libjson::parse(libjson::to_json_string(configjson));
+	} catch(std::invalid_argument e) {
+		error_ = std::string("Invalid json in configuration file: ") + e.what();
+		return false;
+	}
 
-  return true;
+	settings_ = new ConfigPrivate(config);
+
+	JSONNode::const_iterator fit = S.begin(), it = S.begin();
+	std::stringstream stream;
+	std::string placeholder;
+	int ival;
+	bool ierror;
+#define LOADCONFIG(stor, fld) fit = it->find_nocase(fld); if(fit != it->end()) stor = libjson::to_std_string(fit->as_string())
+
+	/** Load general configuration */
+	std::string defaultNickname = "DaZeus";
+	std::string defaultUsername = "dazeus";
+	std::string defaultFullname = "DaZeus";
+	it = S.find_nocase("general");
+	if(it != S.end()) {
+		LOADCONFIG(defaultNickname, "nickname");
+		LOADCONFIG(defaultUsername, "username");
+		LOADCONFIG(defaultFullname, "fullname");
+	}
+
+	/** Load sockets */
+	it = S.find_nocase("sockets");
+	if(it != S.end()) {
+		for(fit = it->begin(); fit != it->end(); ++fit) {
+			sockets_.push_back(libjson::to_std_string(fit->as_string()));
+		}
+	}
+	if(sockets_.size() == 0) {
+		fprintf(stderr, "Warning: No sockets defined in configuration file. Plugins won't be able to connect.\n");
+	}
+
+	/** Load database configuration */
+	it = S.find_nocase("database");
+	databaseConfig_ = new DatabaseConfig;
+	databaseConfig_->type = "mongo";
+	databaseConfig_->hostname = "localhost";
+	databaseConfig_->port = 27017;
+	databaseConfig_->username = "";
+	databaseConfig_->password = "";
+	databaseConfig_->database = "dazeus";
+	databaseConfig_->options = "";
+	if(it != S.end()) {
+		LOADCONFIG(databaseConfig_->hostname, "host");
+		std::string dbRawPort;
+		LOADCONFIG(dbRawPort,     "port");
+		std::stringstream portStr;
+		if(dbRawPort.length() > 0) {
+			portStr << dbRawPort;
+			portStr >> databaseConfig_->port;
+		}
+		LOADCONFIG(databaseConfig_->username, "username");
+		LOADCONFIG(databaseConfig_->password, "password");
+		LOADCONFIG(databaseConfig_->database, "database");
+
+		if(!portStr) {
+			fprintf(stderr, "Database port is not a valid numer: %s\n", dbRawPort.c_str());
+			fprintf(stderr, "Assuming default port.\n");
+			databaseConfig_->port = 27017;
+		}
+	}
+
+	/** Load networks */
+	std::map<std::string, NetworkConfig*> networks;
+	JSONNode::const_iterator nit = S.find("networks");
+	if(nit != S.end()) {
+		for(it = nit->begin(); it != nit->end(); ++it) {
+			NetworkConfig *nc = new NetworkConfig;
+			nc->displayName = "Unnamed network";
+			nc->nickName = defaultNickname;
+			nc->userName = defaultUsername;
+			nc->fullName = defaultFullname;
+			nc->password = "";
+			nc->autoConnect = false;
+
+			LOADCONFIG(nc->displayName, "name");
+			nc->name = strToIdentifier(nc->displayName);
+			if(networks.find(nc->name) != networks.end()) {
+				fprintf(stderr, "Error: Two networks exist with the same identifier, skipping.\n");
+				return false;
+			}
+			LOADCONFIG(nc->nickName, "nickname");
+			LOADCONFIG(nc->userName, "username");
+			LOADCONFIG(nc->fullName, "fullname");
+			LOADCONFIG(nc->password, "password");
+			std::string autoconnect;
+			LOADCONFIG(autoconnect, "autoconnect");
+			nc->autoConnect = autoconnect == "true";
+			JSONNode::const_iterator ssit = it->find_nocase("servers");
+			if(ssit != S.end()) {
+#define LOADCONFIG_S(stor, fld) fit = sit->find_nocase(fld); if(fit != sit->end()) stor = libjson::to_std_string(fit->as_string())
+#define LOADINT_S(stor, fld) LOADCONFIG_S(placeholder, fld); \
+	if(placeholder.length() == 0) ierror = false; \
+	else { stream << placeholder; stream >> ival; ierror = !stream; if(!ierror) stor = ival; stream.str(""); stream.clear(); }
+				for(JSONNode::const_iterator sit = ssit->begin(); sit != ssit->end(); ++sit) {
+					ServerConfig *sc = new ServerConfig;
+					sc->host = "";
+					sc->port = 6667;
+					sc->priority = 100;
+					sc->network = nc;
+					sc->ssl = false;
+
+					LOADCONFIG_S(sc->host, "host");
+					LOADINT_S(sc->port, "port");
+					if(ierror) fprintf(stderr, "Invalid port string: %s\n", placeholder.c_str());
+					LOADINT_S(sc->priority, "priority");
+					if(ierror) fprintf(stderr, "Invalid priority string: %s\n", placeholder.c_str());
+					std::string ssl;
+					LOADCONFIG_S(ssl, "ssl");
+					if(ssl == "true") sc->ssl = true;
+
+					nc->servers.push_back(sc);
+				}
+#undef LOADINT_S
+#undef LOADCONFIG_S
+			}
+			if(nc->servers.size() == 0) {
+				fprintf(stderr, "Warning: No servers defined for network '%s' in configuration file.\n", nc->displayName.c_str());
+			}
+			networks[nc->name] = nc;
+		}
+	}
+#undef LOADCONFIG
+
+	if(networks.size() == 0) {
+		fprintf(stderr, "Warning: No networks defined in configuration file.\n");
+	}
+
+	assert(networks_.size() == 0);
+	std::map<std::string, NetworkConfig*>::const_iterator netit;
+	for(netit = networks.begin(); netit != networks.end(); ++netit) {
+		networks_.push_back(netit->second);
+	}
+
+	return true;
 }
 
 const std::vector<NetworkConfig*> &Config::networks()
 {
-  assert( settings_ != 0 );
-  // TODO remove later
-  if( networks_.size() > 0 )
-    return networks_;
+	return networks_;
+}
 
-  // Database settings
-  settings_->beginGroup(rw("database"));
-  DatabaseConfig *dbc = new DatabaseConfig;
-  dbc->type     = settings_->value(rw("type")).toString().toStdString();
-  dbc->hostname = settings_->value(rw("hostname")).toString().toStdString();
-  std::string dbRawPort = settings_->value(rw("port")).toString().toStdString();
-  std::stringstream portStr;
-  portStr << dbRawPort;
-  portStr >> dbc->port;
-  dbc->username = settings_->value(rw("username")).toString().toStdString();
-  dbc->password = settings_->value(rw("password")).toString().toStdString();
-  dbc->database = settings_->value(rw("database")).toString().toStdString();
-  dbc->options  = settings_->value(rw("options")).toString().toStdString();
-
-  if(!portStr) {
-    fprintf(stderr, "Database port is not a valid numer: %s\n", dbRawPort.c_str());
-    fprintf(stderr, "Assuming default port.\n");
-    dbc->port = 0;
-  }
-
-  if( dbc->type != "mongo") {
-    fprintf(stderr, "No support loaded for database type %s\n", dbc->type.c_str());
-    fprintf(stderr, "Currently, only mongo is supported.\n");
-  }
-
-  delete databaseConfig_;
-  databaseConfig_ = dbc;
-  settings_->endGroup();
-
-  QString defaultNickname = settings_->value(rw("nickname")).toString();
-  QString defaultUsername = settings_->value(rw("username")).toString();
-  QString defaultFullname = settings_->value(rw("fullname")).toString();
-
-  QHash<QString,NetworkConfig*> networks;
-  QMultiHash<QString,ServerConfig*> servers;
-  foreach( const QString &category, settings_->childGroups() )
-  {
-    if( category.toLower().startsWith(rw("network")) )
-    {
-      QString networkName = category.mid(8).toLower();
-      if( networkName.length() > 50 )
-      {
-        fprintf(stderr, "Max network name length is 50. %s\n", networkName.toUtf8().constData());
-        networkName = networkName.left(50);
-      }
-#ifdef DEBUG
-      fprintf(stderr, "Network: %s\n", networkName.toUtf8().constData());
-#endif
-      if( servers.contains(networkName) )
-      {
-        fprintf(stderr, "Warning: Two network blocks for network %s exist in your configuration file. Behaviour is undefined.\n", networkName.toUtf8().constData());
-      }
-
-      NetworkConfig *nc = new NetworkConfig;
-      nc->name          = networkName.toStdString();
-      nc->displayName   = settings_->value(category + rw("/displayname"),
-                                           networkName).toString().toStdString();
-      nc->autoConnect   = settings_->value(category + rw("/autoconnect"),
-                                           false).toBool();
-      nc->nickName      = settings_->value(category + rw("/nickname"),
-                                           defaultNickname).toString().toStdString();
-      nc->userName      = settings_->value(category + rw("/username"),
-                                           defaultUsername).toString().toStdString();
-      nc->fullName      = settings_->value(category + rw("/fullname"),
-                                           defaultFullname).toString().toStdString();
-      nc->password      = settings_->value(category + rw("/password"),
-                                           QString()).toString().toStdString();
-
-      networks.insert(networkName, nc);
-    }
-    else if( category.toLower().startsWith(rw("server")) )
-    {
-      QString networkName = category.mid(7).toLower();
-
-      if( !networks.contains(networkName) )
-      {
-        fprintf(stderr, "Warning: Server block for network %s exists, but no network block found yet. Ignoring block.", networkName.toUtf8().constData());
-        continue;
-      }
-
-      ServerConfig *sc = new ServerConfig;
-      sc->host         = settings_->value(category + rw("/host"),QString()).toString().toStdString();
-      sc->port         = settings_->value(category + rw("/port"),6667).toInt();
-      sc->priority     = settings_->value(category + rw("/priority"), 5).toInt();
-      sc->ssl          = settings_->value(category + rw("/ssl"), false).toBool();
-      sc->network      = networks[networkName];
-      networks[networkName]->servers.push_back( sc );
-
-#ifdef DEBUG
-      fprintf(stderr, "Server for network: %s\n", networkName.toUtf8().constData());
-#endif
-    }
-    else if( category.toLower() != rw("generic")
-          && category.toLower() != rw("database")
-          && category.toLower() != rw("sockets")
-          && !category.toLower().startsWith(rw("plugin")) )
-    {
-      fprintf(stderr, "Warning: Configuration category name not recognized: %s\n", category.toUtf8().constData());
-    }
-  }
-
-  QHashIterator<QString,NetworkConfig*> i(networks);
-  while(i.hasNext())
-  {
-    i.next();
-    if( i.value()->servers.size() == 0 )
-    {
-      fprintf(stderr, "Warning: Network block for %s exists, but no server block found. Ignoring block.\n", i.key().toUtf8().constData());
-      continue;
-    }
-  }
-
-  networks_.clear();
-  foreach(NetworkConfig *v, networks.values()) {
-    networks_.push_back(v);
-  }
-
-  return networks_;
+const std::vector<std::string> &Config::sockets() const
+{
+	return sockets_;
 }

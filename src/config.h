@@ -47,7 +47,7 @@ struct DatabaseConfig {
   std::string options;
 };
 
-class QSettings;
+class ConfigPrivate;
 
 class Config
 {
@@ -55,18 +55,21 @@ class Config
         Config();
        ~Config();
   bool  loadFromFile( std::string fileName );
+  void  reset();
 
   const std::vector<NetworkConfig*> &networks();
   const std::string               &lastError();
   const DatabaseConfig            *databaseConfig() const;
   const std::map<std::string,std::string> groupConfig(std::string plugin) const;
+  const std::vector<std::string>         &sockets() const;
 
   private:
   std::vector<NetworkConfig*> oldNetworks_;
   std::vector<NetworkConfig*> networks_;
-  std::string               error_;
-  QSettings            *settings_;
-  DatabaseConfig       *databaseConfig_;
+  std::vector<std::string>    sockets_;
+  std::string                 error_;
+  ConfigPrivate              *settings_;
+  DatabaseConfig             *databaseConfig_;
 };
 
 #endif
