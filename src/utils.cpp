@@ -27,8 +27,8 @@ std::string strToIdentifier(const std::string &f) {
 	std::string res;
 	res.reserve(f.length());
 	for(unsigned i = 0; i < f.length(); ++i) {
-		if(isalpha(f[i])) continue;
-		res.push_back(toupper(f[i]));
+		if(!isalpha(f[i])) continue;
+		res.push_back(tolower(f[i]));
 	}
 	return res;
 }
