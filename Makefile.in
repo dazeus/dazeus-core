@@ -1,5 +1,6 @@
 LD            = $(CXX)
-CFLAGS        = -Wall -I/usr/include/libjson -I/usr/include/mongo-client -I/usr/include/glib-2.0 \
+CFLAGS        = -Wall -Wno-reorder -I/usr/include/libjson \
+			-I/usr/include/mongo-client -I/usr/include/glib-2.0 \
 			-DNDEBUG
 CXXFLAGS      = $(CFLAGS)
 LIBS          = -lircclient -ljson -lmongo-client
@@ -33,12 +34,11 @@ $(TARGET): $(OBJECTS)
 	$(LD) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 distclean: clean
-	-$(DEL_FILE) $(TARGET)
-	-$(DEL_FILE) Makefile
+	rm -f $(TARGET) Makefile
 
 clean:
 	rm -f $(OBJECTS)
-	rmdir $(OBJECTS_DIR)
+	-rmdir $(OBJECTS_DIR)
 
 $(OBJECTS_DIR)/main.o: src/main.cpp src/dazeus.h \
 		src/network.h \
