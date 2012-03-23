@@ -50,8 +50,8 @@ class PluginComm
     // Constructor which allows anything from a sender (isSender=true)
     // or to some receiver (isSender=false)
     RequirementInfo(Network *n, std::string obj, bool isSender) :
-        needsNetwork(true), wantedNetwork(n), needsReceiver(false),
-        needsSender(false)
+        needsNetwork(true), needsReceiver(false),
+        needsSender(false), wantedNetwork(n)
     {
         if(isSender) {
             needsSender = true; wantedSender = obj;
