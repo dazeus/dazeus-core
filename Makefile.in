@@ -44,7 +44,7 @@ $(OBJECTS_DIR)/main.o: src/main.cpp src/dazeus.h \
 		src/network.h \
 		src/user.h \
 		src/dazeusglobal.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/main.o src/main.cpp
 
 $(OBJECTS_DIR)/dazeus.o: src/dazeus.cpp src/dazeus.h \
@@ -53,7 +53,7 @@ $(OBJECTS_DIR)/dazeus.o: src/dazeus.cpp src/dazeus.h \
 		src/database.h \
 		src/config.h \
 		src/plugincomm.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/dazeus.o src/dazeus.cpp
 
 $(OBJECTS_DIR)/network.o: src/network.cpp src/network.h \
@@ -61,29 +61,29 @@ $(OBJECTS_DIR)/network.o: src/network.cpp src/network.h \
 		src/server.h \
 		src/config.h \
 		src/plugincomm.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/network.o src/network.cpp
 
 $(OBJECTS_DIR)/config.o: src/config.cpp src/config.h \
 		src/database.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/config.o src/config.cpp
 
 $(OBJECTS_DIR)/user.o: src/user.cpp src/user.h \
 		src/network.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/user.o src/user.cpp
 
 $(OBJECTS_DIR)/server.o: src/server.cpp src/server.h \
 		src/user.h \
 		src/network.h \
 		src/config.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/server.o src/server.cpp
 
 $(OBJECTS_DIR)/database.o: src/database.cpp src/database.h \
 		src/config.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/database.o src/database.cpp
 
 $(OBJECTS_DIR)/plugincomm.o: src/plugincomm.cpp src/plugincomm.h \
@@ -93,9 +93,9 @@ $(OBJECTS_DIR)/plugincomm.o: src/plugincomm.cpp src/plugincomm.h \
 		src/server.h \
 		src/dazeus.h \
 		src/database.h
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/plugincomm.o src/plugincomm.cpp
 
 $(OBJECTS_DIR)/utils.o: src/utils.cpp
-	-mkdir -p $(OBJECTS_DIR)
+	@mkdir -p $(OBJECTS_DIR)
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o $(OBJECTS_DIR)/utils.o src/utils.cpp
