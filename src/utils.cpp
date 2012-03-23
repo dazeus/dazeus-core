@@ -36,7 +36,7 @@ std::string strToIdentifier(const std::string &f) {
 std::string trim(const std::string &s) {
 	std::string str;
 	bool alpha = true;
-	for(int i = 0; i < s.length(); ++i) {
+	for(unsigned i = 0; i < s.length(); ++i) {
 		if(alpha && isalpha(s[i]))
 			continue;
 		alpha = false;
