@@ -11,24 +11,24 @@
 
 int main(int argc, char *argv[])
 {
-    fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
-    unsigned int high, low;
-    irc_get_version(&high, &low);
-    fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
+	fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
+	unsigned int high, low;
+	irc_get_version(&high, &low);
+	fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
 
-    // Initialise random seed
-    srand(time(NULL));
+	// Initialise random seed
+	srand(time(NULL));
 
-    // TODO parse command-line options
-    DaZeus d( "./dazeus.conf" );
+	// TODO parse command-line options
+	DaZeus d( "./dazeus.conf" );
 
-    // find and initialise plugins
-    d.initPlugins();
+	// find and initialise plugins
+	d.initPlugins();
 
-    // connect to servers marked as "autoconnect"
-    d.autoConnect();
+	// connect to servers marked as "autoconnect"
+	d.autoConnect();
 
-    // start the event loop
-    d.run();
-    return 0;
+	// start the event loop
+	d.run();
+	return 0;
 }
