@@ -831,7 +831,9 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			std::string value = database_->property(params[1], network, receiver, sender);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[1])));
-			response.push_back(JSONNode("value", libjson::to_json_string(value)));
+			if(value.length() > 0) {
+				response.push_back(JSONNode("value", libjson::to_json_string(value)));
+			}
 		} else if(params[0] == "set") {
 			if(params.size() < 3) {
 				response.push_back(JSONNode("success", false));
