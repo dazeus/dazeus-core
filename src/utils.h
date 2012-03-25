@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 std::string strToLower(const std::string &f);
 std::string strToUpper(const std::string &f);

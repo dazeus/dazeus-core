@@ -12,6 +12,7 @@
 #include <libjson.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdio.h>
 #include "utils.h"
 
 class Network;
