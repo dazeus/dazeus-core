@@ -69,6 +69,17 @@ DaZeus::~DaZeus()
 
 
 /**
+ * @brief Add additional sockets to the list defined in the configuration file.
+ *
+ * The application will listen on the given additional sockets.
+ */
+void DaZeus::addAdditionalSockets(const std::vector<std::string> &sockets)
+{
+	config_->addAdditionalSockets(sockets);
+}
+
+
+/**
  * @brief Connect to all networks marked "autoconnect".
  * 
  * Warning: This method is usually called outside the event loop, just after

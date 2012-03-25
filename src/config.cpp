@@ -44,6 +44,16 @@ Config::~Config()
 }
 
 
+void Config::addAdditionalSockets(const std::vector<std::string> &a)
+{
+	std::vector<std::string>::const_iterator sock_it;
+	for(sock_it = a.begin(); sock_it != a.end(); ++sock_it) {
+		additionalSockets_.push_back(*sock_it);
+		sockets_.push_back(*sock_it);
+	}
+}
+
+
 /**
  * @brief Return database configuration.
  *
@@ -155,6 +165,11 @@ bool Config::loadFromFile( std::string fileName )
 		for(fit = it->begin(); fit != it->end(); ++fit) {
 			sockets_.push_back(libjson::to_std_string(fit->as_string()));
 		}
+	}
+	// Add additional sockets as defined
+	std::vector<std::string>::const_iterator sock_it;
+	for(sock_it = additionalSockets_.begin(); sock_it != additionalSockets_.end(); ++sock_it) {
+		sockets_.push_back(*sock_it);
 	}
 	if(sockets_.size() == 0) {
 		fprintf(stderr, "Warning: No sockets defined in configuration file. Plugins won't be able to connect.\n");
