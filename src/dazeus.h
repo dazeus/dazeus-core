@@ -34,8 +34,6 @@ class DaZeus
     void     addAdditionalSockets(const std::vector<std::string> &sockets);
 
   private:
-    void     resetConfig();
-
     Config          *config_;
     std::string      configFileName_;
     PluginComm      *plugins_;
