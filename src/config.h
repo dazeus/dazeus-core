@@ -56,6 +56,7 @@ class Config
        ~Config();
   bool  loadFromFile( std::string fileName );
   void  reset();
+  void  addAdditionalSockets(const std::vector<std::string>&);
 
   const std::vector<NetworkConfig*> &networks();
   const std::string               &lastError();
@@ -67,6 +68,7 @@ class Config
   std::vector<NetworkConfig*> oldNetworks_;
   std::vector<NetworkConfig*> networks_;
   std::vector<std::string>    sockets_;
+  std::vector<std::string>    additionalSockets_;
   std::string                 error_;
   ConfigPrivate              *settings_;
   DatabaseConfig             *databaseConfig_;

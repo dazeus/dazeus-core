@@ -31,6 +31,7 @@ class DaZeus
     bool     initPlugins();
     void     autoConnect();
     bool     connectDatabase();
+    void     addAdditionalSockets(const std::vector<std::string> &sockets);
 
   private:
     void     resetConfig();
