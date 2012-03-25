@@ -12,4 +12,6 @@
 #define DAZEUS_VERSION_STR "2.0-beta1"
 #define DAZEUS_VERSION 0x010901
 
+#define DAZEUS_DEFAULT_CONFIGFILE "dazeus.conf"
+
 #endif
