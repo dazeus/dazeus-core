@@ -68,8 +68,7 @@ bool Database::open()
 	);
 	bson_finish(index);
 
-	if(!mongo_sync_cmd_index_create(M, PROPERTIES, index,
-	  MONGO_INDEX_UNIQUE | MONGO_INDEX_DROP_DUPS | MONGO_INDEX_BACKGROUND))
+	if(!mongo_sync_cmd_index_create(M, PROPERTIES, index, 0))
 	{
 #ifdef DEBUG
 		fprintf(stderr, "Index create error: %s\n", strerror(errno));
