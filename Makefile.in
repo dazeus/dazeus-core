@@ -1,6 +1,7 @@
 LD            = $(CXX)
 CFLAGS        = -Wall -Wno-reorder -I/usr/include/libjson \
 			-I/usr/include/mongo-client -I/usr/include/glib-2.0 \
+			-I/usr/include/libircclient \
 			-DNDEBUG
 CXXFLAGS      = $(CFLAGS)
 LIBS          = -lircclient -ljson -lmongo-client
