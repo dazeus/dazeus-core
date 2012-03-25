@@ -17,8 +17,8 @@
 /**
  * @brief Constructor.
  *
- * Initialises the object, and loads configuration if a path was given.
- * @param configFileName optional path to the configuration file.
+ * @param configFileName optional path to the configuration file. Configuration
+ * will not be loaded automatically, use loadConfig() for that.
  */
 DaZeus::DaZeus( std::string configFileName )
 : config_( 0 )
@@ -26,27 +26,6 @@ DaZeus::DaZeus( std::string configFileName )
 , plugins_( 0 )
 , database_( 0 )
 {
-  if( configFileName_.length() != 0 )
-    loadConfig();
-
-  // Pretty number of initialisations viewer -- and also an immediate database
-  // check.
-  std::stringstream numInitsStr;
-  numInitsStr << database_->property("dazeus.numinits");
-  int numInits;
-  numInitsStr >> numInits;
-  ++numInits;
-  numInitsStr.str(""); numInitsStr.clear();
-  numInitsStr << numInits;
-  database_->setProperty("dazeus.numinits", numInitsStr.str());
-  const char *suffix = "th";
-  if(numInits%100 == 11 ) ;
-  else if(numInits%100 == 12) ;
-  else if(numInits%100 == 13) ;
-  else if(numInits%10 == 1) suffix = "st";
-  else if(numInits%10 == 2) suffix = "nd";
-  else if(numInits%10 == 3) suffix = "rd";
-  printf("Initialising DaZeus for the %d%s time!\n", numInits, suffix);
 }
 
 
@@ -63,7 +42,6 @@ DaZeus::~DaZeus()
   }
   networks_.clear();
 
-  resetConfig();
   delete plugins_;
 }
 
@@ -134,6 +112,10 @@ bool DaZeus::configLoaded() const
 bool DaZeus::connectDatabase()
 {
   const DatabaseConfig *dbc = config_->databaseConfig();
+  if(dbc == 0) {
+    fprintf(stderr, "Database configuration is absent, cannot continue.\n");
+    return false;
+  }
   database_ = new Database(dbc->hostname, dbc->port);
 
   if( !database_->open() )
@@ -160,6 +142,7 @@ Database *DaZeus::database() const
  */
 bool DaZeus::initPlugins()
 {
+  assert(plugins_ != 0);
   plugins_->init();
 
   return true;
@@ -175,24 +158,27 @@ bool DaZeus::initPlugins()
  */
 bool DaZeus::loadConfig()
 {
-  // Clean up this object.
-  resetConfig();
-
   assert( configFileName_.length() != 0 );
 
   if( config_ == 0 )
     config_ = new Config();
 
-  config_->loadFromFile( configFileName_ );
-
   if( !config_ )
     return false;
 
+  config_->reset();
+  config_->loadFromFile( configFileName_ );
+
   const std::vector<NetworkConfig*> &networks = config_->networks();
 
-  if(!connectDatabase())
+  if(!connectDatabase()) {
+    delete config_;
+    config_ = 0;
     return false;
+  }
 
+  if(plugins_)
+    delete plugins_;
   plugins_ = new PluginComm( database_, config_, this );
 
   std::vector<NetworkConfig*>::const_iterator it;
@@ -200,35 +186,35 @@ bool DaZeus::loadConfig()
   {
     Network *net = new Network( *it, plugins_ );
     if( net == 0 ) {
-      resetConfig();
+      delete config_;
+      config_ = 0;
       return false;
     }
 
     networks_.push_back( net );
   }
 
+  // Pretty number of initialisations viewer -- and also an immediate database
+  // check.
+  std::stringstream numInitsStr;
+  numInitsStr << database_->property("dazeus.numinits");
+  int numInits;
+  numInitsStr >> numInits;
+  if(!numInitsStr)
+    numInits = 0;
+  ++numInits;
+  numInitsStr.str(""); numInitsStr.clear();
+  numInitsStr << numInits;
+  database_->setProperty("dazeus.numinits", numInitsStr.str());
+  const char *suffix = "th";
+  if(numInits%100 == 11 ) ;
+  else if(numInits%100 == 12) ;
+  else if(numInits%100 == 13) ;
+  else if(numInits%10 == 1) suffix = "st";
+  else if(numInits%10 == 2) suffix = "nd";
+  else if(numInits%10 == 3) suffix = "rd";
+  printf("Initialising DaZeus for the %d%s time!\n", numInits, suffix);
   return true;
-}
-
-/**
- * @brief Resets everything from the configuration of this object.
- *
- * Destroys the config_ object if it's already there, resets networks, servers,
- * et cetera.
- * This method will not clear the configFileName_. It is always called when
- * loadConfig() is called.
- */
-void DaZeus::resetConfig()
-{
-  //delete config_;
-  //config_ = 0;
-
-  //foreach( Network *net, networks_ )
-  //{
-    //net->disconnect( Network::ConfigurationReloadReason );
-    //net->deleteLater();
-  //}
-  //networks_.clear();
 }
 
 void DaZeus::run()

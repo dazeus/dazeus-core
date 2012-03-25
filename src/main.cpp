@@ -19,16 +19,13 @@ int main(int argc, char *argv[])
 	// Initialise random seed
 	srand(time(NULL));
 
-	// TODO parse command-line options
 	DaZeus d( "./dazeus.conf" );
-
-	// find and initialise plugins
+	if(!d.loadConfig()) {
+		fprintf(stderr, "Failed to load configuration, bailing out.\n");
+		return 3;
+	}
 	d.initPlugins();
-
-	// connect to servers marked as "autoconnect"
 	d.autoConnect();
-
-	// start the event loop
 	d.run();
 	return 0;
 }
