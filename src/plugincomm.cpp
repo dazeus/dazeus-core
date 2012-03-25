@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <time.h>
 #include <ctype.h>
+#include <poll.h>
 
 #include <string>
 #include <sstream>
@@ -259,17 +260,35 @@ void PluginComm::poll() {
 	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
 		int dev = it->first;
 		SocketInfo info = it->second;
+
+		// check if it's in error state
+		struct pollfd fds[1];
+		fds[0].fd = dev;
+		fds[0].events = fds[0].revents = 0;
+		if(::poll(fds, 1, 0) == -1) {
+			perror("Failed to check socket error state");
+			close(dev);
+			toRemove.push_back(dev);
+			continue;
+		} else if(fds[0].revents & POLLERR || fds[0].revents & POLLHUP) {
+			close(dev);
+			toRemove.push_back(dev);
+			continue;
+		}
+
 		bool appended = false;
 		while(1) {
 			char *readahead = (char*)malloc(512);
 			ssize_t r = read(dev, readahead, 512);
 			if(r == 0) {
 				// end-of-file
+				close(dev);
 				toRemove.push_back(dev);
 				break;
 			} else if(r < 0) {
 				if(errno != EWOULDBLOCK) {
 					fprintf(stderr, "Socket error: %s\n", strerror(errno));
+					close(dev);
 					toRemove.push_back(dev);
 				}
 				free(readahead);
