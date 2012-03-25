@@ -12,6 +12,7 @@ if(!$mongohost || !$dsn) {
 	warn "The DSN is used by the Perl DBI module, and might look like one of these:\n";
 	warn "  DBI:mysql:database=dazeus;host=localhost\n";
 	warn "  DBI:SQLite:dbname=database.sqlite\n";
+	warn "Don't forget to escape the DSN if it contains shell metacharacters.\n";
 	die "Did not understand parameters\n";
 }
 
