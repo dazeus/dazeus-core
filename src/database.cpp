@@ -10,6 +10,7 @@
 #include <cerrno>
 #include <cassert>
 #include <sstream>
+#include <stdio.h>
 
 // #define DEBUG
 
