@@ -32,7 +32,7 @@ bool contains(std::vector<Value> x, Value v) {
 
 template <typename Container, typename Value>
 void erase(Container &x, Value v) {
-	x.erase(remove(x.begin(), x.end(), v));
+	x.erase(remove(x.begin(), x.end(), v), x.end());
 }
 
 template <typename Container, typename Value>
