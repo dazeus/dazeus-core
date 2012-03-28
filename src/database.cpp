@@ -49,17 +49,30 @@ std::string Database::lastError() const
 
 bool Database::open()
 {
+#ifdef DEBUG
+	fprintf(stderr, "Initiating connection to Mongo daemon at %s:%d\n",
+	  hostName_.c_str(), port_);
+#endif
 	m_ = (void*)mongo_sync_connect(hostName_.c_str(), port_, TRUE);
 	if(!m_) {
 		lastError_ = strerror(errno);
+#ifdef DEBUG
+		fprintf(stderr, "Connection error: %s\n", lastError_.c_str());
+#endif
 		return false;
 	}
 	if(!mongo_sync_conn_set_auto_reconnect(M, TRUE)) {
 		lastError_ = strerror(errno);
 		mongo_sync_disconnect(M);
+#ifdef DEBUG
+		fprintf(stderr, "Cannot set auto-reconnect: %s\n", lastError_.c_str());
+#endif
 		return false;
 	}
 
+#ifdef DEBUG
+	fprintf(stderr, "Building index on table %s...\n", PROPERTIES);
+#endif
 	bson *index = bson_build(
 		BSON_TYPE_INT32, "network", 1,
 		BSON_TYPE_INT32, "receiver", 1,
