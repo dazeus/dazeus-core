@@ -116,7 +116,7 @@ bool DaZeus::connectDatabase()
     fprintf(stderr, "Database configuration is absent, cannot continue.\n");
     return false;
   }
-  database_ = new Database(dbc->hostname, dbc->port);
+  database_ = new Database(dbc->hostname, dbc->port, dbc->database, dbc->username, dbc->password);
 
   if( !database_->open() )
   {
