@@ -256,7 +256,7 @@ void Network::kickedChannel(const std::string&, const std::string &user, const s
 
 void Network::onFailedConnection()
 {
-  fprintf(stderr, "Connection failed on %s", Network::toString(this).c_str());
+  fprintf(stderr, "Connection failed on %s\n", Network::toString(this).c_str());
 
   identifiedUsers_.clear();
   knownUsers_.clear();
