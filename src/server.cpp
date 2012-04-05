@@ -6,7 +6,11 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
-#include <stdio.h>
+
+// libircclient.h needs cstdlib, don't remove the inclusion
+#include <cstdio>
+#include <cstdlib>
+#include <libircclient.h>
 
 #include "server.h"
 #include "config.h"
