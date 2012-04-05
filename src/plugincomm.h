@@ -14,14 +14,14 @@
 #include <assert.h>
 #include <stdio.h>
 #include "utils.h"
+#include "network.h"
 
-class Network;
 class Database;
 class Server;
 class Config;
 class DaZeus;
 
-class PluginComm
+class PluginComm : public NetworkListener
 {
 
   struct Command {
