@@ -7,7 +7,6 @@
 #include "server.h"
 #include "config.h"
 #include "user.h"
-#include "plugincomm.h"
 #include "utils.h"
 
 // #define DEBUG
@@ -30,11 +29,10 @@ std::string Network::toString(const Network *n)
 /**
  * @brief Constructor.
  */
-Network::Network( const NetworkConfig *c, PluginComm *p )
+Network::Network( const NetworkConfig *c )
 : activeServer_(0)
 , config_(c)
 , me_(0)
-, plugins_(p)
 {}
 
 
@@ -263,7 +261,7 @@ void Network::onFailedConnection()
   identifiedUsers_.clear();
   knownUsers_.clear();
 
-  plugins_->ircEvent("DISCONNECT", "", std::vector<std::string>(), this);
+  slotIrcEvent("DISCONNECT", "", std::vector<std::string>());
 
   // Flag old server as undesirable
   flagUndesirableServer( activeServer_->config() );
@@ -449,6 +447,9 @@ void Network::slotIrcEvent(const std::string &event, const std::string &origin, 
 		slotNickChanged(origin, params[0], receiver);
 	}
 #undef MIN
-	assert(plugins_ != 0);
-	plugins_->ircEvent(event, origin, params, this);
+	std::vector<NetworkListener*>::iterator nlit;
+	for(nlit = networkListeners_.begin(); nlit != networkListeners_.end();
+	    nlit++) {
+		(*nlit)->ircEvent(event, origin, params, this);
+	}
 }
