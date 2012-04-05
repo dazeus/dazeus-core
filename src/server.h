@@ -15,11 +15,18 @@
 #include "user.h"
 #include "network.h"
 #include "server.h"
-#include "config.h"
 
 // #define SERVER_FULLDEBUG
 
-struct ServerConfig;
+struct NetworkConfig;
+
+struct ServerConfig {
+  std::string host;
+  uint16_t port;
+  uint8_t priority;
+  NetworkConfig *network;
+  bool ssl;
+};
 
 class Server
 {
