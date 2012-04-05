@@ -10,7 +10,15 @@
 #include <string>
 #include <stdint.h>
 
-struct DatabaseConfig;
+struct DatabaseConfig {
+  std::string type;
+  std::string hostname;
+  uint16_t port;
+  std::string username;
+  std::string password;
+  std::string database;
+  std::string options;
+};
 
 /**
  * @class Database

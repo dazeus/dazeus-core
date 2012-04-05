@@ -14,7 +14,17 @@
 class Server;
 
 struct ServerConfig;
-struct NetworkConfig;
+
+struct NetworkConfig {
+  std::string name;
+  std::string displayName;
+  std::string nickName;
+  std::string userName;
+  std::string fullName;
+  std::string password;
+  std::vector<ServerConfig*> servers;
+  bool autoConnect;
+};
 
 class NetworkListener
 {

@@ -17,38 +17,11 @@
  * the IRC bot. Things like autojoining channels are not in here, because
  * that's handled by admins during runtime... :)
  */
-struct ServerConfig;
-
-struct NetworkConfig {
-  std::string name;
-  std::string displayName;
-  std::string nickName;
-  std::string userName;
-  std::string fullName;
-  std::string password;
-  std::vector<ServerConfig*> servers;
-  bool autoConnect;
-};
-
-struct ServerConfig {
-  std::string host;
-  uint16_t port;
-  uint8_t priority;
-  NetworkConfig *network;
-  bool ssl;
-};
-
-struct DatabaseConfig {
-  std::string type;
-  std::string hostname;
-  uint16_t port;
-  std::string username;
-  std::string password;
-  std::string database;
-  std::string options;
-};
 
 class ConfigPrivate;
+class DatabaseConfig;
+class NetworkConfig;
+class ServerConfig;
 
 class Config
 {
