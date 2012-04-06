@@ -86,10 +86,9 @@ void PluginComm::run() {
 	// and add the IRC descriptors
 	std::vector<Network*>::const_iterator nit;
 	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		Server *active = (*nit)->activeServer();
-		if(active) {
+		if((*nit)->activeServer()) {
 			int ircmaxfd = 0;
-			active->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
+			(*nit)->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
 			if(ircmaxfd > highest)
 				highest = ircmaxfd;
 		}
@@ -124,9 +123,8 @@ void PluginComm::run() {
 		}
 	}
 	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		Server *active = (*nit)->activeServer();
-		if(active) {
-			active->processDescriptors(&sockets, &out_sockets);
+		if((*nit)->activeServer()) {
+			(*nit)->processDescriptors(&sockets, &out_sockets);
 		}
 	}
 }
