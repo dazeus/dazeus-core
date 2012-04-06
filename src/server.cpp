@@ -221,7 +221,9 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 
 	// for now, keep these std::strings:
-	std::string origin = std::string(o);
+	std::string origin;
+	if(o != NULL)
+		origin = std::string(o);
 	size_t exclamMark = origin.find('!');
 	if(exclamMark != std::string::npos) {
 		origin = origin.substr(0, exclamMark);
