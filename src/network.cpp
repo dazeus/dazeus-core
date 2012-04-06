@@ -33,6 +33,7 @@ Network::Network( const NetworkConfig *c )
 : activeServer_(0)
 , config_(c)
 , me_(0)
+, deleteServer_(false)
 {}
 
 
@@ -264,11 +265,10 @@ void Network::onFailedConnection()
   slotIrcEvent("DISCONNECT", "", std::vector<std::string>());
 
   // Flag old server as undesirable
+  // Don't destroy it here yet; it is still in the stack. It will be destroyed
+  // in processDescriptors().
   flagUndesirableServer( activeServer_->config() );
-  delete activeServer_;
-  activeServer_ = 0;
-
-  connectToNetwork();
+  deleteServer_ = true;
 }
 
 
@@ -451,5 +451,19 @@ void Network::slotIrcEvent(const std::string &event, const std::string &origin, 
 	for(nlit = networkListeners_.begin(); nlit != networkListeners_.end();
 	    nlit++) {
 		(*nlit)->ircEvent(event, origin, params, this);
+	}
+}
+
+void Network::addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd) {
+	activeServer_->addDescriptors(in_set, out_set, maxfd);
+}
+
+void Network::processDescriptors(fd_set *in_set, fd_set *out_set) {
+	deleteServer_ = false;
+	activeServer_->processDescriptors(in_set, out_set);
+	if(deleteServer_) {
+		delete activeServer_;
+		activeServer_ = 0;
+		connectToNetwork();
 	}
 }

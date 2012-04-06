@@ -78,6 +78,8 @@ class Network
     void sendWhois( std::string destination );
     void flagUndesirableServer( const ServerConfig *sc );
     void serverIsActuallyOkay( const ServerConfig *sc );
+    void addDescriptors(fd_set *in_set, fd_set *out_set, int *maxfd);
+    void processDescriptors(fd_set *in_set, fd_set *out_set);
 
   private:
     void connectToServer( ServerConfig *conf, bool reconnect );
@@ -86,6 +88,7 @@ class Network
     const NetworkConfig  *config_;
     std::map<const ServerConfig*,int> undesirables_;
     User                 *me_;
+    bool                  deleteServer_;
     std::vector<std::string>        identifiedUsers_;
     std::map<std::string,std::vector<std::string> > knownUsers_;
     std::vector<NetworkListener*>   networkListeners_;
