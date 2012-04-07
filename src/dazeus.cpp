@@ -184,7 +184,8 @@ bool DaZeus::loadConfig()
   std::vector<NetworkConfig*>::const_iterator it;
   for(it = networks.begin(); it != networks.end(); ++it)
   {
-    Network *net = new Network( *it, plugins_ );
+    Network *net = new Network( *it );
+    net->addListener(plugins_);
     if( net == 0 ) {
       delete config_;
       config_ = 0;

@@ -12,11 +12,26 @@
 #include <map>
 
 class Server;
-class Network;
-class PluginComm;
 
 struct ServerConfig;
-struct NetworkConfig;
+
+struct NetworkConfig {
+  std::string name;
+  std::string displayName;
+  std::string nickName;
+  std::string userName;
+  std::string fullName;
+  std::string password;
+  std::vector<ServerConfig*> servers;
+  bool autoConnect;
+};
+
+class NetworkListener
+{
+  public:
+    virtual void ircEvent(const std::string &event, const std::string &origin,
+                          const std::vector<std::string> &params, Network *n ) = 0;
+};
 
 class Network
 {
@@ -24,10 +39,13 @@ class Network
   friend class Server;
 
   public:
-                    Network( const NetworkConfig *c, PluginComm *p );
+                    Network( const NetworkConfig *c );
                    ~Network();
 
     static std::string toString(const Network *n);
+    void               addListener( NetworkListener *nl ) {
+      networkListeners_.push_back(nl);
+    }
 
     enum DisconnectReason {
       UnknownReason,
@@ -70,7 +88,7 @@ class Network
     User                 *me_;
     std::vector<std::string>        identifiedUsers_;
     std::map<std::string,std::vector<std::string> > knownUsers_;
-    PluginComm           *plugins_;
+    std::vector<NetworkListener*>   networkListeners_;
 
     void onFailedConnection();
     void joinedChannel(const std::string &user, const std::string &receiver);
