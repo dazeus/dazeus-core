@@ -39,7 +39,8 @@
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
 PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
-: database_(d)
+: NetworkListener()
+, database_(d)
 , config_(c)
 , dazeus_(bot)
 {
