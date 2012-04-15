@@ -9,8 +9,6 @@
 #include "user.h"
 #include "utils.h"
 
-// #define DEBUG
-
 std::string Network::toString(const Network *n)
 {
 	std::stringstream res;
@@ -42,7 +40,7 @@ Network::Network( const NetworkConfig *c )
  */
 Network::~Network()
 {
-  disconnectFromNetwork();
+	disconnectFromNetwork();
 }
 
 
@@ -51,7 +49,7 @@ Network::~Network()
  */
 Server *Network::activeServer() const
 {
-  return activeServer_;
+	return activeServer_;
 }
 
 
@@ -60,21 +58,21 @@ Server *Network::activeServer() const
  */
 bool Network::autoConnectEnabled() const
 {
-  return config_->autoConnect;
+	return config_->autoConnect;
 }
 
 void Network::action( std::string destination, std::string message )
 {
-  if( !activeServer_ )
-    return;
-  activeServer_->ctcpAction( destination, message );
+	if( !activeServer_ )
+		return;
+	activeServer_->ctcpAction( destination, message );
 }
 
 void Network::names( std::string channel )
 {
-  if( !activeServer_ )
-    return;
-  return activeServer_->names( channel );
+	if( !activeServer_ )
+		return;
+	activeServer_->names( channel );
 }
 
 std::vector<std::string> Network::joinedChannels() const
@@ -115,54 +113,54 @@ struct ServerSorter {
 
 const NetworkConfig *Network::config() const
 {
-  return config_;
+	return config_;
 }
 
 void Network::connectToNetwork( bool reconnect )
 {
-  if( !reconnect && activeServer_ )
-    return;
+	if( !reconnect && activeServer_ )
+		return;
 
-  printf("Connecting to network: %s\n", Network::toString(this).c_str());
+	printf("Connecting to network: %s\n", Network::toString(this).c_str());
 
-  // Check if there *is* a server to use
-  if( servers().size() == 0 )
-  {
-    printf("Trying to connect to network '%s', but there are no servers to connect to!\n",
-      config_->displayName.c_str());
-    return;
-  }
+	// Check if there *is* a server to use
+	if( servers().size() == 0 )
+	{
+		printf("Trying to connect to network '%s', but there are no servers to connect to!\n",
+		config_->displayName.c_str());
+		return;
+	}
 
-  // Find the best server to use
+	// Find the best server to use
 
-  // First, sort the list by priority and earlier failures
-  std::vector<ServerConfig*> sortedServers = servers();
-  std::sort( sortedServers.begin(), sortedServers.end(), ServerSorter(this) );
+	// First, sort the list by priority and earlier failures
+	std::vector<ServerConfig*> sortedServers = servers();
+	std::sort( sortedServers.begin(), sortedServers.end(), ServerSorter(this) );
 
-  // Then, take the first one and create a Server around it
-  ServerConfig *best = sortedServers[0];
+	// Then, take the first one and create a Server around it
+	ServerConfig *best = sortedServers[0];
 
-  // And set it as the active server, and connect.
-  connectToServer( best, true );
+	// And set it as the active server, and connect.
+	connectToServer( best, true );
 }
 
 
 void Network::connectToServer( ServerConfig *server, bool reconnect )
 {
-  if( !reconnect && activeServer_ )
-    return;
-  assert(knownUsers_.size() == 0);
-  assert(identifiedUsers_.size() == 0);
+	if( !reconnect && activeServer_ )
+		return;
+	assert(knownUsers_.size() == 0);
+	assert(identifiedUsers_.size() == 0);
 
-  if( activeServer_ )
-  {
-    activeServer_->disconnectFromServer( SwitchingServersReason );
-    // TODO: maybe deleteLater?
-    delete(activeServer_);
-  }
+	if( activeServer_ )
+	{
+		activeServer_->disconnectFromServer( SwitchingServersReason );
+		// TODO: maybe deleteLater?
+		delete(activeServer_);
+	}
 
-  activeServer_ = new Server( server, this );
-  activeServer_->connectToServer();
+	activeServer_ = new Server( server, this );
+	activeServer_->connectToServer();
 }
 
 void Network::joinedChannel(const std::string &user, const std::string &receiver)
@@ -174,10 +172,6 @@ void Network::joinedChannel(const std::string &user, const std::string &receiver
 	std::vector<std::string> users = knownUsers_[strToLower(receiver)];
 	if(!contains(users, strToLower(user)))
 		knownUsers_[strToLower(receiver)].push_back(strToLower(user));
-#ifdef DEBUG
-	qDebug() << "User " << user << " joined channel " << receiver;
-	qDebug() << "knownUsers is now: " << knownUsers_;
-#endif
 }
 
 void Network::partedChannel(const std::string &user, const std::string &, const std::string &receiver)
@@ -191,11 +185,6 @@ void Network::partedChannel(const std::string &user, const std::string &, const 
 	if(!isKnownUser(u.nick())) {
 		erase(identifiedUsers_, strToLower(u.nick()));
 	}
-#ifdef DEBUG
-	qDebug() << "User " << user << " left channel " << receiver;
-	qDebug() << "knownUsers is now: " << knownUsers_;
-	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
-#endif
 }
 
 void Network::slotQuit(const std::string &origin, const std::string&, const std::string &receiver)
@@ -207,11 +196,6 @@ void Network::slotQuit(const std::string &origin, const std::string&, const std:
 	if(!isKnownUser(origin)) {
 		erase(identifiedUsers_, strToLower(origin));
 	}
-#ifdef DEBUG
-	qDebug() << "User " << origin << " quit IRC.";
-	qDebug() << "knownUsers is now: " << knownUsers_;
-	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
-#endif
 }
 
 void Network::slotNickChanged( const std::string &origin, const std::string &nick, const std::string & )
@@ -230,11 +214,6 @@ void Network::slotNickChanged( const std::string &origin, const std::string &nic
 			it->second.push_back(strToLower(nick));
 		}
 	}
-#ifdef DEBUG
-	qDebug() << "User " << origin << " changed nicks to " << nick;
-	qDebug() << "knownUsers is now: " << knownUsers_;
-	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
-#endif
 }
 
 void Network::kickedChannel(const std::string&, const std::string &user, const std::string&, const std::string &receiver)
@@ -248,35 +227,30 @@ void Network::kickedChannel(const std::string&, const std::string &user, const s
 	if(!isKnownUser(u.nick())) {
 		erase(identifiedUsers_, strToLower(u.nick()));
 	}
-#ifdef DEBUG
-	qDebug() << "User " << user << " was kicked from " << receiver;
-	qDebug() << "knownUsers is now: " << knownUsers_;
-	qDebug() << "identifiedUsers is now: " << identifiedUsers_;
-#endif
 }
 
 void Network::onFailedConnection()
 {
-  fprintf(stderr, "Connection failed on %s\n", Network::toString(this).c_str());
+	fprintf(stderr, "Connection failed on %s\n", Network::toString(this).c_str());
 
-  identifiedUsers_.clear();
-  knownUsers_.clear();
+	identifiedUsers_.clear();
+	knownUsers_.clear();
 
-  slotIrcEvent("DISCONNECT", "", std::vector<std::string>());
+	slotIrcEvent("DISCONNECT", "", std::vector<std::string>());
 
-  // Flag old server as undesirable
-  // Don't destroy it here yet; it is still in the stack. It will be destroyed
-  // in processDescriptors().
-  flagUndesirableServer( activeServer_->config() );
-  deleteServer_ = true;
+	// Flag old server as undesirable
+	// Don't destroy it here yet; it is still in the stack. It will be destroyed
+	// in processDescriptors().
+	flagUndesirableServer( activeServer_->config() );
+	deleteServer_ = true;
 }
 
 
 void Network::ctcp( std::string destination, std::string message )
 {
-  if( !activeServer_ )
-    return;
-  return activeServer_->ctcpAction( destination, message );
+	if( !activeServer_ )
+		return;
+	activeServer_->ctcpAction( destination, message );
 }
 
 
@@ -285,70 +259,70 @@ void Network::ctcp( std::string destination, std::string message )
  */
 void Network::disconnectFromNetwork( DisconnectReason reason )
 {
-  if( activeServer_ == 0 )
-    return;
+	if( activeServer_ == 0 )
+		return;
 
-  identifiedUsers_.clear();
-  knownUsers_.clear();
+	identifiedUsers_.clear();
+	knownUsers_.clear();
 
-  activeServer_->disconnectFromServer( reason );
-  // TODO: maybe deleteLater?
-  delete activeServer_;
-  activeServer_ = 0;
+	activeServer_->disconnectFromServer( reason );
+	// TODO: maybe deleteLater?
+	delete activeServer_;
+	activeServer_ = 0;
 }
 
 
 void Network::joinChannel( std::string channel )
 {
-  if( !activeServer_ )
-    return;
-  return activeServer_->join( channel );
+	if( !activeServer_ )
+		return;
+	activeServer_->join( channel );
 }
 
 
 void Network::leaveChannel( std::string channel )
 {
-  if( !activeServer_ )
-    return;
-  activeServer_->part( channel );
+	if( !activeServer_ )
+		return;
+	activeServer_->part( channel );
 }
 
 
 void Network::say( std::string destination, std::string message )
 {
-  if( !activeServer_ )
-    return;
-  activeServer_->message( destination, message );
+	if( !activeServer_ )
+		return;
+	activeServer_->message( destination, message );
 }
 
 
 void Network::sendWhois( std::string destination )
 {
-  activeServer_->whois(destination);
+	activeServer_->whois(destination);
 }
 
 const std::vector<ServerConfig*> &Network::servers() const
 {
-  return config_->servers;
+	return config_->servers;
 }
 
 
 User *Network::user()
 {
-  if( me_ == 0 )
-  {
-    me_ = new User( config_->nickName, config_->nickName,
-                    "__local__", this );
-  }
+	if( me_ == 0 )
+	{
+		me_ = new User( config_->nickName, config_->nickName,
+		    "__local__", this );
+	}
 
-  return me_;
+	return me_;
 }
 
 
 
 std::string Network::networkName() const
 {
-  return config()->name;
+	return config()->name;
 }
 
 
@@ -367,7 +341,7 @@ void Network::flagUndesirableServer( const ServerConfig *sc )
 
 void Network::serverIsActuallyOkay( const ServerConfig *sc )
 {
-  undesirables_.erase(sc);
+	undesirables_.erase(sc);
 }
 
 bool Network::isIdentified(const std::string &user) const {
@@ -390,10 +364,6 @@ void Network::slotWhoisReceived(const std::string &origin, const std::string &ni
 	} else if(identified && !contains(identifiedUsers_, strToLower(nick)) && isKnownUser(nick)) {
 		identifiedUsers_.push_back(strToLower(nick));
 	}
-#ifdef DEBUG
-	qDebug() << "Whois received for"<< nick <<"; identifiedUsers_ is now:";
-	qDebug() << identifiedUsers_;
-#endif
 }
 
 void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, const std::string &receiver ) {
@@ -413,10 +383,6 @@ void Network::slotNamesReceived(const std::string&, const std::string &channel, 
 		if(!contains(users, strToLower(n)))
 			users.push_back(strToLower(n));
 	}
-#ifdef DEBUG
-	qDebug() << "Names received for" << channel << "; knownUsers_ is now:";
-	qDebug() << knownUsers_;
-#endif
 }
 
 void Network::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params) {
