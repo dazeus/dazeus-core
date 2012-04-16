@@ -22,12 +22,13 @@
  */
 Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
 : m_(0)
+, lastError_()
+, hostName_(hostname)
+, databaseName_(database)
+, port_(port)
+, username_(username)
+, password_(password)
 {
-	hostName_ = hostname;
-	port_ = port;
-	databaseName_ = database;
-	username_ = username;
-	password_ = password;
 }
 
 
