@@ -60,6 +60,10 @@ class PluginComm : public NetworkListener
             needsReceiver = true; wantedReceiver = obj;
         }
     }
+    private:
+    // explicitly disable copy constructor
+    RequirementInfo(const RequirementInfo&);
+    void operator=(const RequirementInfo&);
   };
 
   struct SocketInfo {
@@ -153,6 +157,10 @@ class PluginComm : public NetworkListener
   void run();
 
   private:
+    // explicitly disable copy constructor
+    PluginComm(const PluginComm&);
+    void operator=(const PluginComm&);
+
     void newTcpConnection();
     void newLocalConnection();
     void poll();

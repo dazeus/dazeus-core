@@ -94,6 +94,10 @@ class Network
     void processDescriptors(fd_set *in_set, fd_set *out_set);
 
   private:
+    // explicitly disable copy constructor
+    Network(const Network&);
+    void operator=(const Network&);
+
     void connectToServer( ServerConfig *conf, bool reconnect );
 
     Server               *activeServer_;

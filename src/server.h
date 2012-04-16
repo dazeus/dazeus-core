@@ -58,6 +58,10 @@ public:
 	void slotDisconnected();
 
 private:
+	// explicitly disable copy constructor
+	Server(const Server&);
+	void operator=(const Server&);
+
 	const ServerConfig *config_;
 	std::string   motd_;
 	Network  *network_;
