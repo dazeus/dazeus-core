@@ -61,6 +61,10 @@ class Database
                                   const std::string &senderScope   = std::string() );
 
   private:
+    // explicitly disable copy constructor
+    Database(const Database&);
+    void operator=(const Database&);
+
     void *m_;
     std::string lastError_;
     std::string hostName_;

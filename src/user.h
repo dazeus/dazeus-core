@@ -36,6 +36,10 @@ class User {
     static bool isMe( const User &which, const std::string &network );
 
   private:
+    // explicitly disable copy constructor
+    User(const User&);
+    void operator=(const User&);
+
     std::string nick_;
     std::string ident_;
     std::string host_;

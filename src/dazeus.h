@@ -34,6 +34,10 @@ class DaZeus
     void     addAdditionalSockets(const std::vector<std::string> &sockets);
 
   private:
+    // explicitly disable copy constructor
+    DaZeus(const DaZeus&);
+    void operator=(const DaZeus&);
+
     Config          *config_;
     std::string      configFileName_;
     PluginComm      *plugins_;

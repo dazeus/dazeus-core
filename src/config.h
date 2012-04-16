@@ -39,6 +39,10 @@ class Config
   const std::vector<std::string>         &sockets() const;
 
   private:
+  // explicitly disable copy constructor
+  Config(const Config&);
+  void operator=(const Config&);
+
   std::vector<NetworkConfig*> oldNetworks_;
   std::vector<NetworkConfig*> networks_;
   std::vector<std::string>    sockets_;
