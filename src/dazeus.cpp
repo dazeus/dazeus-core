@@ -25,6 +25,7 @@ DaZeus::DaZeus( std::string configFileName )
 , configFileName_( configFileName )
 , plugins_( 0 )
 , database_( 0 )
+, networks_()
 {
 }
 
