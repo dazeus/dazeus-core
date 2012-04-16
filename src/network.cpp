@@ -208,7 +208,7 @@ void Network::partedChannel(const std::string &user, const std::string &, const 
 	}
 }
 
-void Network::slotQuit(const std::string &origin, const std::string&, const std::string &receiver)
+void Network::slotQuit(const std::string &origin, const std::string&, const std::string &)
 {
 	std::map<std::string,std::vector<std::string> >::iterator it;
 	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
@@ -379,7 +379,7 @@ bool Network::isKnownUser(const std::string &user) const {
 	return false;
 }
 
-void Network::slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified) {
+void Network::slotWhoisReceived(const std::string &, const std::string &nick, bool identified) {
 	if(!identified) {
 		erase(identifiedUsers_, strToLower(nick));
 	} else if(identified && !contains(identifiedUsers_, strToLower(nick)) && isKnownUser(nick)) {
@@ -387,7 +387,7 @@ void Network::slotWhoisReceived(const std::string &origin, const std::string &ni
 	}
 }
 
-void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, const std::string &receiver ) {
+void Network::slotNamesReceived(const std::string&, const std::string &channel, const std::vector<std::string> &names, const std::string & ) {
 	assert(contains(knownUsers_, strToLower(channel)));
 	std::vector<std::string> &users = knownUsers_[strToLower(channel)];
 	std::vector<std::string>::const_iterator it;

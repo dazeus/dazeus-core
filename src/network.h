@@ -54,7 +54,7 @@ class Network
       ConfigurationReloadReason,
       SwitchingServersReason,
       ErrorReason,
-      AdminRequestReason,
+      AdminRequestReason
     };
 
     enum ChannelMode {
@@ -63,7 +63,7 @@ class Network
       HalfOpMode = 2,
       VoiceMode = 4,
       UnknownMode = 8,
-      OpAndVoiceMode = OpMode | VoiceMode,
+      OpAndVoiceMode = OpMode | VoiceMode
     };
 
     bool                        autoConnectEnabled() const;
