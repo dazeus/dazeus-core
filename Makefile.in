@@ -2,7 +2,9 @@ LD            = $(CXX)
 CFLAGS        = -Wall -Wno-reorder -I/usr/include/libjson \
 			-I/usr/include/mongo-client -I/usr/include/glib-2.0 \
 			-I/usr/include/libircclient \
-			-DNDEBUG
+			-DNDEBUG -Wall -Wextra -Weffc++ -Wno-long-long
+# -pedantic causes build errors in libmongo-client; fixed in 0.1.6
+# https://github.com/algernon/libmongo-client/commit/7843dd307853bad9e49ac4e55ffc9ec8e62054a0
 CXXFLAGS      = $(CFLAGS)
 LIBS          = -lircclient -ljson -lmongo-client
 OBJECTS_DIR   = build
