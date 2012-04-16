@@ -235,7 +235,7 @@ void irc_callback(irc_session_t *s, const char *e, const char *o, const char **p
 	}
 
 #ifdef DEBUG
-	fprintf(stderr, "%s - %s from %s\n", server->toString().c_str, event.c_str(), origin.c_str());
+	fprintf(stderr, "%s - %s from %s\n", Server::toString(server).c_str(), event.c_str(), origin.c_str());
 #endif
 
 	// TODO: handle disconnects nicely (probably using some ping and LIBIRC_ERR_CLOSED
