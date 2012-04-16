@@ -8,6 +8,7 @@
 
 #include "user.h"
 #include <vector>
+#include <sys/select.h> /* fd_set */
 #include <string>
 #include <map>
 

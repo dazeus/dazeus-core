@@ -5,7 +5,6 @@
 
 #include "network.h"
 #include "server.h"
-#include "config.h"
 #include "user.h"
 #include "utils.h"
 

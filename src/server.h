@@ -6,11 +6,12 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <libircclient.h>
 #include <cassert>
 #include <iostream>
 #include <vector>
 #include <string>
+
+#include <libircclient.h>
 
 #include "user.h"
 #include "network.h"

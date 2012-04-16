@@ -13,7 +13,6 @@
 #include <libircclient.h>
 
 #include "server.h"
-#include "config.h"
 
 // #define DEBUG
 
