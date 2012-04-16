@@ -22,7 +22,7 @@
 struct NetworkConfig;
 
 struct ServerConfig {
-  ServerConfig(std::string h, NetworkConfig *n, uint16_t p = 6667,
+  ServerConfig(std::string h = std::string(), NetworkConfig *n = 0, uint16_t p = 6667,
     bool s = false, uint8_t pr = 5) : host(h), port(p), priority(pr),
     network(n), ssl(s) {}
   ServerConfig(const ServerConfig &s) : host(s.host), port(s.port),

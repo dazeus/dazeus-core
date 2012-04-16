@@ -17,6 +17,20 @@ class Server;
 struct ServerConfig;
 
 struct NetworkConfig {
+  NetworkConfig(std::string n = std::string(), std::string d = std::string(),
+    std::string nick = std::string(), std::string user = std::string(),
+    std::string full = std::string(), std::string p = std::string(), bool a =
+    false) : name(n), displayName(d), nickName(nick), userName(user),
+    fullName(full), password(p), servers(), autoConnect(a) {}
+  NetworkConfig(const NetworkConfig &s) : name(s.name),
+    displayName(s.displayName), nickName(s.nickName), userName(s.userName),
+    fullName(s.fullName), password(s.password), servers(s.servers),
+    autoConnect(s.autoConnect) {}
+  const NetworkConfig &operator=(const NetworkConfig &s) { name = s.name;
+    displayName = s.displayName; nickName = s.nickName; userName = s.userName;
+    fullName = s.fullName; password = s.password; servers = s.servers;
+    autoConnect = s.autoConnect; return *this; }
+
   std::string name;
   std::string displayName;
   std::string nickName;
