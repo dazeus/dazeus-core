@@ -7,17 +7,20 @@
 #include "network.h"
 
 User::User( const std::string &fullName, Network *n )
+: nick_()
+, ident_()
+, host_()
+, network_(n)
 {
   setFullName( fullName );
-  setNetwork( n );
 }
 
 User::User( const std::string &nick, const std::string &ident, const std::string &host, Network *n )
+: nick_(nick)
+, ident_(ident)
+, host_(host)
+, network_(n)
 {
-  setNick( nick );
-  setIdent( ident );
-  setHost( host );
-  setNetwork( n );
 }
 
 std::string User::toString() const
