@@ -43,7 +43,6 @@ class User {
     std::string nick_;
     std::string ident_;
     std::string host_;
-    User       *me;
     Network    *network_;
 };
 
