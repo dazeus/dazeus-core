@@ -40,6 +40,10 @@
 
 PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
 : NetworkListener()
+, tcpServers_()
+, localServers_()
+, commandQueue_()
+, sockets_()
 , database_(d)
 , config_(c)
 , dazeus_(bot)
