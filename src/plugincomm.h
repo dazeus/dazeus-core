@@ -32,7 +32,8 @@ class PluginComm : public NetworkListener
     std::string fullArgs;
     std::vector<std::string> args;
     bool whoisSent;
-    Command(Network &n) : network(n), whoisSent(false) {}
+    Command(Network &n) : network(n), origin(), channel(),
+    command(), fullArgs(), args(), whoisSent(false) {}
   };
 
   struct RequirementInfo {
@@ -44,15 +45,18 @@ class PluginComm : public NetworkListener
     std::string wantedSender;
     // Constructor which allows anything
     RequirementInfo() : needsNetwork(false), needsReceiver(false),
-        needsSender(false), wantedNetwork(0) {}
+        needsSender(false), wantedNetwork(0), wantedReceiver(),
+        wantedSender() {}
     // Constructor which allows anything on a network
     RequirementInfo(Network *n) : needsNetwork(true), needsReceiver(false),
-        needsSender(false), wantedNetwork(n) {}
+        needsSender(false), wantedNetwork(n), wantedReceiver(),
+        wantedSender() {}
     // Constructor which allows anything from a sender (isSender=true)
     // or to some receiver (isSender=false)
     RequirementInfo(Network *n, std::string obj, bool isSender) :
         needsNetwork(true), needsReceiver(false),
-        needsSender(false), wantedNetwork(n)
+        needsSender(false), wantedNetwork(n), wantedReceiver(),
+        wantedSender()
     {
         if(isSender) {
             needsSender = true; wantedSender = obj;
@@ -68,7 +72,8 @@ class PluginComm : public NetworkListener
 
   struct SocketInfo {
    public:
-    SocketInfo(std::string t = std::string()) : type(t), waitingSize(0) {}
+    SocketInfo(std::string t = std::string()) : type(t),
+      subscriptions(), commands(), waitingSize(0), readahead() {}
     bool isSubscribed(std::string t) const {
       return contains(subscriptions, strToUpper(t));
     }
@@ -170,7 +175,6 @@ class PluginComm : public NetworkListener
     std::vector<int> localServers_;
     std::vector<Command*> commandQueue_;
     std::map<int,SocketInfo> sockets_;
-    const char *readahead_;
     Database *database_;
     Config *config_;
     DaZeus *dazeus_;
