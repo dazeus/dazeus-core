@@ -177,6 +177,13 @@ void Server::slotNumericMessageReceived( const std::string &origin, unsigned int
 		network_->slotIrcEvent( "NAMES", origin, parameters );
 		in_names_.clear();
 	}
+	else if(code == 332)
+	{
+		std::vector<std::string> parameters;
+		parameters.push_back(args.at(1));
+		parameters.push_back(args.at(2));
+		network_->slotIrcEvent( "TOPIC", origin, parameters );
+	}
 	std::stringstream codestream;
 	codestream << code;
 	std::vector<std::string> params;
