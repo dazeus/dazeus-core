@@ -33,9 +33,12 @@ std::string Server::toString(const Server *s)
 
 Server::Server( const ServerConfig *c, Network *n )
 : config_(c)
+, motd_()
 , network_(n)
 , irc_(0)
+, in_whois_for_()
 , whois_identified_(false)
+, in_names_()
 {
 }
 
