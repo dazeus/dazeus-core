@@ -56,6 +56,15 @@ class Network
       AdminRequestReason,
     };
 
+    enum ChannelMode {
+      UserMode = 0,
+      OpMode = 1,
+      HalfOpMode = 2,
+      VoiceMode = 4,
+      UnknownMode = 8,
+      OpAndVoiceMode = OpMode | VoiceMode,
+    };
+
     bool                        autoConnectEnabled() const;
     const std::vector<ServerConfig*> &servers() const;
     User                       *user();
@@ -64,6 +73,8 @@ class Network
     int                         serverUndesirability( const ServerConfig *sc ) const;
     std::string                 networkName() const;
     std::vector<std::string>    joinedChannels() const;
+    std::map<std::string,std::string> topics() const;
+    std::map<std::string,ChannelMode> usersInChannel(std::string channel) const;
     bool                        isIdentified(const std::string &user) const;
     bool                        isKnownUser(const std::string &user) const;
 
@@ -91,6 +102,7 @@ class Network
     bool                  deleteServer_;
     std::vector<std::string>        identifiedUsers_;
     std::map<std::string,std::vector<std::string> > knownUsers_;
+    std::map<std::string,std::string> topics_;
     std::vector<NetworkListener*>   networkListeners_;
 
     void onFailedConnection();
@@ -101,6 +113,7 @@ class Network
     void slotWhoisReceived(const std::string &origin, const std::string &nick, bool identified);
     void slotNickChanged( const std::string &origin, const std::string &nick, const std::string &receiver );
     void slotNamesReceived(const std::string&, const std::string&, const std::vector<std::string> &names, const std::string &receiver );
+    void slotTopicChanged(const std::string&, const std::string&, const std::string&);
     void slotIrcEvent(const std::string&, const std::string&, const std::vector<std::string>&);
 };
 

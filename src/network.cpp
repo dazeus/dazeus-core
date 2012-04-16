@@ -85,6 +85,28 @@ std::vector<std::string> Network::joinedChannels() const
 	return res;
 }
 
+std::map<std::string,std::string> Network::topics() const
+{
+	return topics_;
+}
+
+std::map<std::string,Network::ChannelMode> Network::usersInChannel(std::string channel) const
+{
+	std::map<std::string, ChannelMode> res;
+	std::map<std::string, std::vector<std::string> >::const_iterator it;
+	for(it = knownUsers_.begin(); it != knownUsers_.end(); ++it) {
+		if(it->first != channel)
+			continue;
+		std::vector<std::string> users = it->second;
+		std::vector<std::string>::const_iterator it2;
+		for(it2 = users.begin(); it2 != users.end(); ++it2) {
+			// TODO: remember the mode
+			res[*it2] = Network::UserMode;
+		}
+	}
+	return res;
+}
+
 /**
  * @brief Chooses one server or the other based on the priority and failure
  *        rate.
@@ -385,6 +407,10 @@ void Network::slotNamesReceived(const std::string&, const std::string &channel, 
 	}
 }
 
+void Network::slotTopicChanged(const std::string&, const std::string &channel, const std::string &topic) {
+	topics_[channel] = topic;
+}
+
 void Network::slotIrcEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params) {
 	std::string receiver;
 	if(params.size() > 0)
@@ -411,6 +437,9 @@ void Network::slotIrcEvent(const std::string &event, const std::string &origin, 
 	} else if(event == "NICK") {
 		MIN(1);
 		slotNickChanged(origin, params[0], receiver);
+	} else if(event == "TOPIC") {
+		MIN(2);
+		slotTopicChanged(origin, params[0], params[1]);
 	}
 #undef MIN
 	std::vector<NetworkListener*>::iterator nlit;
