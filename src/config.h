@@ -19,9 +19,9 @@
  */
 
 class ConfigPrivate;
-class DatabaseConfig;
-class NetworkConfig;
-class ServerConfig;
+struct DatabaseConfig;
+struct NetworkConfig;
+struct ServerConfig;
 
 class Config
 {
