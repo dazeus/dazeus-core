@@ -30,6 +30,7 @@ struct NetworkConfig {
 class NetworkListener
 {
   public:
+    virtual ~NetworkListener() {}
     virtual void ircEvent(const std::string &event, const std::string &origin,
                           const std::vector<std::string> &params, Network *n ) = 0;
 };

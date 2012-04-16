@@ -29,8 +29,13 @@ std::string Network::toString(const Network *n)
 Network::Network( const NetworkConfig *c )
 : activeServer_(0)
 , config_(c)
+, undesirables_()
 , me_(0)
 , deleteServer_(false)
+, identifiedUsers_()
+, knownUsers_()
+, topics_()
+, networkListeners_()
 {}
 
 
