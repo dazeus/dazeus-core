@@ -1,0 +1,3 @@
+[submodule "contrib/libdazeus-irc"]
+	path = contrib/libdazeus-irc
+	url = http://github.com/sgielen/libdazeus-irc.git
