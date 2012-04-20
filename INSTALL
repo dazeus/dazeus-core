@@ -3,14 +3,16 @@ This application has the following dependencies:
 	* libircclient (tested against 1.3)
 	* libjson (tested against 7.4.1)
 	* libmongo-client (tested against 0.1.4)
+	* cmake (tested against 2.8.7)
 
-To compile DaZeus, copy the Makefile.in file and run make:
+To compile DaZeus, use CMake:
 
-  cp Makefile.in Makefile
-  make
+  mkdir -p build
+  cd build
+  cmake -DCMAKE_INSTALL_PREFIX=.. ..
+  make install
 
 This creates a 'dazeus' binary in the 'bin' directory that you can run. If you
-intend to run DaZeus 2.0 elsewhere, you can manually copy the binary there.
-
-If your dependencies are in nonstandard locations, you can alter the Makefile
-after copying it to correctly set CFLAGS and LDFLAGS.
+intend to run DaZeus 2.0 elsewhere, you can manually copy the binary there, or
+simply not give the -DCMAKE_INSTALL_PREFIX=.. option to CMake if you want to
+install DaZeus systemwide.

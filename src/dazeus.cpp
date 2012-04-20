@@ -25,6 +25,7 @@ DaZeus::DaZeus( std::string configFileName )
 , configFileName_( configFileName )
 , plugins_( 0 )
 , database_( 0 )
+, networks_()
 {
 }
 
@@ -75,16 +76,14 @@ void DaZeus::autoConnect()
     if( n->autoConnectEnabled() )
     {
 #ifdef DEBUG
-      // TODO: toString
-      fprintf(stderr, "Connecting to %p (autoconnect is enabled)\n", n);
+      fprintf(stderr, "Connecting to %s (autoconnect is enabled)\n", Network::toString(n).c_str());
 #endif
       n->connectToNetwork();
     }
 #ifdef DEBUG
     else
     {
-      // TODO: toString
-      fprintf(stderr, "Not connecting to %p, autoconnect is disabled.\n", n);
+      fprintf(stderr, "Not connecting to %s, autoconnect is disabled.\n", Network::toString(n).c_str());
     }
 #endif
   }

@@ -11,6 +11,18 @@
 #include <stdint.h>
 
 struct DatabaseConfig {
+  DatabaseConfig(std::string t = std::string(), std::string h = std::string(),
+    uint16_t p = 0, std::string user = std::string(), std::string pass =
+    std::string(), std::string db = std::string(), std::string opt =
+    std::string()) : type(t), hostname(h), port(p), username(user),
+    password(pass), database(db), options(opt) {}
+  DatabaseConfig(const DatabaseConfig &s) : type(s.type),
+    hostname(s.hostname), port(s.port), username(s.username),
+    password(s.password), database(s.database), options(s.options) {}
+  const DatabaseConfig &operator=(const DatabaseConfig &s) { type = s.type;
+    hostname = s.hostname; port = s.port; username = s.username; password =
+    s.password; database = s.database; options = s.options; return *this; }
+
   std::string type;
   std::string hostname;
   uint16_t port;
@@ -61,6 +73,10 @@ class Database
                                   const std::string &senderScope   = std::string() );
 
   private:
+    // explicitly disable copy constructor
+    Database(const Database&);
+    void operator=(const Database&);
+
     void *m_;
     std::string lastError_;
     std::string hostName_;

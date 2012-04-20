@@ -9,8 +9,8 @@
 #include <libjson.h>
 #include "config.h"
 #include "utils.h"
-#include "network.h"
-#include "server.h"
+#include <network.h>
+#include <server.h>
 #include "database.h"
 
 // #define DEBUG
@@ -32,7 +32,12 @@ private:
  * but will not contain any networks or servers.
  */
 Config::Config()
-: settings_( 0 )
+: oldNetworks_()
+, networks_()
+, sockets_()
+, additionalSockets_()
+, error_()
+, settings_( 0 )
 , databaseConfig_( 0 )
 {
 }

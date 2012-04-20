@@ -40,6 +40,10 @@
 
 PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
 : NetworkListener()
+, tcpServers_()
+, localServers_()
+, commandQueue_()
+, sockets_()
 , database_(d)
 , config_(c)
 , dazeus_(bot)
@@ -86,10 +90,9 @@ void PluginComm::run() {
 	// and add the IRC descriptors
 	std::vector<Network*>::const_iterator nit;
 	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		Server *active = (*nit)->activeServer();
-		if(active) {
+		if((*nit)->activeServer()) {
 			int ircmaxfd = 0;
-			active->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
+			(*nit)->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
 			if(ircmaxfd > highest)
 				highest = ircmaxfd;
 		}
@@ -124,9 +127,8 @@ void PluginComm::run() {
 		}
 	}
 	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		Server *active = (*nit)->activeServer();
-		if(active) {
-			active->processDescriptors(&sockets, &out_sockets);
+		if((*nit)->activeServer()) {
+			(*nit)->processDescriptors(&sockets, &out_sockets);
 		}
 	}
 }
@@ -429,9 +431,9 @@ void PluginComm::messageReceived( const std::string &origin, const std::string &
 	if(configIt != config.end())
 		highlightChar = configIt->second;
 
-	if( startsWith(message, n->user()->nick() + ":", true)
-	 || startsWith(message, n->user()->nick() + ",", true)) {
-		payload = trim(message.substr(n->user()->nick().length() + 1));
+	if( startsWith(message, n->nick() + ":", true)
+	 || startsWith(message, n->nick() + ",", true)) {
+		payload = trim(message.substr(n->nick().length() + 1));
 	} else if(startsWith(message, highlightChar, true)) {
 		payload = trim(message.substr(highlightChar.length()));
 	}
@@ -552,13 +554,13 @@ void PluginComm::ircEvent(const std::string &event, const std::string &origin, c
 		// TODO: libircclient does not seem to tell us where the ctcp
 		// request was sent (user or channel), so just assume it was
 		// sent to our nick
-		std::string to = n->user()->nick();
+		std::string to = n->nick();
 		args << origin << to << params[0];
 		dispatch("CTCP", args);
 	} else if(event == "CTCP_REP") {
 		MIN(1);
 		// TODO: see above
-		std::string to = n->user()->nick();
+		std::string to = n->nick();
 		args << origin << to << params[0];
 		dispatch("CTCP_REP", args);
 	} else if(event == "CTCP_ACTION" || event == "ACTION") {
@@ -697,7 +699,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				}
 			} else if(action == "nick") {
 				response.push_back(JSONNode("success", true));
-				response.push_back(JSONNode("nick", libjson::to_json_string(net->user()->nick())));
+				response.push_back(JSONNode("nick", libjson::to_json_string(net->nick())));
 			} else {
 				assert(false);
 				return;
