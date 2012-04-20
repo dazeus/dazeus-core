@@ -9,7 +9,7 @@ set(DAZEUS_VERSION "${DAZEUS_VERSION_MAJOR}.${DAZEUS_VERSION_MINOR}")
 
 IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/CMakeLists.txt")
 	message("It seems you do not have a checkout of libdazeus-irc.")
-	message("It is required to compile libdazeus, and can be automatically")
+	message("It is required to compile dazeus, and can be automatically")
 	message("created by Git by running:")
 	message("  git submodule update --init")
 	message(FATAL_ERROR "libdazeus-irc is not checked out")
