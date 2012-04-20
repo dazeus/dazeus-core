@@ -6,7 +6,6 @@
 #include "dazeus.h"
 #include "dazeusglobal.h"
 
-#include <libircclient.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,9 +15,6 @@ void usage(char*);
 int main(int argc, char *argv[])
 {
 	fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
-	unsigned int high, low;
-	irc_get_version(&high, &low);
-	fprintf(stdout, "IRC library version: %d.%02d\n", high, low);
 
 	// Initialise random seed
 	srand(time(NULL));

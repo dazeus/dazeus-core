@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <map>
 
 std::string strToLower(const std::string &f);
 std::string strToUpper(const std::string &f);
@@ -41,6 +42,19 @@ Value takeFirst(Container c) {
 	c.erase(c.begin());
 	return v;
 }
+
+template <typename Value>
+typename std::map<std::string,Value>::const_iterator find_ci(const std::map<std::string,Value> &m, std::string s) {
+	std::string sl = strToLower(s);
+	typename std::map<std::string,Value>::const_iterator it;
+	for(it = m.begin(); it != m.end(); ++it) {
+		if(strToLower(it->first) == sl) {
+			return it;
+		}
+	}
+	return m.end();
+}
+
 
 template <typename Container>
 std::string join(Container c, std::string s) {
