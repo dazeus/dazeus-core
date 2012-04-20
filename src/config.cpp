@@ -9,8 +9,8 @@
 #include <libjson.h>
 #include "config.h"
 #include "utils.h"
-#include "network.h"
-#include "server.h"
+#include <network.h>
+#include <server.h>
 #include "database.h"
 
 // #define DEBUG
