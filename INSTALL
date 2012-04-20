@@ -5,8 +5,9 @@ This application has the following dependencies:
 	* libmongo-client (tested against 0.1.4)
 	* cmake (tested against 2.8.7)
 
-To compile DaZeus, use CMake:
+To compile DaZeus, first checkout the Git submodule, then use CMake:
 
+  git submodule update --init
   mkdir -p build
   cd build
   cmake -DCMAKE_INSTALL_PREFIX=.. ..
