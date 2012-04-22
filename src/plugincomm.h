@@ -17,7 +17,6 @@
 #include "network.h"
 
 class Database;
-class Server;
 class Config;
 class DaZeus;
 
