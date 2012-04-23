@@ -322,6 +322,13 @@ sub _readPacket {
 			delete $self->{sock};
 			die $!;
 		}
+		# On OS X, if the other end closes the socket, recv() still returns success
+		# values and sets no error; however, connected() will be undef there
+		if(!defined($self->{sock}->connected())) {
+			# Error in peek
+			delete $self->{sock};
+			die $!;
+		}
 		# TODO: change this to "if there are no more bytes available", more accurate
 		if($last_event_part && $last_event_part eq $event_part) {
 			$once = 0;
