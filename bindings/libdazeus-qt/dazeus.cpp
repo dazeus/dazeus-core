@@ -190,5 +190,6 @@ bool DaZeus::handleEvent(int timeout) {
 
 	libdazeus_event_free(de);
 	emit newEvent(e);
+	delete e;
 	return true;
 }
