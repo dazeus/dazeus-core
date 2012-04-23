@@ -257,6 +257,7 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 				return -1;
 			}
 			once = 1;
+			free(buf);
 			continue;
 		}
 		if(d->readahead_size >= i + json_size) {
@@ -273,11 +274,15 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 				close(d->socket);
 				d->socket = 0;
 				d->error = "Invalid JSON data sent to socket";
+				free(buf);
 				return -1;
 			}
 			*result = message;
+			free(buf);
 			return json_size;
 		}
+		// not enough data yet, try again?
+		free(buf);
 	}
 	return 0;
 }
@@ -553,6 +558,7 @@ void libdazeus_close(dazeus *d)
 {
 	close(d->socket);
 	free(d->socketfile);
+	free(d->readahead);
 	free(d);
 }
 
