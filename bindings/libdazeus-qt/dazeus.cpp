@@ -29,6 +29,7 @@
 
 #include "dazeus.h"
 #include <libdazeus.h>
+#include <stdlib.h>
 
 ///// SCOPE /////
 DaZeus::Scope::Scope()
