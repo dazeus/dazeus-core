@@ -185,7 +185,7 @@ int _append_buffer(dazeus *d, int timeout, int disregard_timeout) {
 }
 
 // Don't forget to free the JSONNODE returned via 'result'
-// using json_free()!
+// using json_delete()!
 // timeout=-1 => try indefinitely
 // timeout=0  => try exactly once
 // timeout>0  => try that many seconds
@@ -355,7 +355,7 @@ int _read(dazeus *d, JSONNODE **result) {
 					d->lastEvent->_next = e;
 					d->lastEvent = e;
 				}
-				json_free(res);
+				json_delete(res);
 			} else {
 				*result = res;
 				return 1;
@@ -377,13 +377,13 @@ int _check_success(dazeus *d, JSONNODE *response) {
 		if(error) {
 			d->error = json_as_string(error);
 		}
-		json_free(error);
+		json_delete(error);
 		json_free(succval);
-		json_free(success);
+		json_delete(success);
 		return 0;
 	}
 	json_free(succval);
-	json_free(success);
+	json_delete(success);
 	return 1;
 }
 
@@ -575,8 +575,7 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
 	JSONNODE *request  = json_new_a("get", "networks");
 	json_push_back(fulljson,request);
 	_send(d, fulljson);
-	json_free(request);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -584,26 +583,26 @@ dazeus_stringlist *libdazeus_networks(dazeus *d)
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return NULL;
 	}
 
 	JSONNODE *networks = json_pop_back(response, "networks");
 	if(networks == NULL) {
-		json_free(response);
+		json_delete(response);
 		d->error = "No networks present in reply";
 		return NULL;
 	}
 	if(json_type(networks) != JSON_ARRAY) {
-		json_free(networks);
-		json_free(response);
+		json_delete(networks);
+		json_delete(response);
 		d->error = "Networks in reply wasn't an array";
 		return NULL;
 	}
 	dazeus_stringlist *list = _jsonarray_to_stringlist(networks);
 
-	json_free(networks);
-	json_free(response);
+	json_delete(networks);
+	json_delete(response);
 	return list;
 }
 
@@ -625,7 +624,7 @@ dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
 	json_push_back(fulljson, request);
 	json_push_back(fulljson, params);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -633,26 +632,26 @@ dazeus_stringlist *libdazeus_channels(dazeus *d, const char *network)
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return NULL;
 	}
 
 	JSONNODE *channels = json_pop_back(response, "channels");
 	if(channels == NULL) {
-		json_free(response);
+		json_delete(response);
 		d->error = "Reply didn't have channels";
 		return NULL;
 	}
 	if(json_type(channels) != JSON_ARRAY) {
-		json_free(channels);
-		json_free(response);
+		json_delete(channels);
+		json_delete(response);
 		d->error = "Channels in reply wasn't an array";
 		return NULL;
 	}
 	dazeus_stringlist *list = _jsonarray_to_stringlist(channels);
 
-	json_free(channels);
-	json_free(response);
+	json_delete(channels);
+	json_delete(response);
 	return list;
 }
 
@@ -676,7 +675,7 @@ int libdazeus_message(dazeus *d, const char *network, const char *receiver, cons
 	json_push_back(fulljson, request);
 	json_push_back(fulljson, params);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -684,11 +683,11 @@ int libdazeus_message(dazeus *d, const char *network, const char *receiver, cons
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return 0;
 	}
 
-	json_free(response);
+	json_delete(response);
 	return 1;
 }
 
@@ -728,7 +727,7 @@ char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
 	json_push_back(fulljson, params);
 	json_push_back(fulljson, scope);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -736,7 +735,7 @@ char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return NULL;
 	}
 
@@ -749,8 +748,8 @@ char *libdazeus_get_property(dazeus *d, const char *variable, dazeus_scope *s)
 		json_free(str);
 	}
 
-	json_free(value);
-	json_free(response);
+	json_delete(value);
+	json_delete(response);
 	return ret;
 }
 
@@ -778,7 +777,7 @@ int libdazeus_set_property(dazeus *d, const char *variable, const char *value, d
 	json_push_back(fulljson, params);
 	json_push_back(fulljson, scope);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -786,11 +785,11 @@ int libdazeus_set_property(dazeus *d, const char *variable, const char *value, d
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return 0;
 	}
 
-	json_free(response);
+	json_delete(response);
 	return 1;
 }
 
@@ -816,7 +815,7 @@ int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
 	json_push_back(fulljson, params);
 	json_push_back(fulljson, scope);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -824,11 +823,11 @@ int libdazeus_unset_property(dazeus *d, const char *variable, dazeus_scope *s)
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return 0;
 	}
 
-	json_free(response);
+	json_delete(response);
 	return 1;
 }
 
@@ -848,7 +847,7 @@ int libdazeus_subscribe(dazeus *d, const char *event)
 	json_push_back(fulljson, request);
 	json_push_back(fulljson, params);
 	_send(d, fulljson);
-	json_free(fulljson);
+	json_delete(fulljson);
 
 	JSONNODE *response;
 	if(!_read(d, &response)) {
@@ -856,11 +855,11 @@ int libdazeus_subscribe(dazeus *d, const char *event)
 	}
 
 	if(!_check_success(d, response)) {
-		json_free(response);
+		json_delete(response);
 		return 0;
 	}
 
-	json_free(response);
+	json_delete(response);
 	return 1;
 }
 
@@ -893,7 +892,7 @@ dazeus_event *libdazeus_handle_event(dazeus *d, int timeout)
 		dazeus_event *e = _event_from_json(d, res);
 		d->event = e;
 		d->lastEvent = e;
-		json_free(res);
+		json_delete(res);
 	}
 
 	// return the first one
