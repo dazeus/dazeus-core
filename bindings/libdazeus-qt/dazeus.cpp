@@ -135,7 +135,9 @@ QString DaZeus::getProperty(const QString &variable, const Scope &scope) {
 	if(result == 0) {
 		return QString();
 	} else {
-		return QString::fromUtf8(result);
+		QString res = QString::fromUtf8(result);
+		free(result);
+		return res;
 	}
 }
 
@@ -190,5 +192,6 @@ bool DaZeus::handleEvent(int timeout) {
 
 	libdazeus_event_free(de);
 	emit newEvent(e);
+	delete e;
 	return true;
 }

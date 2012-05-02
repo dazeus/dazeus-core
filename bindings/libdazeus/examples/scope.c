@@ -1,6 +1,7 @@
 #include <libdazeus.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <strings.h>
 
 int main(int argc, char *argv[]) {
 	if(argc != 2) {
@@ -32,27 +33,30 @@ int main(int argc, char *argv[]) {
 	check(libdazeus_set_property(d, "examples.scope.foo", "baz", oftc));
 	printf("Set network scope for 'oftc' to baz\n");
 
-	const char *cStr = libdazeus_get_property(d, "examples.scope.foo", qmoo);
+	char *cStr = libdazeus_get_property(d, "examples.scope.foo", qmoo);
 	if(cStr == NULL) {
-		cStr = "__unset__";
+		cStr = strdup("__unset__");
 	}
 	// Should be 'bar':
 	printf("Value for network scope 'q', channel #moo: %s\n", cStr);
+	free(cStr);
 	cStr = libdazeus_get_property(d, "examples.scope.foo", oftcmoo);
 	if(cStr == NULL) {
-		cStr = "__unset__";
+		cStr = strdup("__unset__");
 	}
 	// Should be 'baz':
 	printf("Value for network scope 'oftc', channel #moo: %s\n", cStr);
+	free(cStr);
 
 	check(libdazeus_unset_property(d, "examples.scope.foo", oftc));
 	printf("Unset network scope for 'oftc'\n");
 	cStr = libdazeus_get_property(d, "examples.scope.foo", oftcmoo);
 	if(cStr == NULL) {
-		cStr = "__unset__";
+		cStr = strdup("__unset__");
 	}
 	// Should be 'bar':
 	printf("Value for network scope 'oftc', channel #moo: %s\n", cStr);
+	free(cStr);
 	check(libdazeus_unset_property(d, "examples.scope.foo", global));
 	printf("Unset global scope\n");
 
@@ -60,10 +64,11 @@ int main(int argc, char *argv[]) {
 	printf("Set network scope 'oftc' to quux\n");
 	cStr = libdazeus_get_property(d, "examples.scope.foo", q);
 	if(cStr == NULL) {
-		cStr = "__unset__";
+		cStr = strdup("__unset__");
 	}
 	// Should be __unset__:
 	printf("Value for network 'q': %s\n", cStr);
+	free(cStr);
 
 	libdazeus_scope_free(global);
 	libdazeus_scope_free(oftc);
