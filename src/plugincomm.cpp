@@ -103,6 +103,11 @@ void PluginComm::run() {
 	int socks = select(highest + 1, &sockets, &out_sockets, NULL, &timeout);
 	if(socks < 0) {
 		fprintf(stderr, "select() failed: %s\n", strerror(errno));
+		if(errno == EBADF) {
+			// hopefully it was a regular plugin socket that went bad
+			// then poll() will notice it
+			poll();
+		}
 		return;
 	}
 	else if(socks == 0) {
