@@ -475,7 +475,7 @@ void PluginComm::messageReceived( const std::string &origin, const std::string &
 			args.push_back(stringBuilder);
 
 		if(args.size() > 0) {
-			const std::string &command = args.front();
+			const std::string command = args.front();
 			args.erase(args.begin());
 
 			Command *cmd = new Command(*n);
