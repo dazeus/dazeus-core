@@ -7,6 +7,50 @@ use POSIX qw(:errno_h);
 use Storable qw(thaw freeze);
 use MIME::Base64 qw(encode_base64 decode_base64);
 
+=head1 NAME
+
+DaZeus - Perl interface to the DaZeus 2 Socket API
+
+=head1 SYNPOSIS
+
+  use DaZeus;
+  my $dazeus = DaZeus->connect("unix:/tmp/dazeus.sock");
+  # or:
+  my $dazeus = DaZeus->connect("tcp:localhost:1234");
+  
+  # Get connection status
+  my $networks = $dazeus->networks();
+  foreach (@$networks) {
+    my $channels = $dazeus->channels($n);
+    print "$_:\n";
+    foreach (@$channels) {
+      print "  $_\n";
+    }
+  }
+  
+  $dazeus->subscribe("JOINED", sub { warn "JOINED event received!" });
+  
+  $dazeus->subscribe(qw/PRIVMSG NOTICE/);
+  while(my $event = $dazeus->handleEvent()) {
+    next if($event->{'event'} eq "JOINED");
+    my ($network, $sender, $channel, $message)
+      = @{$event->{'params'}};
+    print "[$network $channel] <$sender> $message\n";
+    my $destination = $channel eq "msg" ? $sender : $channel;
+    $dazeus->message($network, $destination, $message);
+  }
+
+=head1 DESCRIPTION
+
+This module provides a Perl interface to the DaZeus 2 Socket API, so a Perl
+application can act as a DaZeus 2 plugin. The module supports receiving events
+and sending messages. See also the "examples" directory that comes with the
+Perl bindings.
+
+=head1 METHODS
+
+=cut
+
 my ($HAS_INET, $HAS_UNIX);
 BEGIN {
 	$HAS_INET = eval 'use IO::Socket::INET; 1';
@@ -14,6 +58,24 @@ BEGIN {
 };
 
 our $VERSION = '1.00';
+
+=head2 connect($socket)
+
+Creates a DaZeus object connected to the given socket. Returns the object if
+the initial connection succeeded; otherwise, calls die(). If, after this
+initial connection, the connection fails, for example because the bot is
+restarted, the module will re-connect.
+
+The given socket name must either start with "tcp:" or "unix:"; in the case of
+a UNIX socket it must contain a path to the UNIX socket, in the case of TCP it
+may end in a port number. IPv6 addresses must have a port number attached, so
+it can be distinguished from the rest of the address; in "tcp:2001:db8::1:1234"
+1234 is the port number.
+
+If you give an object through $socket, the module will attempt to use it
+directly as the target socket.
+
+=cut
 
 sub connect {
 	my ($pkg, $socket) = @_;
@@ -32,6 +94,19 @@ sub connect {
 
 	return $self->_connect();
 }
+
+=head2 socket()
+
+Returns the internal UNIX or TCP socket used for communication. This call is
+useful if you want to watch multiple sockets, for example, using the select()
+call. Every time the socket can be read, you can call the handleEvents() method
+to process any incoming events. Do not call read() or write() on this socket,
+or other calls that change internal socket state.
+
+If the given DaZeus object was not connected, a new connection is opened and
+a valid socket will still be returned.
+
+=cut
 
 sub socket {
 	my ($self) = @_;
@@ -75,6 +150,13 @@ sub _connect {
 	return $self;
 }
 
+=head2 networks()
+
+Returns a list of active networks on this DaZeus instance, or calls
+die() if communication failed.
+
+=cut
+
 sub networks {
 	my ($self) = @_;
 	$self->_send({get => "networks"});
@@ -86,6 +168,13 @@ sub networks {
 		die $response->{error};
 	}
 }
+
+=head2 channels($network)
+
+Returns a list of joined channels on the given network, or calls
+die() if communication failed.
+
+=cut
 
 sub channels {
 	my ($self, $network) = @_;
@@ -99,6 +188,13 @@ sub channels {
 	}
 }
 
+=head2 message($network, $channel, $message)
+
+Sends given message to given channel on given network, or calls die()
+if communication failed.
+
+=cut
+
 sub message {
 	my ($self, $network, $channel, $message) = @_;
 	$self->_send({do => "message", params => [$network, $channel, $message]});
@@ -110,6 +206,12 @@ sub message {
 		die $response->{error};
 	}
 }
+
+=head2 action($network, $channel, $message)
+
+Like message(), but sends the message as a CTCP ACTION (as if "/me" was used).
+
+=cut
 
 sub action {
 	my ($self, $network, $channel, $message) = @_;
@@ -123,6 +225,15 @@ sub action {
 	}
 }
 
+=head2 sendNames($network, $channel)
+
+Requests a NAMES command being sent for the given channel on the given network.
+After this, a NAMES event will be produced using the normal event system
+described below, if the IRC server behaves correctly. Calls die() if
+communication failed.
+
+=cut
+
 sub sendNames {
 	my ($self, $network, $channel) = @_;
 	$self->_send({do => "names", params => [$network, $channel]});
@@ -134,6 +245,15 @@ sub sendNames {
 		die $response->{error};
 	}
 }
+
+=head2 sendWhois($network, $nick)
+
+Requests a WHOIS command being sent for the given nick on the given network.
+After this, a WHOIS event will be produced using the normal event system
+described below, if the IRC server behaves correctly. Calls die() if
+communication failed.
+
+=cut
 
 sub sendWhois {
 	my ($self, $network, $nick) = @_;
@@ -147,6 +267,15 @@ sub sendWhois {
 	}
 }
 
+=head2 join($network, $channel)
+
+Requests a JOIN command being sent for the given channel on the given network.
+After this, a JOIN event will be produced using the normal event system
+described below, if the IRC server behaves correctly and the channel was not
+already joined. Calls die() if communication failed.
+
+=cut
+
 sub join {
 	my ($self, $network, $channel) = @_;
 	$self->_send({do => "join", params => [$network, $channel]});
@@ -159,6 +288,15 @@ sub join {
 	}
 }
 
+=head2 part($network, $channel)
+
+Requests a PART command being sent for the given channel on the given network.
+After this, a PART event will be produced using the normal event system
+described below, if the IRC server behaves correctly and the channel was
+joined. Calls die() if communication failed.
+
+=cut
+
 sub part {
 	my ($self, $network, $channel) = @_;
 	$self->_send({do => "part", params => [$network, $channel]});
@@ -170,6 +308,13 @@ sub part {
 		die $response->{error};
 	}
 }
+
+=head2 getNick($network)
+
+Requests the current nickname on given network, and returns it. Calls die()
+if communication failed.
+
+=cut
 
 sub getNick {
 	my ($self, $network) = @_;
@@ -194,6 +339,13 @@ sub _addScope {
 	return scope => \@$scope;
 }
 
+=head2 getConfig($name)
+
+Retrieves the given variable from the configuration file and returns
+its value. Calls die() if communication failed.
+
+=cut
+
 sub getConfig {
 	my ($self, $name) = @_;
 	$self->_send({get => "config", params => [$name]});
@@ -205,6 +357,16 @@ sub getConfig {
 		die $response->{error};
 	}
 }
+
+=head2 getProperty($name, [$network, [$receiver, [$sender]]])
+
+Retrieves the given variable from the persistent database and returns
+its value. Optionally, context can be given for this property request,
+so properties stored earlier using a specific scope can be correctly
+matched against this request, and the most specific match will be
+returned. Calls die() if communication failed.
+
+=cut
 
 sub getProperty {
 	my ($self, $name, @scope) = @_;
@@ -220,6 +382,16 @@ sub getProperty {
 	}
 }
 
+=head2 setProperty($name, $value, [$network, [$receiver, [$sender]]])
+
+Stores the given variable to the persistent database. Optionally, context can
+be given for this property, so multiple properties with the same name and
+possibly overlapping context can be stored and later returned. This is useful
+in situations where you want different settings per network, but also
+overriding settings per channel. Calls die() if communication failed.
+
+=cut
+
 sub setProperty {
 	my ($self, $name, $value, @scope) = @_;
 	$value = encode_base64(freeze($value)) if ref($value);
@@ -233,6 +405,14 @@ sub setProperty {
 	}
 }
 
+=head2 unsetProperty($name, [$network, [$receiver, [$sender]]])
+
+Unsets the given variable with given context from the persistent database. If
+no variable was found with the exact given context, no variables are removed.
+Calls die() if communication failed.
+
+=cut
+
 sub unsetProperty {
 	my ($self, $name, @scope) = @_;
 	$self->_send({do => "property", params => ["unset", $name], _addScope(@scope)});
@@ -245,6 +425,14 @@ sub unsetProperty {
 	}
 }
 
+=head2 getPropertyKeys($name, [$network, [$receiver, [$sender]]])
+
+Retrieves all keys in a given namespace. I.e. if example.foo and example.bar
+were stored earlier, and getPropertyKeys("example") is called, "foo" and "bar"
+will be returned from this method. Calls die() if communication failed.
+
+=cut
+
 sub getPropertyKeys {
 	my ($self, $name, @scope) = @_;
 	$self->_send({do => "property", params => ["keys", $name], _addScope(@scope)});
@@ -256,6 +444,14 @@ sub getPropertyKeys {
 		die $response->{error};
 	}
 }
+
+=head2 subscribe($event, [$event, [$event, ..., [$coderef]]])
+
+Subscribes to the given events. If the last parameter is a code reference, it
+will be called automatically every time one of the given events hits, with the
+DaZeus object as the first parameter, and the received event as the second.
+
+=cut
 
 sub subscribe {
 	my ($self, @events) = @_;
@@ -271,12 +467,36 @@ sub subscribe {
 	return $response->{added};
 }
 
+=head2 unsubscribe($event, [$event, [$event, ...]])
+
+Unsubscribe from the given events. They will no longer be received, until
+subscribe() is called again.
+
+=cut
+
 sub unsubscribe {
 	my ($self, @events) = @_;
 	$self->_send({do => "unsubscribe", params => \@events});
 	my $response = $self->_read();
 	return $response->{removed};
 }
+
+=head2 handleEvent($timeout)
+
+Returns all events that can be returned as soon as possible, but no longer
+than the given $timeout. If $timeout is zero, do not block. If timeout is
+undefined, wait forever until the first event arrives.
+
+"As soon as possible" means that if there are cached events already read from
+the socket earlier, the socket will not be touched. Otherwise, if events are
+available for reading, they will be immediately read. Only if no events were
+cached, none were available for reading, and $timeout is not zero will this
+function block to retrieve events. (See also handleEvents().)
+
+This method only returns a single event, in order of receiving. For every
+returned event, the event handler (if given to subscribe()), is called.
+
+=cut
 
 sub handleEvent {
 	my ($self, $timeout) = @_;
@@ -373,6 +593,13 @@ sub _readPacket {
 	return;
 }
 
+=head2 handleEvents()
+
+Handle and return as much events as possible without blocking. Also calls the
+event handler for every returned event.
+
+=cut
+
 sub handleEvents {
 	my ($self) = @_;
 	my @events;
@@ -404,152 +631,6 @@ sub _send {
 1;
 
 __END__
-
-=head1 NAME
-
-DaZeus - Perl bindings for DaZeus IRC bot communication
-
-=head1 SYNOPSIS
-
-  use DaZeus;
-  my $d = DaZeus->connect("unix:/tmp/dazeus.sock");
-  # or:
-  my $d = DaZeus->connect("tcp:localhost:1234");
-  
-  # Get connection status
-  my $networks = $d->networks();
-  foreach (@$networks) {
-    my $channels = $d->channels($n);
-    print "$_:\n";
-    foreach (@$channels) {
-      print "  $_\n";
-    }
-  }
-  
-  # Subscribe to events
-  $d->subscribe("JOINED", sub { warn "JOINED event received!" });
-  while(1) {
-    $d->handleEvent() or last;
-  }
-
-=head1 DESCRIPTION
-
-This module is the Perl version of the DaZeus library bindings. They allow a
-Perl application to act as a DaZeus 2 plugin.
-
-=head1 METHODS
-
-=head2 connect($socket)
-
-Creates a DaZeus object connected to the given socket. Returns the object if
-the initial connection succeeded; undef otherwise. If, after this initial
-connection, the connection fails, for example because the bot is restarted, the
-module will re-connect.
-
-The given socket name must either start with "tcp:" or "unix:"; in the case of
-a UNIX socket it must contain a path to the UNIX socket, in the case of TCP it
-may end in a port number. IPv6 addresses must have a port number attached, so
-it can be distinguished from the rest of the address; in "tcp:2001:db8::1:1234"
-1234 is the port number.
-
-If you give an object through $socket, the module will attempt to use it
-directly as the target socket.
-
-=head2 socket()
-
-Returns the socket internally used for communication. It should act as an
-IO::Socket. You can use this method in select() loops, but make sure not to
-read or write from it.
-
-=head2 networks()
-
-Returns a list of all networks known in this DaZeus instance.
-
-=head2 channels($network)
-
-Given a network name, returns a list of all channels on this network. If the
-bot does not know about the network, this method calls die().
-
-=head2 message($network, $channel, $message)
-
-Says $message on given channel and network. If the channel is not joined on the
-network, this method calls die().
-
-=head2 action($network, $channel, $message)
-
-Send a CTCP ACTION (/me) on a given channel and network.
-
-=head2 sendNames($network, $channel)
-
-Given a network and channel name, ask for a list of names. The results will
-come in through the NAMES event.
-
-=head2 sendWhois($network, $nick)
-
-Send a WHOIS for the given nick to the network. The reply will come back via
-numeric events; this method returns 1 on success.
-
-=head2 join($network, $channel)
-
-Joins given channel on given network.
-
-=head2 part($network, $channel)
-
-Leaves given channel on given network.
-
-=head2 getNick($network)
-
-Returns our own nickname on given network.
-
-=head2 setProperty($name, $value, [$network, $receiver, $sender]]])
-
-Sets the given property $name to $value in the internal DaZeus database. The
-three optional variables are for setting the variable scope.
-
-=head2 getProperty($name, [$network, [$receiver, [$sender]]])
-
-Returns the value of property $name. The three optional variables are for
-setting the variable scope.
-
-=head2 unsetProperty($name, [$network, [$receiver, [$sender]]])
-
-Unsets the given property $name. The three optional variables are for setting
-the variable scope.
-
-=head2 getPropertyKeys($name, [$network, [$receiver, [$sender]]])
-
-Returns all property keys beginning with '$name'. The three optional variables
-are for setting the variable scope.
-
-=head2 getConfig($name)
-
-Get the configuration parameter called '$name', and return it. Returns undef
-if there was no such configuration item.
-
-=head2 subscribe(@events, [$handler])
-
-Subscribes to the given events. Call handleEvent() to handle the next incoming
-event. If the last parameter is a code reference, it is called for every event
-in @events.
-
-=head2 unsubscribe(@events)
-
-Unsubscribes from the given events. Events that already occured before the
-unsubscription, but never handled, may still come in.
-
-=head2 handleEvent($timeout)
-
-Return one event, or return undef if no event comes in within the given timeout
-parameter (in seconds). If an event was received during the last command, it
-will be handled by this method immediately.
-
-If a handler is defined for the incoming event, the handler is called before
-this method returns.
-
-=head2 handleEvents()
-
-Handle all events that can be immediately handled, by calling handleEvent until
-it returns undef, then returning a list of all events it returned.
 
 =head1 AUTHOR
 
