@@ -53,7 +53,6 @@ void _connect(dazeus *d)
 		return;
 	}
 
-	// TODO actually connect
 	if(strncmp(d->socketfile, "unix:", 5) == 0) {
 		struct sockaddr_un addr;
 		// Open a UNIX socket
