@@ -104,9 +104,9 @@ uint8_t read_utf8_byte(const std::string &json, size_t &pos, bool is_first) {
 	ss >> res;
 
 	/// Sanity checking of read byte
-	// If it's 0xxxxxxx, it shouldn't have been encoded using \u in the first place
-	if(res < 128) {
-		throw std::runtime_error("Assumption failed: Only non-ASCII representations out of JSON write function");
+	// If it's 0xxxxxxx, it's a single ASCII byte, only allowed if it's the "first" one
+	if(is_first && res < 128) {
+		return (uint8_t)res;
 	}
 	// We're fixing issues where \u00XX appears incorrectly, assuming this is needed
 	if(res > 255) {
@@ -114,11 +114,11 @@ uint8_t read_utf8_byte(const std::string &json, size_t &pos, bool is_first) {
 	}
 	// If it's a first byte, may not be 10xxxxxx
 	if(is_first && res < 192) {
-		throw std::runtime_error("Assumption failed: First byte of Unicode codepoint must be > 192");
+		throw std::runtime_error("Assumption failed: First bits of Unicode first byte must be 11");
 	}
 	// If it's a continuation byte, must be 10xxxxxx
-	if(!is_first && res >= 192) {
-		throw std::runtime_error("Assumption failed: Continuation byte of Unicode code point must be <= 192");
+	if(!is_first && (res < 128 || res >= 192)) {
+		throw std::runtime_error("Assumption failed: First bits of Unicode continuation byte must be 10");
 	}
 
 	return (uint8_t)res;
@@ -126,12 +126,16 @@ uint8_t read_utf8_byte(const std::string &json, size_t &pos, bool is_first) {
 
 uint32_t read_utf8_codepoint(const std::string &json, size_t &pos) {
 	uint8_t first = read_utf8_byte(json, pos, true);
+	if(first < 128) {
+		// Single byte, leave as-is
+		return first;
+	}
 
 	// Source: https://en.wikipedia.org/wiki/Utf-8#Description
 	// The number of bytes for the character is the number of set bits to
 	// the left of this byte; i.e. 0b1111_0XXX means this character
 	// consists of 4 bytes -- except for a character consisting of 1 byte,
-	// but that won't be encoded as \u (checked in read_utf8_byte).
+	// but that's already handled above.
 	uint8_t num_bytes;
 	for(num_bytes = 0;; ++num_bytes) {
 		// explictly store this in a variable, as the compiler might
@@ -181,7 +185,7 @@ std::string fix_unicode_in_json(const std::string &json) {
 			escaped = false;
 			if(t == 'u') { // beginning of Unicode character
 				i--; // read_utf8_codepoint starts at \, we're already at u
-				uint16_t cp_value = read_utf8_codepoint(json, i);
+				uint32_t cp_value = read_utf8_codepoint(json, i);
 				i--; // read_utf8_codepoint ends at next char
 				std::string hex_representation;
 				std::stringstream ss;
