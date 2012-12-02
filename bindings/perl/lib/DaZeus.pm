@@ -214,6 +214,10 @@ sub getProperty {
 	if($response->{success}) {
 		my $value = $response->{'value'};
 		$value = eval { thaw(decode_base64($value)) } || $value if defined $value;
+		# See comments in setProperty() for explanation
+		if(ref($value) eq "HASH" && $value->{'__dazeus_Storable_wrapped'}) {
+			$value = $value->{'__wrapped_value'};
+		}
 		return $value;
 	} else {
 		$response->{error} ||= "Request failed, no error";
@@ -223,7 +227,16 @@ sub getProperty {
 
 sub setProperty {
 	my ($self, $name, $value, @scope) = @_;
-	$value = encode_base64(freeze($value)) if ref($value);
+	if(!ref($value)) {
+		# Storable has provisions for storing additional scalar state, such
+		# as the UTF-8 flag (see perlunicode). Therefore, even simple strings
+		# should be stored with Storable, and it wants references for freezing.
+		# This is why we build a reference around the value, in such a way that
+		# old reading code does not break because we still need to be backwards
+		# compatible.
+		$value = {"__dazeus_Storable_wrapped" => 1, "__wrapped_value" => $value};
+	}
+	$value = encode_base64(freeze($value));
 	$self->_send({do => "property", params => ["set", $name, $value], _addScope(@scope)});
 	my $response = $self->_read();
 	if($response->{success}) {
