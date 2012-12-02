@@ -71,6 +71,7 @@ sub _connect {
 	} else {
 		die "Didn't understand format of socketfile: " . $self->{socketfile} . " -- does it begin with unix: or tcp:?\n";
 	}
+	binmode($self->{sock}, ':bytes');
 
 	return $self;
 }
