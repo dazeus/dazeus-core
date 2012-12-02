@@ -749,7 +749,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 					fprintf(stderr, "Request for communication to network %s receiver %s, but not in that channel, dropping\n",
 						network.c_str(), receiver.c_str());
 					response.push_back(JSONNode("success", false));
-					response.push_back(JSONNode("error", "Not in that chanel"));
+					response.push_back(JSONNode("error", "Not in that channel"));
 				}
 				break;
 			}
