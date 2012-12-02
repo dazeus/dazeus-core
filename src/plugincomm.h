@@ -134,7 +134,8 @@ class PluginComm : public NetworkListener
       n.push_back(JSONNode("event", libjson::to_json_string(event.c_str())));
       n.push_back(params);
 
-      std::string jsonMsg = libjson::to_std_string(n.write());
+      std::string jsonMsg = fix_unicode_in_json(
+          libjson::to_std_string(n.write()));
       std::stringstream mstr;
       mstr << jsonMsg.length();
       mstr << jsonMsg;
