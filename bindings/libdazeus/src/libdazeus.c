@@ -38,13 +38,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include <time.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include <libjson.h>
+
+char *_workaround_json_encoding_bug(char *buf, int *bufsize);
 
 void _connect(dazeus *d)
 {
@@ -269,6 +273,7 @@ int _readPacket(dazeus *d, int timeout, JSONNODE **result) {
 			memmove(d->readahead, d->readahead + i + json_size, d->readahead_size - i - json_size);
 			d->readahead_size -= i + json_size;
 
+			buf = _workaround_json_encoding_bug(buf, &json_size);
 			JSONNODE *message = json_parse(buf);
 			if(message == NULL) {
 				close(d->socket);
@@ -917,3 +922,95 @@ void libdazeus_event_free(dazeus_event *d)
 	free(d);
 }
 
+void *_ensure_space(void *buf, int *cursize, int newsize) {
+	if(newsize > *cursize) {
+		*cursize = newsize + 31;
+		buf = realloc(buf, *cursize);
+	}
+	return buf;
+}
+
+/**
+ * Work around a UTF-8 encoding bug in the JSON library. This function splits
+ * up all multi-byte characters in the incoming string, and turns them back
+ * into single byte encodings. For example, \u0192 is turned back into
+ * \u00c6\u0092.
+ */
+char *_workaround_json_encoding_bug(char *buf, int *bufsize) {
+	int orig_size = *bufsize;
+
+	int newbuf_size = *bufsize;
+	char *newbuf = (char*)malloc(newbuf_size + 1);
+	int newbuf_i = 0;
+
+	int escaped = 0;
+	int i;
+	for(i = 0; i < orig_size; ++i) {
+		char c = buf[i];
+		newbuf = _ensure_space(newbuf, &newbuf_size, newbuf_i + 1);
+		if(escaped) {
+			escaped = 0;
+			if(c == 'u') {
+				char codept_c[5];
+				uint32_t codept;
+				memcpy(codept_c, buf + i + 1, 4);
+				codept_c[4] = 0;
+				i += 4;
+				sscanf(codept_c, "%x", &codept);
+				if(codept <= 0x7f) {
+					// Single character already, just write it
+					newbuf = _ensure_space(newbuf, &newbuf_size, newbuf_i + 5);
+					memcpy(newbuf, buf + i + 1, 4);
+					newbuf_i += 4;
+				} else {
+					// Multiple characters will need to be written
+					// First byte:  [num_bytes times 1]0[first 7-num_bytes bits]
+					// Other bytes: 10[next 6 bits]
+					int num_bytes = 0;
+					uint8_t first_byte;
+					if(codept <= 0x7ff) {
+						num_bytes = 2;
+						first_byte = 0xc0;
+						codept <<= 21;
+					} else if(codept <= 0xffff) {
+						num_bytes = 3;
+						first_byte = 0xe0;
+						codept <<= 16;
+					} else if(codept <= 0x1fffff) {
+						num_bytes = 4;
+						first_byte = 0xf0;
+						codept <<= 11;
+					} else {
+						fprintf(stderr, "Number of bytes in UTF-8 character breaks RFC 3629\n");
+						assert(0);
+					}
+					newbuf = _ensure_space(newbuf, &newbuf_size, newbuf_i - 1 + (num_bytes * 6));
+					int bits_in_first = 7 - num_bytes;
+					first_byte |= (uint8_t) (codept >> (32 - bits_in_first));
+					sprintf(newbuf + newbuf_i, "u%04x", first_byte);
+					newbuf_i += 5;
+					int bits_done = bits_in_first;
+					for(; num_bytes > 1; --num_bytes) {
+						uint8_t next_byte = 0x80;
+						uint32_t shifted = codept << bits_done;
+						next_byte |= (uint8_t) (shifted >> 26);
+						sprintf(newbuf + newbuf_i, "\\u%04x", next_byte);
+						newbuf_i += 6;
+					}
+				}
+			} else {
+				newbuf[newbuf_i++] = c;
+			}
+		} else {
+			if(c == '\\') {
+				escaped = 1;
+			}
+			newbuf[newbuf_i++] = c;
+		}
+	}
+
+	*bufsize = newbuf_i;
+	free(buf);
+	newbuf[newbuf_i] = 0;
+	return newbuf;
+}
