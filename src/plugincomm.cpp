@@ -897,7 +897,8 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		response.push_back(JSONNode("error", "Did not understand request"));
 	}
 
-	std::string jsonMsg = libjson::to_std_string(response.write());
+	std::string jsonMsg = fix_unicode_in_json(
+		libjson::to_std_string(response.write()));
 	std::stringstream mstr;
 	mstr << jsonMsg.length();
 	mstr << jsonMsg;

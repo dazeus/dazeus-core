@@ -20,6 +20,7 @@ std::vector<std::string> split(const std::string &s, const std::string &sep);
 bool contains(std::string x, char v);
 // does X start with Y?
 bool startsWith(std::string x, std::string y, bool caseInsensitive);
+std::string fix_unicode_in_json(const std::string &json);
 
 template <typename Container, typename Key>
 bool contains(Container x, Key k) {
