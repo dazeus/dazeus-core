@@ -959,8 +959,9 @@ char *_workaround_json_encoding_bug(char *buf, int *bufsize) {
 				if(codept <= 0x7f) {
 					// Single character already, just write it
 					newbuf = _ensure_space(newbuf, &newbuf_size, newbuf_i + 5);
-					memcpy(newbuf, buf + i + 1, 4);
-					newbuf_i += 4;
+					newbuf[newbuf_i] = 'u';
+					memcpy(newbuf + newbuf_i + 1, codept_c, 4);
+					newbuf_i += 5;
 				} else {
 					// Multiple characters will need to be written
 					// First byte:  [num_bytes times 1]0[first 7-num_bytes bits]
