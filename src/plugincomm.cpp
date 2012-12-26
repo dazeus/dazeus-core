@@ -111,6 +111,12 @@ void PluginComm::run() {
 		return;
 	}
 	else if(socks == 0) {
+		// No sockets fired, just check for network timeouts
+		for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+			if((*nit)->activeServer()) {
+				(*nit)->checkTimeouts();
+			}
+		}
 		return;
 	}
 	for(it = tcpServers_.begin(); it != tcpServers_.end(); ++it) {
@@ -134,6 +140,7 @@ void PluginComm::run() {
 	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
 		if((*nit)->activeServer()) {
 			(*nit)->processDescriptors(&sockets, &out_sockets);
+			(*nit)->checkTimeouts();
 		}
 	}
 }
