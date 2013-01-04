@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "utils.h"
+#include "../contrib/libdazeus-irc/src/utils.h"
 #include "network.h"
 
 class Database;
