@@ -743,7 +743,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			Network *n = *nit;
 			if(n->networkName() == network) {
 				netfound = true;
-				if(receiver.substr(0, 1) != "#" || contains(n->joinedChannels(), strToLower(receiver))) {
+				if(receiver.substr(0, 1) != "#" || contains_ci(n->joinedChannels(), strToLower(receiver))) {
 					response.push_back(JSONNode("success", true));
 					if(action == "names") {
 						n->names(receiver);
