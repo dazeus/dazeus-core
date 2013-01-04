@@ -8,11 +8,33 @@
 #include <stdexcept>
 #include <sstream>
 #include <stdint.h>
+#include <cassert>
 #include "utils.h"
+
+struct utf8_encoding_error : public std::runtime_error {
+	std::vector<uint8_t> original_bytes;
+	utf8_encoding_error(std::vector<uint8_t> b, std::string what)
+		: std::runtime_error(what)
+		, original_bytes(b)
+	{
+	}
+	utf8_encoding_error(uint8_t b, std::string what)
+		: std::runtime_error("UTF-8 encoding error: " + what)
+		, original_bytes()
+	{
+		original_bytes.push_back(b);
+	}
+	utf8_encoding_error(std::string what)
+		: std::runtime_error("UTF-8 encoding error: " + what)
+		, original_bytes()
+	{
+	}
+	virtual ~utf8_encoding_error() throw() {}
+};
 
 uint8_t read_utf8_byte(const std::string &json, size_t &pos, bool is_first) {
 	if(json[pos] != '\\' || json[pos+1] != 'u') {
-		throw std::runtime_error("Assumption failed: Valid Unicode out of JSON write function");
+		throw utf8_encoding_error("Invalid character found where new UTF-8 byte expected");
 	}
 	std::stringstream ss;
 	char unicode[4] = {json[pos+2], json[pos+3], json[pos+4], json[pos+5]};
@@ -28,26 +50,28 @@ uint8_t read_utf8_byte(const std::string &json, size_t &pos, bool is_first) {
 	}
 	// We're fixing issues where \u00XX appears incorrectly, assuming this is needed
 	if(res > 255) {
-		throw std::runtime_error("Assumption failed: Only byte representations out of JSON write function");
+		throw utf8_encoding_error(res, "JSON writer wrote characters with codepoint above byte max");
 	}
 	// If it's a first byte, may not be 10xxxxxx
 	if(is_first && res < 192) {
-		throw std::runtime_error("Assumption failed: First bits of Unicode first byte must be 11");
+		throw utf8_encoding_error(res, "First bits of Unicode first byte must be 11");
 	}
 	// If it's a continuation byte, must be 10xxxxxx
 	if(!is_first && (res < 128 || res >= 192)) {
-		throw std::runtime_error("Assumption failed: First bits of Unicode continuation byte must be 10");
+		throw utf8_encoding_error(res, "First bits of Unicode continuation byte must be 10");
 	}
 
 	return (uint8_t)res;
 }
 
 uint32_t read_utf8_codepoint(const std::string &json, size_t &pos) {
+	std::vector<uint8_t> replaced_bytes;
 	uint8_t first = read_utf8_byte(json, pos, true);
 	if(first < 128) {
 		// Single byte, leave as-is
 		return first;
 	}
+	replaced_bytes.push_back(first);
 
 	// Source: https://en.wikipedia.org/wiki/Utf-8#Description
 	// The number of bytes for the character is the number of set bits to
@@ -79,13 +103,30 @@ uint32_t read_utf8_codepoint(const std::string &json, size_t &pos) {
 		res = s >> (num_bytes + 25);
 	}
 	while(num_bytes-- > 1) {
-		uint8_t next_byte = read_utf8_byte(json, pos, false);
-		uint8_t s = next_byte << 2;
-		// Six new bytes!
-		res = (res << 6) + (s >> 2);
+		try {
+			uint8_t next_byte = read_utf8_byte(json, pos, false);
+			replaced_bytes.push_back(next_byte);
+			uint8_t s = next_byte << 2;
+			// Six new bytes!
+			res = (res << 6) + (s >> 2);
+		} catch(utf8_encoding_error &e) {
+			if(e.original_bytes.size() > 0) {
+				assert(e.original_bytes.size() == 1);
+				replaced_bytes.insert(replaced_bytes.end(), e.original_bytes.begin(), e.original_bytes.end());
+			}
+			throw utf8_encoding_error(replaced_bytes, e.what());
+		}
 	}
 
 	return res;
+}
+
+std::string cp_to_hex(uint32_t cp) {
+	std::string hex_representation;
+	std::stringstream ss;
+	ss << std::hex << std::setw(4) << std::setfill('0') << cp;
+	ss >> hex_representation;
+	return hex_representation;
 }
 
 std::string fix_unicode_in_json(const std::string &json) {
@@ -102,15 +143,24 @@ std::string fix_unicode_in_json(const std::string &json) {
 		if(escaped) {
 			escaped = false;
 			if(t == 'u') { // beginning of Unicode character
-				i--; // read_utf8_codepoint starts at \, we're already at u
-				uint32_t cp_value = read_utf8_codepoint(json, i);
+				try {
+					i--; // read_utf8_codepoint starts at \, we're already at u
+					uint32_t cp_value = read_utf8_codepoint(json, i);
+					fixed += 'u'; // the slash was already copied
+					fixed += cp_to_hex(cp_value);
+				} catch(utf8_encoding_error &e) {
+					// Not an Unicode encoding, write the original bytes
+					assert(e.original_bytes.length() >= 1);
+					bool first = true;
+					for(size_t i = 0; i < e.original_bytes.size(); ++i) {
+						uint8_t cp = e.original_bytes[i];
+						if(!first) fixed += '\\';
+						fixed += 'u';
+						fixed += cp_to_hex(cp);
+						first = false;
+					}
+				}
 				i--; // read_utf8_codepoint ends at next char
-				std::string hex_representation;
-				std::stringstream ss;
-				ss << std::hex << std::setw(4) << std::setfill('0') << cp_value;
-				ss >> hex_representation;
-				fixed += 'u';
-				fixed += hex_representation;
 			} else {
 				fixed += t;
 			}
