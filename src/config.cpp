@@ -12,6 +12,7 @@
 #include <network.h>
 #include <server.h>
 #include "database.h"
+#include "../contrib/libdazeus-irc/src/utils.h"
 
 // #define DEBUG
 
