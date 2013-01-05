@@ -595,6 +595,10 @@ void PluginComm::ircEvent(const std::string &event, const std::string &origin, c
 		MIN(1);
 		args << origin << params[0] << params;
 		dispatch("NUMERIC", args);
+	} else if(event == "ACTION_ME" || event == "CTCP_ME" || event == "PRIVMSG_ME") {
+		MIN(2);
+		args << origin << params;
+		dispatch(event, args);
 	} else {
 		fprintf(stderr, "Unknown event: \"%s\" \"%s\" \"%s\"\n", Network::toString(n).c_str(), event.c_str(), origin.c_str());
 		args << origin << params[0] << event << params;
