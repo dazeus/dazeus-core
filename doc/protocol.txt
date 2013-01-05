@@ -102,7 +102,8 @@ After subscribing, events can be received anytime outside another existing
 response. The following events exist:
 
   CONNECT, DISCONNECT, JOIN, PART, QUIT, NICK, MODE, TOPIC, INVITE, KICK,
-  PRIVMSG, NOTICE, CTCP, CTCP_REP, ACTION, NUMERIC, UNKNOWN, WHOIS, NAMES
+  PRIVMSG, NOTICE, CTCP, CTCP_REP, ACTION, NUMERIC, UNKNOWN, WHOIS, NAMES,
+  PRIVMSG_ME, CTCP_ME, ACTION_ME
 
 All events will have have an "event" field set to one of the above strings, and
 a "params" field that will contain an array with parameters depending on the
