@@ -26,7 +26,8 @@ int main(int argc, char *argv[]) {
 	s("CONNECT"); s("DISCONNECT"); s("JOIN"); s("PART"); s("QUIT");
 	s("NICK"); s("MODE"); s("TOPIC"); s("INVITE"); s("KICK"); s("PRIVMSG");
 	s("NOTICE"); s("CTCP"); s("CTCP_REP"); s("ACTION"); s("NUMERIC");
-	s("UNKNOWN"); s("WHOIS"); s("NAMES");
+	s("UNKNOWN"); s("WHOIS"); s("NAMES"); s("PRIVMSG_ME"); s("CTCP_ME");
+	s("ACTION_ME");
 #undef s
 
 	dazeus_event *e;
