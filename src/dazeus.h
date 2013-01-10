@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-class Config;
+class ConfigReader;
 class PluginComm;
 class Network;
 class Database;
@@ -31,14 +31,13 @@ class DaZeus
     bool     initPlugins();
     void     autoConnect();
     bool     connectDatabase();
-    void     addAdditionalSockets(const std::vector<std::string> &sockets);
 
   private:
     // explicitly disable copy constructor
     DaZeus(const DaZeus&);
     void operator=(const DaZeus&);
 
-    Config          *config_;
+    ConfigReader    *config_;
     std::string      configFileName_;
     PluginComm      *plugins_;
     Database        *database_;

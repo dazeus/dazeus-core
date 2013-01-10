@@ -1,299 +1,401 @@
 /**
- * Copyright (c) Sjors Gielen, 2010
+ * Copyright (c) Sjors Gielen, 2013
  * See LICENSE for license.
  */
 
-#include <fstream>
-#include <sstream>
-#include <assert.h>
-#include <libjson.h>
-#include "config.h"
+#include <iostream>
+#include <dotconf.h>
+#include <cassert>
+#include "./config.h"
 #include "utils.h"
-#include <network.h>
-#include <server.h>
-#include "database.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
+#include "server.h"
 
-// #define DEBUG
-
-class ConfigPrivate {
-public:
-	ConfigPrivate(JSONNode s) : s_(s) {}
-	JSONNode &s() { return s_; }
-private:
-	JSONNode s_;
+enum section {
+	S_ROOT,
+	S_SOCKET,
+	S_DATABASE,
+	S_NETWORK,
+	S_SERVER,
+	S_PLUGIN
 };
 
-#define S settings_->s()
+struct ConfigReaderState {
+	ConfigReaderState() : current_section(S_ROOT),
+	global_progress(0), socket_progress(0), database_progress(0),
+	network_progress(0), server_progress(0), plugin_progress(0) {}
+	ConfigReaderState(ConfigReaderState const&);
+	ConfigReaderState &operator=(ConfigReaderState const&);
 
-/**
- * @brief Constructor
- *
- * This constructor sets default configuration. A new Config object is usable,
- * but will not contain any networks or servers.
- */
-Config::Config()
-: oldNetworks_()
-, networks_()
-, sockets_()
-, additionalSockets_()
-, error_()
-, settings_( 0 )
-, databaseConfig_( 0 )
-{
+	int current_section;
+	std::vector<SocketConfig*> sockets;
+	std::vector<NetworkConfig*> networks;
+	std::vector<PluginConfig*> plugins;
+
+	GlobalConfig *global_progress;
+	SocketConfig *socket_progress;
+	DatabaseConfig *database_progress;
+	NetworkConfig *network_progress;
+	ServerConfig *server_progress;
+	PluginConfig *plugin_progress;
+	std::string error;
+};
+
+ConfigReader::ConfigReader(std::string file)
+: global(0)
+, database(0)
+, file(file)
+, state(new ConfigReaderState())
+, is_read(false)
+{}
+
+ConfigReader::~ConfigReader() {
+	delete database;
+	std::vector<NetworkConfig*>::const_iterator it;
+	for(it = networks.begin(); it != networks.end(); ++it) {
+		delete *it;
+	}
+	networks.clear();
+	delete state;
 }
 
-/**
- * @brief Destructor
- */
-Config::~Config()
-{
-	reset();
+static DOTCONF_CB(sect_open);
+static DOTCONF_CB(sect_close);
+static DOTCONF_CB(option);
+
+static const configoption_t options[] = {
+	{"<socket>", ARG_NONE, sect_open, NULL, CTX_ALL},
+	{"</socket>", ARG_NONE, sect_close, NULL, CTX_ALL},
+	{"<database>", ARG_NONE, sect_open, NULL, CTX_ALL},
+	{"</database>", ARG_NONE, sect_close, NULL, CTX_ALL},
+	{"<network", ARG_STR, sect_open, NULL, CTX_ALL},
+	{"</network>", ARG_NONE, sect_close, NULL, CTX_ALL},
+	{"<server>", ARG_NONE, sect_open, NULL, CTX_ALL},
+	{"</server>", ARG_NONE, sect_close, NULL, CTX_ALL},
+	{"<plugin", ARG_STR, sect_open, NULL, CTX_ALL},
+	{"</plugin>", ARG_NONE, sect_close, NULL, CTX_ALL},
+	{"nickname", ARG_RAW, option, NULL, CTX_ALL},
+	{"username", ARG_RAW, option, NULL, CTX_ALL},
+	{"fullname", ARG_RAW, option, NULL, CTX_ALL},
+	{"plugindirectory", ARG_RAW, option, NULL, CTX_ALL},
+	{"highlight", ARG_RAW, option, NULL, CTX_ALL},
+	{"type", ARG_RAW, option, NULL, CTX_ALL},
+	{"path", ARG_RAW, option, NULL, CTX_ALL},
+	{"host", ARG_RAW, option, NULL, CTX_ALL},
+	{"port", ARG_INT, option, NULL, CTX_ALL},
+	{"password", ARG_RAW, option, NULL, CTX_ALL},
+	{"database", ARG_RAW, option, NULL, CTX_ALL},
+	{"options", ARG_RAW, option, NULL, CTX_ALL},
+	{"autoconnect", ARG_RAW, option, NULL, CTX_ALL},
+	{"priority", ARG_INT, option, NULL, CTX_ALL},
+	{"ssl", ARG_RAW, option, NULL, CTX_ALL},
+	{"executable", ARG_RAW, option, NULL, CTX_ALL},
+	{"scope", ARG_RAW, option, NULL, CTX_ALL},
+	{"parameters", ARG_RAW, option, NULL, CTX_ALL},
+	{"var", ARG_RAW, option, NULL, CTX_ALL},
+	LAST_OPTION
+};
+
+FUNC_ERRORHANDLER(error_handler);
+
+static bool bool_is_true(std::string s) {
+	s = strToLower(trim(s));
+	return s == "true" || s == "yes" || s == "1";
 }
 
+void ConfigReader::read() {
+	if(is_read) return;
 
-void Config::addAdditionalSockets(const std::vector<std::string> &a)
-{
-	std::vector<std::string>::const_iterator sock_it;
-	for(sock_it = a.begin(); sock_it != a.end(); ++sock_it) {
-		additionalSockets_.push_back(*sock_it);
-		sockets_.push_back(*sock_it);
+	configfile_t *configfile = dotconf_create(
+		const_cast<char*>(file.c_str()), options,
+		this, CASE_INSENSITIVE);
+	if(!configfile) {
+		throw exception(state->error = "Error opening config file.");
 	}
+
+	configfile->errorhandler = (dotconf_errorhandler_t) error_handler;
+
+	// Initialise global config in progress. Other fields will be
+	// initialised when a section is started, global starts now.
+	state->global_progress = new GlobalConfig();
+	if(dotconf_command_loop(configfile) == 0) {
+		dotconf_cleanup(configfile);
+		if(state->error.size() == 0)
+			state->error = "Error reading config file.";
+		throw exception(state->error);
+	}
+
+	if(state->database_progress == 0) {
+		throw exception("No Database block defined in config file.");
+	}
+
+	assert(state->socket_progress == 0);
+	assert(state->network_progress == 0);
+	assert(state->server_progress == 0);
+	assert(state->plugin_progress == 0);
+
+	sockets = state->sockets;
+	networks = state->networks;
+	plugins = state->plugins;
+	global = state->global_progress;
+	database = state->database_progress;
+
+	state->sockets.clear();
+	state->networks.clear();
+	state->plugins.clear();
+
+	dotconf_cleanup(configfile);
+	is_read = true;
 }
 
-
-/**
- * @brief Return database configuration.
- *
- * Currently, you *must* call networks() before calling databaseConfig().
- * This is considered a bug.
- */
-const DatabaseConfig *Config::databaseConfig() const
+FUNC_ERRORHANDLER(error_handler)
 {
-	return databaseConfig_;
+	ConfigReaderState *s = ((ConfigReader*)configfile->context)->_state();
+	if(s->error.length() == 0) {
+		s->error = msg;
+	} else {
+		s->error.append("\n" + std::string(msg));
+	}
+	return 1;
 }
 
-/**
- * @brief Returns configuration for a given group.
- *
- * Returns an empty list if no special configuration was found in the
- * configuration file. Currently, you *must* call networks() before calling
- * this method. This is considered a bug.
- */
-const std::map<std::string,std::string> Config::groupConfig(std::string group) const
+static DOTCONF_CB(sect_open)
 {
-	std::map<std::string,std::string> configuration;
-	assert(settings_);
+	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
+	std::string name(cmd->name);
 
-	if(group.length() == 0)
-		return configuration;
-
-	JSONNode::const_iterator it = S.find_nocase(libjson::to_json_string(group));
-	if(it == S.end())
-		return configuration;
-
-	for(JSONNode::const_iterator nit = it->begin(); nit != it->end(); ++nit) {
-		configuration[strToLower(libjson::to_std_string(nit->name()))] = libjson::to_std_string(nit->as_string()).c_str();
-	}
-
-	return configuration;
-}
-
-/**
- * @brief Returns the last error triggered by this class.
- *
- * If there was no error, returns an empty string.
- */
-const std::string &Config::lastError()
-{
-	return error_;
-}
-
-void Config::reset()
-{
-	networks_.clear();
-	sockets_.clear();
-	error_.clear();
-	delete settings_;
-	settings_ = 0;
-	delete databaseConfig_;
-	databaseConfig_ = 0;
-}
-
-/**
- * @brief Load configuration from file.
- *
- * This method attempts to load all contents from the given file to the Config
- * object, then returns whether that worked or not.
- */
-bool Config::loadFromFile( std::string fileName )
-{
-	reset();
-	std::ifstream ifile(fileName.c_str());
-	if(!ifile) {
-		error_ = "Configuration file does not exist or is unreadable: " + fileName;
-		return false;
-	}
-
-	std::stringstream configstr;
-	configstr << ifile.rdbuf();
-	std::string configjson = configstr.str();
-
-	JSONNode config;
-	try {
-		config = libjson::parse(libjson::to_json_string(configjson));
-	} catch(std::invalid_argument e) {
-		error_ = std::string("Invalid json in configuration file: ") + e.what();
-		return false;
-	}
-
-	settings_ = new ConfigPrivate(config);
-
-	JSONNode::const_iterator fit = S.begin(), it = S.begin();
-	std::stringstream stream;
-	std::string placeholder;
-	int ival;
-	bool ierror;
-#define LOADCONFIG(stor, fld) fit = it->find_nocase(fld); if(fit != it->end()) stor = libjson::to_std_string(fit->as_string())
-
-	/** Load general configuration */
-	std::string defaultNickname = "DaZeus";
-	std::string defaultUsername = "dazeus";
-	std::string defaultFullname = "DaZeus";
-	it = S.find_nocase("general");
-	if(it != S.end()) {
-		LOADCONFIG(defaultNickname, "nickname");
-		LOADCONFIG(defaultUsername, "username");
-		LOADCONFIG(defaultFullname, "fullname");
-	}
-
-	/** Load sockets */
-	it = S.find_nocase("sockets");
-	if(it != S.end()) {
-		for(fit = it->begin(); fit != it->end(); ++fit) {
-			sockets_.push_back(libjson::to_std_string(fit->as_string()));
-		}
-	}
-	// Add additional sockets as defined
-	std::vector<std::string>::const_iterator sock_it;
-	for(sock_it = additionalSockets_.begin(); sock_it != additionalSockets_.end(); ++sock_it) {
-		sockets_.push_back(*sock_it);
-	}
-	if(sockets_.size() == 0) {
-		fprintf(stderr, "Warning: No sockets defined in configuration file. Plugins won't be able to connect.\n");
-	}
-
-	/** Load database configuration */
-	it = S.find_nocase("database");
-	databaseConfig_ = new DatabaseConfig;
-	databaseConfig_->type = "mongo";
-	databaseConfig_->hostname = "localhost";
-	databaseConfig_->port = 27017;
-	databaseConfig_->username = "";
-	databaseConfig_->password = "";
-	databaseConfig_->database = "dazeus";
-	databaseConfig_->options = "";
-	if(it != S.end()) {
-		LOADCONFIG(databaseConfig_->hostname, "host");
-		std::string dbRawPort;
-		LOADCONFIG(dbRawPort,     "port");
-		std::stringstream portStr;
-		if(dbRawPort.length() > 0) {
-			portStr << dbRawPort;
-			portStr >> databaseConfig_->port;
-		}
-		LOADCONFIG(databaseConfig_->username, "username");
-		LOADCONFIG(databaseConfig_->password, "password");
-		LOADCONFIG(databaseConfig_->database, "database");
-
-		if(!portStr) {
-			fprintf(stderr, "Database port is not a valid numer: %s\n", dbRawPort.c_str());
-			fprintf(stderr, "Assuming default port.\n");
-			databaseConfig_->port = 27017;
-		}
-	}
-
-	/** Load networks */
-	std::map<std::string, NetworkConfig*> networks;
-	JSONNode::const_iterator nit = S.find("networks");
-	if(nit != S.end()) {
-		for(it = nit->begin(); it != nit->end(); ++it) {
-			NetworkConfig *nc = new NetworkConfig;
-			nc->displayName = "Unnamed network";
-			nc->nickName = defaultNickname;
-			nc->userName = defaultUsername;
-			nc->fullName = defaultFullname;
-			nc->password = "";
-			nc->autoConnect = false;
-
-			LOADCONFIG(nc->displayName, "name");
-			nc->name = strToIdentifier(nc->displayName);
-			if(networks.find(nc->name) != networks.end()) {
-				fprintf(stderr, "Error: Two networks exist with the same identifier, skipping.\n");
-				return false;
+	switch(s->current_section) {
+	case S_ROOT:
+		assert(s->global_progress != NULL);
+		assert(s->socket_progress == NULL);
+		assert(s->network_progress == NULL);
+		assert(s->server_progress == NULL);
+		if(name == "<socket>") {
+			s->current_section = S_SOCKET;
+			s->socket_progress = new SocketConfig;
+		} else if(name == "<database>") {
+			if(s->database_progress != NULL) {
+				return "More than one Database block defined in configuration file.";
 			}
-			LOADCONFIG(nc->nickName, "nickname");
-			LOADCONFIG(nc->userName, "username");
-			LOADCONFIG(nc->fullName, "fullname");
-			LOADCONFIG(nc->password, "password");
-			std::string autoconnect;
-			LOADCONFIG(autoconnect, "autoconnect");
-			nc->autoConnect = autoconnect == "true";
-			JSONNode::const_iterator ssit = it->find_nocase("servers");
-			if(ssit != S.end()) {
-#define LOADCONFIG_S(stor, fld) fit = sit->find_nocase(fld); if(fit != sit->end()) stor = libjson::to_std_string(fit->as_string())
-#define LOADINT_S(stor, fld) LOADCONFIG_S(placeholder, fld); \
-	if(placeholder.length() == 0) ierror = false; \
-	else { stream << placeholder; stream >> ival; ierror = !stream; if(!ierror) stor = ival; stream.str(""); stream.clear(); }
-				for(JSONNode::const_iterator sit = ssit->begin(); sit != ssit->end(); ++sit) {
-					ServerConfig *sc = new ServerConfig;
-					sc->host = "";
-					sc->port = 6667;
-					sc->priority = 100;
-					sc->network = nc;
-					sc->ssl = false;
-
-					LOADCONFIG_S(sc->host, "host");
-					LOADINT_S(sc->port, "port");
-					if(ierror) fprintf(stderr, "Invalid port string: %s\n", placeholder.c_str());
-					LOADINT_S(sc->priority, "priority");
-					if(ierror) fprintf(stderr, "Invalid priority string: %s\n", placeholder.c_str());
-					std::string ssl;
-					LOADCONFIG_S(ssl, "ssl");
-					if(ssl == "true") sc->ssl = true;
-
-					nc->servers.push_back(sc);
-				}
-#undef LOADINT_S
-#undef LOADCONFIG_S
-			}
-			if(nc->servers.size() == 0) {
-				fprintf(stderr, "Warning: No servers defined for network '%s' in configuration file.\n", nc->displayName.c_str());
-			}
-			networks[nc->name] = nc;
+			s->current_section = S_DATABASE;
+			s->database_progress = new DatabaseConfig;
+		} else if(name == "<network") {
+			std::string networkname = cmd->data.str;
+			networkname.resize(networkname.length() - 1);
+			s->current_section = S_NETWORK;
+			std::string default_nick = s->global_progress->default_nickname;
+			std::string default_user = s->global_progress->default_username;
+			std::string default_full = s->global_progress->default_fullname;
+			s->network_progress = new NetworkConfig(networkname, networkname,
+				default_nick, default_user, default_full);
+		} else if(name == "<plugin") {
+			std::string pluginname = cmd->data.str;
+			pluginname.resize(pluginname.length() - 1);
+			s->current_section = S_PLUGIN;
+			s->plugin_progress = new PluginConfig(pluginname);
+		} else {
+			return "Logic error";
 		}
+		break;
+	case S_NETWORK:
+		assert(s->network_progress != NULL);
+		assert(s->server_progress == NULL);
+		if(name == "<server>") {
+			s->current_section = S_SERVER;
+			s->server_progress = new ServerConfig("", s->network_progress);
+		}
+		break;
+	default:
+		return "Logic error";
 	}
-#undef LOADCONFIG
-
-	if(networks.size() == 0) {
-		fprintf(stderr, "Warning: No networks defined in configuration file.\n");
-	}
-
-	assert(networks_.size() == 0);
-	std::map<std::string, NetworkConfig*>::const_iterator netit;
-	for(netit = networks.begin(); netit != networks.end(); ++netit) {
-		networks_.push_back(netit->second);
-	}
-
-	return true;
+	return NULL;
 }
 
-const std::vector<NetworkConfig*> &Config::networks()
+static DOTCONF_CB(sect_close)
 {
-	return networks_;
-}
+	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
 
-const std::vector<std::string> &Config::sockets() const
+	std::string name(cmd->name);
+	switch(s->current_section) {
+	// we can never have a section end in the root context
+	case S_ROOT: return "Logic error";
+	case S_SOCKET:
+		if(name == "</socket>") {
+			s->sockets.push_back(s->socket_progress);
+			s->socket_progress = 0;
+			s->current_section = S_ROOT;
+		} else {
+			return "Logic error";
+		}
+		break;
+	case S_DATABASE:
+		if(name == "</database>") {
+			s->current_section = S_ROOT;
+		} else {
+			return "Logic error";
+		}
+		break;
+	case S_NETWORK:
+		if(name == "</network>") {
+			s->networks.push_back(s->network_progress);
+			s->network_progress = 0;
+			s->current_section = S_ROOT;
+		} else {
+			return "Logic error";
+		}
+		break;
+	case S_SERVER:
+		if(name == "</server>") {
+			s->network_progress->servers.push_back(s->server_progress);
+			s->server_progress = 0;
+			s->current_section = S_NETWORK;
+		} else {
+			return "Logic error";
+		}
+		break;
+	case S_PLUGIN:
+		if(name == "</plugin>") {
+			s->plugins.push_back(s->plugin_progress);
+			s->plugin_progress = 0;
+			s->current_section = S_ROOT;
+		} else {
+			return "Logic error";
+		}
+		break;
+	default:
+		return "Logic error";
+	}
+
+	return NULL;
+}
+static DOTCONF_CB(option)
 {
-	return sockets_;
+	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
+	std::string name(cmd->name);
+	switch(s->current_section) {
+	case S_ROOT: {
+		GlobalConfig *g = s->global_progress;
+		assert(g);
+		if(name == "nickname") {
+			g->default_nickname = trim(cmd->data.str);
+		} else if(name == "username") {
+			g->default_username = trim(cmd->data.str);
+		} else if(name == "fullname") {
+			g->default_fullname = trim(cmd->data.str);
+		} else if(name == "plugindirectory") {
+			g->plugindirectory = trim(cmd->data.str);
+		} else if(name == "highlight") {
+			g->highlight = trim(cmd->data.str);
+		} else {
+			s->error = "Invalid option name in root context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	case S_SOCKET: {
+		SocketConfig *sc = s->socket_progress;
+		assert(sc);
+		if(name == "type") {
+			sc->type = trim(cmd->data.str);
+		} else if(name == "path") {
+			sc->path = trim(cmd->data.str);
+		} else if(name == "host") {
+			sc->host = trim(cmd->data.str);
+		} else if(name == "port") {
+			if(cmd->data.value > std::numeric_limits<uint16_t>::max() || cmd->data.value < 0) {
+				return "Invalid value for 'port'";
+			}
+			sc->port = cmd->data.value;
+		} else {
+			s->error = "Invalid option name in socket context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	case S_DATABASE: {
+		DatabaseConfig *dc = s->database_progress;
+		assert(dc);
+		if(name == "type") {
+			dc->type = trim(cmd->data.str);
+		} else if(name == "host") {
+			dc->hostname = trim(cmd->data.str);
+		} else if(name == "port") {
+			dc->port = cmd->data.value;
+		} else if(name == "username") {
+			dc->username = trim(cmd->data.str);
+		} else if(name == "password") {
+			dc->password = trim(cmd->data.str);
+		} else if(name == "database") {
+			dc->database = trim(cmd->data.str);
+		} else if(name == "options") {
+			dc->options = trim(cmd->data.str);
+		} else {
+			s->error = "Invalid option name in database context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	case S_NETWORK: {
+		NetworkConfig *nc = s->network_progress;
+		assert(nc);
+		if(name == "autoconnect") {
+			nc->autoConnect = bool_is_true(cmd->data.str);
+		} else if(name == "nickname") {
+			nc->nickName = trim(cmd->data.str);
+		} else if(name == "username") {
+			nc->userName = trim(cmd->data.str);
+		} else if(name == "fullname") {
+			nc->fullName = trim(cmd->data.str);
+		} else if(name == "password") {
+			nc->password = trim(cmd->data.str);
+		} else {
+			s->error = "Invalid option name in network context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	case S_SERVER: {
+		ServerConfig *sc = s->server_progress;
+		assert(sc);
+		if(name == "host") {
+			sc->host = trim(cmd->data.str);
+		} else if(name == "port") {
+			sc->port = cmd->data.value;
+		} else if(name == "priority") {
+			sc->priority = cmd->data.value;
+		} else if(name == "ssl") {
+			sc->ssl = bool_is_true(cmd->data.str);
+		} else {
+			s->error = "Invalid option name in server context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	case S_PLUGIN: {
+		PluginConfig *pc = s->plugin_progress;
+		assert(pc);
+		if(name == "path") {
+			pc->path = trim(cmd->data.str);
+		} else if(name == "executable") {
+			pc->executable = trim(cmd->data.str);
+		} else if(name == "scope") {
+			pc->scope = trim(cmd->data.str);
+		} else if(name == "parameters") {
+			pc->parameters = trim(cmd->data.str);
+		} else if(name == "var") {
+			if(cmd->arg_count != 2) {
+				s->error = "Invalid amount of parameters to Var in plugin context";
+				return "Configuration file contains errors";
+			}
+			pc->config[trim(cmd->data.list[0])] = trim(cmd->data.list[1]);
+		} else {
+			s->error = "Invalid option name in plugin context: " + name;
+			return "Configuration file contains errors";
+		}
+		break;
+	}
+	default:
+		return "Logic error";
+	}
+	return NULL;
 }

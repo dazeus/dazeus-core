@@ -44,17 +44,7 @@ DaZeus::~DaZeus()
   networks_.clear();
 
   delete plugins_;
-}
-
-
-/**
- * @brief Add additional sockets to the list defined in the configuration file.
- *
- * The application will listen on the given additional sockets.
- */
-void DaZeus::addAdditionalSockets(const std::vector<std::string> &sockets)
-{
-	config_->addAdditionalSockets(sockets);
+  delete config_;
 }
 
 
@@ -99,7 +89,7 @@ std::string DaZeus::configFileName() const {
  */
 bool DaZeus::configLoaded() const
 {
-  return config_ != 0;
+  return config_->isRead();
 }
 
 
@@ -110,7 +100,7 @@ bool DaZeus::configLoaded() const
  */
 bool DaZeus::connectDatabase()
 {
-  const DatabaseConfig *dbc = config_->databaseConfig();
+  const DatabaseConfig *dbc = config_->getDatabaseConfig();
   if(dbc == 0) {
     fprintf(stderr, "Database configuration is absent, cannot continue.\n");
     return false;
@@ -159,16 +149,18 @@ bool DaZeus::loadConfig()
 {
   assert( configFileName_.length() != 0 );
 
-  if( config_ == 0 )
-    config_ = new Config();
+  if( config_ != 0 ) {
+    delete config_;
+  }
+
+  config_ = new ConfigReader(configFileName_);
 
   if( !config_ )
     return false;
 
-  config_->reset();
-  config_->loadFromFile( configFileName_ );
+  config_->read();
 
-  const std::vector<NetworkConfig*> &networks = config_->networks();
+  const std::vector<NetworkConfig*> &networks = config_->getNetworks();
 
   if(!connectDatabase()) {
     delete config_;

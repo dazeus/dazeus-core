@@ -38,7 +38,7 @@
 
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
-PluginComm::PluginComm(Database *d, Config *c, DaZeus *bot)
+PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
 : NetworkListener()
 , tcpServers_()
 , localServers_()
@@ -146,58 +146,37 @@ void PluginComm::run() {
 }
 
 void PluginComm::init() {
-	std::stringstream socketStr;
-	std::vector<std::string>::const_iterator it;
+	std::vector<SocketConfig*>::const_iterator it;
 
-	for(it = config_->sockets().begin(); it != config_->sockets().end(); ++it) {
-		socketStr.clear();
-		socketStr.str(std::string());
-		std::string socket = *it;
-		size_t colon = socket.find(':');
-		if(colon == std::string::npos) {
-			fprintf(stderr, "(PluginComm) Did not understand socket option: %s\n", socket.c_str());
-			continue;
-		}
-		std::string socketType = socket.substr(0, colon);
-		socket = socket.substr(colon + 1);
-		if(socketType == "unix") {
-			unlink(socket.c_str());
+	for(it = config_->getSockets().begin(); it != config_->getSockets().end(); ++it) {
+		SocketConfig *sc = *it;
+		if(sc->type == "unix") {
+			unlink(sc->path.c_str());
 			int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
 			if(server <= 0) {
-				fprintf(stderr, "(PluginComm) Failed to create socket for %s: %s\n", socket.c_str(), strerror(errno));
+				fprintf(stderr, "(PluginComm) Failed to create socket at %s: %s\n", sc->path.c_str(), strerror(errno));
 				continue;
 			}
 			NOTBLOCKING(server);
 			struct sockaddr_un addr;
 			addr.sun_family = AF_UNIX;
-			strcpy(addr.sun_path, socket.c_str());
+			strcpy(addr.sun_path, sc->path.c_str());
 			if(bind(server, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
 				close(server);
-				fprintf(stderr, "(PluginComm) Failed to start listening for local connections on %s: %s\n", socket.c_str(), strerror(errno));
+				fprintf(stderr, "(PluginComm) Failed to start listening for local connections on %s: %s\n", sc->path.c_str(), strerror(errno));
 				continue;
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
-				unlink(socket.c_str());
+				unlink(sc->path.c_str());
 			}
 			localServers_.push_back(server);
-		} else if(socketType == "tcp") {
-			colon = socket.find(':');
-			std::string tcpHost, tcpPort;
-			if(colon == std::string::npos) {
-				tcpHost = "localhost";
-				tcpPort = socket;
-			} else {
-				tcpHost = socket.substr(0, colon);
-				tcpPort = socket.substr(colon + 1);
-			}
-			unsigned int port;
-			std::stringstream ports;
-			ports << tcpPort;
-			ports >> port;
-			if(!ports || port > UINT16_MAX) {
-				fprintf(stderr, "(PluginComm) Invalid TCP port number for socket %s\n", socket.c_str());
-				continue;
+		} else if(sc->type == "tcp") {
+			std::string portStr;
+			{
+				std::stringstream portStrSs;
+				portStrSs << sc->port;
+				portStr = portStrSs.str();
 			}
 
 			struct addrinfo *hints, *result;
@@ -207,7 +186,7 @@ void PluginComm::init() {
 			hints->ai_socktype = SOCK_STREAM;
 			hints->ai_protocol = 0;
 
-			int s = getaddrinfo(tcpHost.c_str(), tcpPort.c_str(), hints, &result);
+			int s = getaddrinfo(sc->host.c_str(), portStr.c_str(), hints, &result);
 			free(hints);
 			hints = 0;
 
@@ -224,15 +203,15 @@ void PluginComm::init() {
 			NOTBLOCKING(server);
 			if(bind(server, result->ai_addr, result->ai_addrlen) < 0) {
 				close(server);
-				fprintf(stderr, "(PluginComm) Failed to start listening for TCP connections on %s: %s\n",
-					socket.c_str(), strerror(errno));
+				fprintf(stderr, "(PluginComm) Failed to start listening for TCP connections on %s:%d: %s\n",
+					sc->host.c_str(), sc->port, strerror(errno));
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
 			}
 			tcpServers_.push_back(server);
 		} else {
-			fprintf(stderr, "(PluginComm) Skipping socket %s: unknown type %s\n", socket.c_str(), socketType.c_str());
+			fprintf(stderr, "(PluginComm) Skipping socket: unknown type >%s<\n", sc->type.c_str());
 		}
 	}
 }
@@ -434,20 +413,14 @@ void PluginComm::messageReceived( const std::string &origin, const std::string &
                   const std::string &receiver, Network *n ) {
 	assert(n != 0);
 
-	std::map<std::string,std::string> config = config_->groupConfig("general");
-	std::map<std::string,std::string>::iterator configIt;
+	GlobalConfig *c = config_->getGlobalConfig();
 
 	std::string payload;
-	std::string highlightChar = "}";
-	configIt = config.find("highlightCharacter");
-	if(configIt != config.end())
-		highlightChar = configIt->second;
-
 	if( startsWith(message, n->nick() + ":", true)
 	 || startsWith(message, n->nick() + ",", true)) {
 		payload = trim(message.substr(n->nick().length() + 1));
-	} else if(startsWith(message, highlightChar, true)) {
-		payload = trim(message.substr(highlightChar.length()));
+	} else if(startsWith(message, c->highlight, true)) {
+		payload = trim(message.substr(c->highlight.length()));
 	}
 
 	if(payload.length() != 0) {
@@ -889,18 +862,24 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			response.push_back(JSONNode("error", "Missing parameters"));
 		} else {
 			std::vector<std::string> parts = split(params[0], ".");
-			std::string group = parts.front();
+			std::string plugin = parts.front();
 			parts.erase(parts.begin());
 			std::string name = join(parts, ".");
 
-			std::stringstream configName;
-			configName << "plugin_" << group;
-			std::map<std::string,std::string> groupConfig = config_->groupConfig(configName.str());
-			std::map<std::string,std::string>::iterator configIt = groupConfig.find(name);
 			response.push_back(JSONNode("success", true));
 			response.push_back(JSONNode("variable", libjson::to_json_string(params[0])));
-			if(configIt != groupConfig.end()) {
-				response.push_back(JSONNode("value", libjson::to_json_string(configIt->second)));
+
+			// Get the right plugin config
+			const std::vector<PluginConfig*> &plugins = config_->getPlugins();
+			for(std::vector<PluginConfig*>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
+				PluginConfig *pc = *cit;
+				if(pc->name == plugin) {
+					std::map<std::string,std::string>::iterator configIt = pc->config.find(name);
+					if(configIt != pc->config.end()) {
+						response.push_back(JSONNode("value", libjson::to_json_string(configIt->second)));
+						break;
+					}
+				}
 			}
 		}
 	} else {

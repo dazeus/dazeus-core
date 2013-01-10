@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 
 	std::string configfile = DAZEUS_DEFAULT_CONFIGFILE;
-	std::vector<std::string> sockets;
 
 	std::string type;
 	for(int i = 1; i < argc; ++i) {
@@ -29,8 +28,6 @@ int main(int argc, char *argv[])
 			if(strcmp(argv[i], "-h") == 0) {
 				usage(argv[0]);
 				return 1;
-			} else if(strcmp(argv[i], "-s") == 0) {
-				type = "socket";
 			} else if(strcmp(argv[i], "-c") == 0) {
 				type = "config";
 			} else {
@@ -39,9 +36,7 @@ int main(int argc, char *argv[])
 				return 2;
 			}
 		} else {
-			if(type == "socket") {
-				sockets.push_back(std::string(argv[i]));
-			} else if(type == "config") {
+			if(type == "config") {
 				configfile = std::string(argv[i]);
 			} else {
 				abort();
@@ -55,7 +50,6 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to load configuration, bailing out.\n");
 		return 3;
 	}
-	d.addAdditionalSockets(sockets);
 	d.initPlugins();
 	d.autoConnect();
 	d.run();

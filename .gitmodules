@@ -1,3 +1,6 @@
 [submodule "contrib/libdazeus-irc"]
 	path = contrib/libdazeus-irc
 	url = http://github.com/sgielen/libdazeus-irc.git
+[submodule "contrib/dotconf"]
+	path = contrib/dotconf
+	url = https://github.com/williamh/dotconf

@@ -1,55 +1,83 @@
 /**
- * Copyright (c) Sjors Gielen, 2010
+ * Copyright (c) Sjors Gielen, 2013
  * See LICENSE for license.
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef _DAZEUS_CONFIG_H
+#define _DAZEUS_CONFIG_H
 
-#include <vector>
-#include <string>
-#include <map>
+#include "network.h"
+#include "database.h"
+#include <stdexcept>
 #include <stdint.h>
+#include <string>
 
-/**
- * These structs are only for configuration as it is in the configuration
- * file. This configuration cannot be changed via the runtime interface of
- * the IRC bot. Things like autojoining channels are not in here, because
- * that's handled by admins during runtime... :)
- */
+struct ConfigReaderState;
 
-class ConfigPrivate;
-struct DatabaseConfig;
-struct NetworkConfig;
-struct ServerConfig;
+struct GlobalConfig {
+	GlobalConfig()
+	: default_nickname("DaZeus")
+	, default_username("DaZeus")
+	, default_fullname("DaZeus IRC bot")
+	, plugindirectory("plugins")
+	, highlight("}") {}
 
-class Config
-{
-  public:
-        Config();
-       ~Config();
-  bool  loadFromFile( std::string fileName );
-  void  reset();
-  void  addAdditionalSockets(const std::vector<std::string>&);
+	std::string default_nickname;
+	std::string default_username;
+	std::string default_fullname;
+	std::string plugindirectory;
+	std::string highlight;
+};
 
-  const std::vector<NetworkConfig*> &networks();
-  const std::string               &lastError();
-  const DatabaseConfig            *databaseConfig() const;
-  const std::map<std::string,std::string> groupConfig(std::string plugin) const;
-  const std::vector<std::string>         &sockets() const;
+struct PluginConfig {
+	PluginConfig(std::string n) : name(n) {}
+	std::string name;
+	std::string path;
+	std::string executable;
+	std::string scope;
+	std::string parameters;
+	std::map<std::string, std::string> config;
+};
 
-  private:
-  // explicitly disable copy constructor
-  Config(const Config&);
-  void operator=(const Config&);
+struct SocketConfig {
+	SocketConfig() : port(0) {}
+	std::string type;
+	std::string host;
+	uint16_t port;
+	std::string path;
+};
 
-  std::vector<NetworkConfig*> oldNetworks_;
-  std::vector<NetworkConfig*> networks_;
-  std::vector<std::string>    sockets_;
-  std::vector<std::string>    additionalSockets_;
-  std::string                 error_;
-  ConfigPrivate              *settings_;
-  DatabaseConfig             *databaseConfig_;
+class ConfigReader {
+	std::vector<NetworkConfig*> networks;
+	std::vector<PluginConfig*> plugins;
+	std::vector<SocketConfig*> sockets;
+	GlobalConfig *global;
+	DatabaseConfig *database;
+	std::string file;
+	ConfigReaderState *state;
+	bool is_read;
+
+public:
+	struct exception : public std::runtime_error {
+		exception(std::string e) : std::runtime_error(e) {}
+	};
+
+	ConfigReader(std::string file);
+	ConfigReader(ConfigReader const&);
+	ConfigReader &operator=(ConfigReader const&);
+	~ConfigReader();
+
+	bool isRead() { return is_read; }
+	void read();
+	std::string error();
+	ConfigReaderState *_state() { return state; }
+
+	const std::vector<NetworkConfig*> &getNetworks() { return networks; }
+	const std::vector<PluginConfig*> &getPlugins() { return plugins; }
+	const std::vector<SocketConfig*> &getSockets() { return sockets; }
+	GlobalConfig *getGlobalConfig() { return global; }
+	DatabaseConfig *getDatabaseConfig() { return database; }
+	std::string &getFile() { return file; }
 };
 
 #endif
