@@ -11,9 +11,9 @@
 #include <stdint.h>
 
 struct DatabaseConfig {
-  DatabaseConfig(std::string t = std::string(), std::string h = std::string(),
-    uint16_t p = 0, std::string user = std::string(), std::string pass =
-    std::string(), std::string db = std::string(), std::string opt =
+  DatabaseConfig(std::string t = std::string(), std::string h = std::string("127.0.0.1"),
+    uint16_t p = 27017, std::string user = std::string(), std::string pass =
+    std::string(), std::string db = std::string("dazeus"), std::string opt =
     std::string()) : type(t), hostname(h), port(p), username(user),
     password(pass), database(db), options(opt) {}
   DatabaseConfig(const DatabaseConfig &s) : type(s.type),
