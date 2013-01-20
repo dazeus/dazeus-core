@@ -61,6 +61,5 @@ void usage(char *exec)
 	fprintf(stderr, "Usage: %s options\n", exec);
 	fprintf(stderr, "Available options:\n");
 	fprintf(stderr, "  -c configfile  - Use this configuration file\n");
-	fprintf(stderr, "  -s socket      - Listen on this socket too\n");
 	fprintf(stderr, "  -h             - Display this help message\n");
 }
