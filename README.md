@@ -1,10 +1,10 @@
-= DaZeus
+# DaZeus
 
 This is DaZeus 2.0, a tiny IRC bot that works with
 out-of-process plugins. It provides a configuration, database and IRC interface
 via UNIX or TCP sockets to its plugins.
 
-= Installing
+# Installing
 
 This application has the following dependencies:
 
@@ -26,7 +26,7 @@ intend to run DaZeus 2.0 elsewhere, you can manually copy the binary there, or
 simply not give the `-DCMAKE_INSTALL_PREFIX=..` option to CMake if you want to
 install DaZeus systemwide.
 
-= Running
+# Running
 
 When the `dazeus` binary is run, it reads the `dazeus.conf` configuration file
 (unless you give the `-c` option). A sample configuration file is in the
@@ -38,7 +38,7 @@ as configured. To get a useful interface with the bot, the DaZeus 1 Legacy
 Daemon is required for now, and can be retrieved at
 <https://github.com/dazeus/dazeus-legacyd>.
 
-= Plugins
+# Plugins
 
 The API that plugins use over the socket interface is described in the `doc`
 directory. Bindings are available for Perl, C and C++/Qt, see the `bindings`
@@ -56,7 +56,7 @@ A list of supported plugins is available at <https://github.com/dazeus>:
 * `dazeus-plugin-mediawiki`: A plugin for integrating MediaWiki edits with IRC
 * `dazeus-plugin-karma`: A plugin for keeping karma scores
 
-= Authors
+# Authors
 
 The maintainer of DaZeus is Sjors Gielen <dazeus@sjorsgielen.nl>. Also,
 Ferdi van der Werf <pyromani@gmail.com> provided patches to the core bot.
