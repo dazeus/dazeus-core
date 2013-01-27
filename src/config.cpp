@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
 #include "server.h"
+#include <limits>
 
 enum section {
 	S_ROOT,
