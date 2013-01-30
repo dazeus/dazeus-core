@@ -1,0 +1,219 @@
+/**
+\page pluginprotocoldocs DaZeus 2 Plugin Protocol
+\section Introduction
+
+The DaZeus 2 plugin protocol links the core bot with the installed plugins, and
+is used to communicate events and their responses. Also, it exposes DaZeus' own
+configuration and database APIs, so plugins can easily attach without requiring
+configuration of their own.
+
+Bindings for this protocol are available for \ref index "several languages".
+Of course, patches are very welcome for newly implemented bindings! For help
+with writing bindings, you can look at the logic in existing bindings -- see
+the main page of this documentation to find their source code. Also, to
+experiment with the protocol without the use of special libraries, the
+<tt>socat</tt> or <tt>nc</tt> tool can be used as follows, where
+<tt>dazeus.sock</tt> is the UNIX socket:
+
+- <tt>socat UNIX-CONNECT:dazeus.sock READLINE</tt><br/>
+- <tt>nc -U dazeus.sock</tt>
+
+The protocol was designed as a trade-off between human and machine readability.
+It is largely based on <a href="http://www.json.org">the JSON standard
+(http://www.json.org/)</a>, with some additions to allow for quicker reading.
+At the moment, communication is supported over UNIX and TCP sockets.
+
+\section Overview
+
+Messages in the protocol look like this:
+\code
+  [size in ASCII][JSON data of given size]
+\endcode
+
+For example, a simple message might look like this:
+\code
+  18{"get":"networks"}
+\endcode
+
+Here, the 18 is sent over the network as normal ASCII bytes, i.e. <tt>0x31
+0x38</tt>. Reading a size stops at the first <tt>{</tt>. In order to improve
+human write- and readability, a <tt>\\n</tt> (newline) or <tt>\\r</tt>
+(carriage return) occuring anywhere outside of this atomic block is ignored.
+For example, the above message is equal to this:
+
+\code
+  \n\r18{"get":"networks"}\n\r
+\endcode
+
+Any other bytes before the JSON, other than <tt>\\n</tt>, <tt>\\r</tt> and
+ASCII digits, are not allowed. The sender must not send them, the receiver must
+ignore them or abort the session.
+
+The bot will respond to incoming messages in the order the messages were sent,
+with the exception that if the plugin is subscribed to events, those events
+may be sent in the middle of a list of responses. For example, communication
+like this is possible:
+\code
+  Plugin: [Request 1]
+  Plugin: [Request 2]
+  Bot: [Response 1]
+  Bot: [Event]
+  Bot: [Response 2]
+\endcode
+
+All JSON data must be objects. Requests will have a <tt>get</tt> or <tt>do</tt>
+field (both are synonyms) and may have a <tt>params</tt> field; responses will
+have a <tt>got</tt> or <tt>did</tt> field, a <tt>success</tt> field, and other
+fields depending on the request.  If the <tt>success</tt> field value is false,
+there will be an <tt>error</tt> field with a human readable error string.
+
+Events will have an <tt>event</tt> field and some <tt>params</tt>, that depend
+on the event (see the \ref Events "events section").
+
+\section Requests
+
+There are three types of requests:
+- Get some information, like known networks or joined channels,
+- Do something on IRC, such as saying something or leaving a channel,
+- Accessing DaZeus internals, such as events or the database.
+
+The "get all known networks" request looks like <tt>{"get":"networks"}</tt>.
+The response will have the list of networks in the <tt>networks</tt> field. The
+"get all joined channels" request will look like <tt>{"get":"channels",
+"params":["the network"]}</tt>. If the network is joined, the response will
+have a <tt>channels</tt> field with an array value. There is a similar
+<tt>nick</tt> command which retrieves our own nickname on a given network.
+
+A message request will look like:
+\code
+  {"do":"message", "params":["network","channel","message"]}
+\endcode
+
+For a CTCP ACTION (/me), use <tt>action</tt> instead of the first
+<tt>message</tt>:
+\code
+  {"do":"action", "params":["network","channel","message"]}
+\endcode
+
+For joining a channel: (same for leaving a channel)
+\code
+  {"do":"join", "params":["network","channel"]}
+\endcode
+
+For doing a WHOIS request: (the results come in through NUMERIC events, see
+the \ref Events "events section")
+\code
+  {"do":"whois", "params":["network","nick"]}
+\endcode
+
+The "subscribe to events" request will look like:
+\code
+  {"do":"subscribe", "params":["JOINED","MOTD"]}
+\endcode
+To unsubscribe, change <tt>subscribe</tt> into <tt>unsubscribe</tt>. See the
+next section for more information.
+
+For all database actions, the action keyword is <tt>property</tt>, and the specific
+action is in the first parameter. For example, to retrieve the <tt>count</tt>
+property, the <tt>counter</tt> example Perl script sends:
+\code
+  {"do":"property", "params":["get","examples.counter.count"]}
+\endcode
+To set the value:
+\code
+  {"do":"property", "params":["set","examples.counter.count","2"]}
+\endcode
+See the \ref Properties "section on properties" below for more information.
+
+\section Events
+
+After subscribing, events can be received anytime outside another existing
+response. The following events exist:
+
+\code
+  CONNECT, DISCONNECT, JOIN, PART, QUIT, NICK, MODE, TOPIC, INVITE, KICK,
+  PRIVMSG, NOTICE, CTCP, CTCP_REP, ACTION, NUMERIC, UNKNOWN, WHOIS, NAMES,
+  PRIVMSG_ME, CTCP_ME, ACTION_ME
+\endcode
+
+All events will have have an <tt>event</tt> field set to one of the above
+strings, and a <tt>params</tt> field that will contain an array with parameters
+depending on the event.
+
+\todo Describe parameters for events
+
+\section Properties
+
+Properties can be sent and retrieved over the DaZeus 2 plugin protocol and act
+as a database for zero-configuration plugins. Using the <tt>property set</tt>
+command a property can be stored:
+\code
+  {"do":"property", "params":["set","examples.counter.count","2"]}
+\endcode
+
+After this, the property can be retrieved using <tt>property get</tt>:
+\code
+  {"do":"property", "params":["get","examples.counter.count"]}
+\endcode
+
+This will result in the following response, after the previous two commands:
+\code
+  {"did":"property", "variable":"examples.counter.count", "value":"2"}
+\endcode
+
+Next to these commands, <tt>property unset</tt> is available which looks like
+this:
+\code
+  {"do":"property", "params":["unset","examples.counter.count"]}
+\endcode
+
+Last but not least there is the <tt>property keys</tt> command, which returns a list
+of keys in a given namespace:
+\code
+  {"do":"property", "params":["keys","examples.counter"]}
+\endcode
+Which could respond:
+\code
+  {"did":"property", "keys":["count"]}
+\endcode
+
+For added functionality, you can look into variable scopes. Using the commands
+above, variables will be stored and returned "as is" (global scope). But,
+suppose you want to have a variable especially for a specific IRC channel, or
+even a specific user. You could use various different names per variable, but
+scoping allows you to let DaZeus do the work for you.
+
+There are four scopes, in order of specificity: Global scope, network scope,
+receiver scope and sender scope. When returning the variable, the `closest'
+variable is returned. For example, if a variable is set on global scope, and
+overridden on a network scope, variable requests with the same network will
+return the network scope value; all other requests will return the global
+scope value.
+
+Scope is given through the <tt>scope</tt> array field on <tt>property</tt>
+requests. Some examples follow:
+\code
+> {"do":"property", "params":["set","examples.scope.foo", "bar"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["oftc"], "params":["set","examples.scope.foo", "baz"]}
+< {"did":"property", "success":true}
+
+> {"do":"property", "scope":["q"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo", "value":"bar"}
+> {"do":"property", "scope":["oftc"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo", "value":"baz"}
+
+> {"do":"property", "scope":["oftc"], "params":["unset","examples.scope.foo"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["oftc"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo", "value":"bar"}
+> {"do":"property", "params":["unset","examples.scope.foo"]}
+< {"did":"property", "success":true}
+
+> {"do":"property", "scope":["oftc"], "params":["set","examples.scope.foo", "baz"]}
+< {"did":"property", "success":true}
+> {"do":"property", "scope":["q"], "params":["get","examples.scope.foo"]}
+< {"did":"property", "success":true, "variable":"examples.scope.foo"}
+\endcode
+
+*/
