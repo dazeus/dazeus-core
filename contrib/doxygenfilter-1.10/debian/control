@@ -1,0 +1,18 @@
+Source: libdoxygenfilter-perl
+Priority: optional
+Section: perl
+Maintainer: Tom Aeby <aeby@graeff.com>
+Standards-Version: 3.6.1
+Build-Depends-Indep: debhelper (>= 4.1.0), perl (>= 5.6.1-7)
+
+Package: libdoxygenfilter-perl
+Architecture: all
+Priority: optional
+Section: perl
+Depends: ${perl:Depends}
+Recommends: doxygen
+Description: DoxyGen Input Filter adding PERL support to doxygen
+ DoxyGen-Filter is a Perl script and accompanying Perl modules that
+ can be used as INPUT_FILTER for doxygen. It converts Perl files
+ in a way that doxygen will be able to generate code documentation
+ from Doxygen-Filter's output.

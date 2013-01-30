@@ -1,0 +1,58 @@
+# Doxyfile 1.2.12
+
+# This file describes the settings to be used by the documentation system
+# doxygen (www.doxygen.org) for a project
+#
+# All text after a hash (#) is considered a comment and will be ignored
+# The format is:
+#       TAG = value [value, ...]
+# For lists items can also be appended using:
+#       TAG += value [value, ...]
+# Values that contain spaces should be placed between quotes (" ")
+
+#---------------------------------------------------------------------------
+# General configuration options
+#---------------------------------------------------------------------------
+
+# The PROJECT_NAME tag is a single word (or a sequence of words surrounded 
+# by quotes) that should identify the project.
+
+PROJECT_NAME           = "Perl modules"
+
+# The PROJECT_NUMBER tag can be used to enter a project or revision number. 
+# This could be handy for archiving the generated documentation or 
+# if some version control system is used.
+
+PROJECT_NUMBER         = 
+
+# The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
+# base path where the generated documentation will be put. 
+# If a relative path is entered, it will be relative to the location 
+# where doxygen was started. If left blank the current directory will be used.
+
+OUTPUT_DIRECTORY       = api
+
+# If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag 
+# can be used to strip a user defined part of the path. Stripping is 
+# only done if one of the specified strings matches the left-hand part of 
+# the path. It is allowed to use relative paths in the argument list.
+
+STRIP_FROM_PATH        = .
+
+# The INPUT tag can be used to specify the files and/or directories that contain 
+# documented source files. You may enter file names like "myfile.cpp" or 
+# directories like "/usr/src/myproject". Separate the files or directories 
+# with spaces.
+
+INPUT                  = .
+
+# If the value of the INPUT tag contains directories, you can use the 
+# FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
+# and *.h) to filter out the source-files in the directories. If left 
+# blank file matching one of the following patterns are included: 
+# *.c *.cc *.cxx *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
+# *.h++ *.idl
+
+FILE_PATTERNS          = *.pm *.vb
+
+@INCLUDE = Doxyfile

@@ -1,0 +1,5 @@
+libdoxygenfilter-perl (1.00-1) unstable; urgency=low
+
+  * First published as debian package
+
+ -- Tom Aeby <aeby@graeff.com>  Mon, 30 Jan 2006 09:25:09 +0100

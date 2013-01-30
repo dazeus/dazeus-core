@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+# -*- Makefile -*-
+
+# Use debhelper V. 4
+# export DH_COMPAT := 4
+
+# Make sure perl is defined (allow overriding from the command line
+PERL ?= /usr/bin/perl
+
+# Set our build directory
+b := $(shell pwd)/debian/tmp
+
+arrange: arrange-stamp
+arrange-stamp: install
+	dh_testdir
+	dh_installdirs
+	touch arrange-stamp
+
+binary: binary-stamp
+binary-stamp: binary-indep binary-arch
+	dh_testdir
+	touch binary-stamp
+
+binary-arch: binary-arch-stamp
+binary-arch-stamp: arrange
+	dh_testdir
+	touch binary-arch-stamp
+
+binary-indep: binary-indep-stamp
+binary-indep-stamp: arrange
+	dh_testdir
+	dh_testroot
+	dh_installexamples examples/*
+	dh_installdocs
+	dh_installchangelogs CHANGES
+	dh_link
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_perl
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+	touch binary-indep-stamp
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	echo "y" | $(PERL) Makefile.PL INSTALLDIRS=vendor
+	$(MAKE)
+	$(MAKE) test
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	if [ -e Makefile ]; then $(MAKE) -i distclean; fi
+	dh_clean arrange-stamp binary-stamp binary-arch-stamp binary-indep-stamp build-stamp install-stamp blib pm_to_blib
+
+install: install-stamp
+install-stamp: build
+	dh_testdir
+	$(MAKE) install PREFIX=$(b)/usr
+	touch install-stamp
+
+.PHONY: arrange binary binary-arch binary-indep build clean install

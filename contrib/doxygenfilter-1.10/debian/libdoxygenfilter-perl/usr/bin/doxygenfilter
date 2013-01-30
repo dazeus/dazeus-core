@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+
+use warnings;
+use strict;
+
+use DoxyGen::PerlFilter;
+use DoxyGen::SQLFilter;
+
+my $filter;
+
+if ($ARGV[0] =~ /\.java$/) {
+    while (<>) {
+        print;
+    }
+} else {
+    if  ($ARGV[0] =~ /sql$/) {
+        $filter = DoxyGen::SQLFilter->new(\*STDOUT);
+    } else {
+        $filter = DoxyGen::PerlFilter->new(\*STDOUT);
+    }
+    $filter->filter($ARGV[0]);
+}

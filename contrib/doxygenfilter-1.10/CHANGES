@@ -1,0 +1,70 @@
+================ RELEASE 1.10 ==============================================
+2009/01/08 13:38:56 (aeby)	version:
+	that's version 1.10
+
+2009/01/08 13:38:29 (aeby)	examples/PerlDoxyfile, .../VBClass.vb, lib/DoxyGen/VBFilter.pm:
+	added example visual basic class
+	VBFilter: emit class declaration before comments inside the same class
+
+2009/01/08 12:42:56 (aeby)	MANIFEST, .../.SKIP:
+	reflect everything in MANIFEST
+
+2009/01/08 12:29:19 (aeby)	packaging/win32exe/build.d/.03_make_zip.swp:
+	vi swp file - not required :-)
+
+2009/01/08 09:32:48 (aeby)	lib/DoxyGen/PerlFilter.pm:
+	added support for @var command (suggested by Mike Richardson)
+
+2009/01/08 09:31:44 (aeby)	examples/Subclass2.pm:
+	added example for a documented variable
+
+2009/01/08 09:06:00 (aeby)	lib/DoxyGen/SQLFilter.pm:
+	*** empty log message ***
+
+2009/01/08 09:04:59 (aeby)	bin/doxygenfilter, lib/DoxyGen/VBFilter.pm:
+	added support for visual basic
+
+2006/02/15 15:59:29 (aeby)	lib/DoxyGen/PerlFilter.pm:
+	filter(): "@method" handling: drop auto-recognized $self argument at
+	first position
+
+================ RELEASE 1.01 ==============================================
+2006/02/01 14:37:13 (aeby)	version:
+	that's version 1.01
+
+2006/02/01 12:54:07 (aeby)	bin/doxygenfilter:
+	call pas2dox for .pas files, js2doxy for .js files
+	add "lib" to the include path
+
+2006/01/31 17:46:06 (aeby)	lib/DoxyGen/PerlFilter.pm:
+	filter(): avoid warnings about uninitialized values
+	analyze_sub(): added some more argument recognition patterns
+
+2006/01/31 16:53:52 (aeby)	lib/DoxyGen/Filter.pm, .../PerlFilter.pm, .../SQLFilter.pm:
+	added copyright info
+
+2006/01/31 16:53:28 (aeby)	bin/doxygenfilter:
+	parse command line options, understand -h and -v, output a usage message if
+	command line syntax is not ok
+	treat input as perl if filename is ending with .pl, .pm or .perl, as sql
+	if filename ends with .sql, if no file extension is used treat it as perl
+	if the first line starts with #!....bin.perl. In all other cases just pass
+	the file through as is.
+
+2006/01/31 12:26:06 (aeby)	lib/DoxyGen/PerlFilter.pm:
+	added emit_class(), file_contents(), analyze_sub() methods.
+	Read the whole file before analyzing.
+	Try to analyze subs and packages that are not explicitly documented and
+	emit class and function prototypes for them.
+
+2006/01/30 09:55:35 (aeby)	debian/rules:
+	nstalls examples, now
+
+2006/01/30 09:08:56 (aeby)	debian/changelog:
+	version is 1.00
+
+
+2006/01/30 09:25:00 (aeby)
+	took the project over with the permission of
+	the original author Bart Schuller.
+

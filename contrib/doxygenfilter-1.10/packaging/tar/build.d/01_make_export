@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+test -d tmp || mkdir tmp
+. version
+if [ "$TAG" != "" ]; then
+  tag=$TAG
+else
+  tag=v`echo $VERSION | sed -e 's/^0.//' -e 's/\\./-/'`
+fi
+
+echo "checking out $VERSION with cvs tag $tag"
+dir=doxygenfilter-$VERSION
+
+CVSROOT=`cat CVS/Root`
+if [ "$CVSROOT" = "" ]; then
+    CVSROOT=":pserver:anonymous@cvs.sourceforge.net:/cvsroot/bigsister"
+fi
+export CVSROOT
+
+rm -rf tmp/$dir
+mkdir -p tmp/$dir || exit 1
+(cd tmp/$dir && cvs -Q export -r $tag doxygenfilter)
+
+if test -f ../documentation/manual/man.tar; then
+    test -d tmp/$dir/docu || mkdir -p tmp/$dir/docu
+    fakeroot tar xf ../documentation/manual/man.tar -C tmp/$dir/docu --no-same-owner || exit 1
+else
+    echo "WARNING: man pages are missing"
+fi
+
+if test -f ../documentation/manual/help.tar; then
+    test -d tmp/$dir/docu || mkdir -p tmp/$dir/docu >/dev/null 2>&1 
+    fakeroot tar xf ../documentation/manual/help.tar -C tmp/$dir/docu --no-same-owner || exit 1
+else
+    echo "WARNING: help files are missing"
+fi
+
+    
+# we are building `cat version`, so override the version from CVS
+cp version tmp/$dir/doxygenfilter
+mkdir -p packaging/pkgs >/dev/null 2>&1
+cd tmp/$dir
+mv doxygenfilter $dir
+tar czf ../../packaging/pkgs/doxygenfilter-$VERSION.tar.gz $dir

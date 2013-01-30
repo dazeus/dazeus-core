@@ -1,0 +1,41 @@
+DoxyGen::Filter version 0.01
+====================
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module is only useful if you also have doxygen installed, which can
+be obtained from http://www.doxygen.org/
+
+USAGE
+
+The examples directory contains two "Doxyfile" and "PerlDoxyfile", with
+PerlDoxyfile including Doxyfile. The idea is to have the common
+(language-agnostic) options in Doxyfile and the perl-specific options in
+PerlDoxyfile. Currently that's mostly the file pattern to use.
+
+So, check those over and when they seem right just run "doxygen PerlDoxyfile".
+
+You should get a directory api/html/ with nice docs.
+
+The .pm files in the examples directory should give you a feel for how
+to map the doxygen commands to perl.
+
+Let me know what you think of it and what you feel is missing,
+preferably with a syntax proposal.
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2002 Bart Schuller <cpan@smop.org>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+

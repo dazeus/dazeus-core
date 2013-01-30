@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+. version
+mkdir -p tmp > /dev/null 2>&1 || true
+dir=doxygenfilter-$VERSION
+rm -rf tmp/$dir || true
+if [ ! -f packaging/pkgs/doxygenfilter-$VERSION.tar.gz ]; then
+    echo "please build tar package first"
+    exit 1
+fi
+cd tmp 
+tar xzf ../packaging/pkgs/doxygenfilter-$VERSION.tar.gz

@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -e
+. version
+rpmdir=`pwd`/tmp/rpm
+for sub in "" BUILD RPMS RPMS/noarch SOURCES SPECS SRPMS; do
+    mkdir -p $rpmdir/$sub > /dev/null 2>&1 || true
+done
+
+dir=doxygenfilter-$VERSION
+rm -rf tmp/$dir || true
+if [ ! -f packaging/pkgs/doxygenfilter-$VERSION.tar.gz ]; then
+    echo "please build tar package first"
+    exit 1
+fi
+cd tmp 
+tar xzf ../packaging/pkgs/doxygenfilter-$VERSION.tar.gz
+cd $dir
+[ -L doxygenfilter-$VERSION ] && rm -f doxygenfilter-$VERSION;true
+ln -s . doxygenfilter-$VERSION
+tar cjf $rpmdir/SOURCES/doxygenfilter-$VERSION.tar.bz2 doxygenfilter-$VERSION/. 
+cp packaging/rpm/doxygenfilter.spec $rpmdir/SPECS
+cd ../..
+ed $rpmdir/SPECS/doxygenfilter.spec <<END
+1,$ s/^Version:.*/Version:	$VERSION/
+1,$ s/^Release:.*/Release:	$RELEASE/
+w
+q
+END
+
+rpm --define="_topdir $rpmdir" -ba $rpmdir/SPECS/doxygenfilter.spec
+
+cp $rpmdir/SRPMS/doxygenfilter-$VERSION-$RELEASE.src.rpm packaging/pkgs
+cp $rpmdir/RPMS/noarch/doxygenfilter-$VERSION-$RELEASE.noarch.rpm packaging/pkgs

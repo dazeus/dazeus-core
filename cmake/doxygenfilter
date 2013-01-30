@@ -1,0 +1,8 @@
+#!/bin/sh
+pwd >&2
+CONTRIBDIR="contrib"
+if [ ! -d "$CONTRIBDIR" ]; then
+	CONTRIBDIR="../contrib"
+fi
+DOXYGENFILTER="${CONTRIBDIR}/doxygenfilter-1.10/"
+perl -I${DOXYGENFILTER}/lib ${DOXYGENFILTER}/bin/doxygenfilter $@
