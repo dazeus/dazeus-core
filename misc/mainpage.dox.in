@@ -1,0 +1,21 @@
+/** \mainpage
+ *
+ * DaZeus is a simple and reliable IRC bot. It consists of the core bot, an
+ * application written in C++ that exposes a socket interface, and plugins that
+ * run in their own process and use the socket interface to connect to IRC.
+ * Bindings are currently available in C, C++, Perl and Node.js.
+ *
+ * This is the documentation for DaZeus version @DAZEUS_VERSION@. An online
+ * version of this documentation can be found at http://dazeus.github.com/; if
+ * you have Doxygen installed you can also generate it in the source tree using
+ * "make doc".
+ *
+ * You can continue to the documentation of:
+ *
+ * - \ref DaZeus "the DaZeus source code"
+ * - \ref Network "libdazeus-irc, the IRC library used by DaZeus"
+ * - \ref libdazeus.h "The C bindings"
+ * - \ref dazeus.h "The C++/Qt bindings"
+ * - <a href="http://dazeus.github.com/perl.html">The Perl bindings</a>
+ * - \ref pluginprotocoldocs "The plugin interface documentation"
+ */
