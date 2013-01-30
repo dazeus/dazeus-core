@@ -90,6 +90,7 @@ static const configoption_t options[] = {
 	{"autoconnect", ARG_RAW, option, NULL, CTX_ALL},
 	{"priority", ARG_INT, option, NULL, CTX_ALL},
 	{"ssl", ARG_RAW, option, NULL, CTX_ALL},
+	{"sslverify", ARG_RAW, option, NULL, CTX_ALL},
 	{"executable", ARG_RAW, option, NULL, CTX_ALL},
 	{"scope", ARG_RAW, option, NULL, CTX_ALL},
 	{"parameters", ARG_RAW, option, NULL, CTX_ALL},
@@ -366,6 +367,8 @@ static DOTCONF_CB(option)
 			sc->priority = cmd->data.value;
 		} else if(name == "ssl") {
 			sc->ssl = bool_is_true(cmd->data.str);
+		} else if(name == "sslverify") {
+			sc->ssl_verify = bool_is_true(cmd->data.str);
 		} else {
 			s->error = "Invalid option name in server context: " + name;
 			return "Configuration file contains errors";
