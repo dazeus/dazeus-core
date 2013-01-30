@@ -1,5 +1,4 @@
 #!/bin/sh
-pwd >&2
 CONTRIBDIR="contrib"
 if [ ! -d "$CONTRIBDIR" ]; then
 	CONTRIBDIR="../contrib"
