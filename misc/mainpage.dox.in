@@ -13,8 +13,8 @@
  *
  * You can continue to the documentation of:
  *
- * - \ref DaZeus "the DaZeus source code"
- * - \ref Network "libdazeus-irc, the IRC library used by DaZeus"
+ * - \ref dazeus::DaZeus "the DaZeus source code"
+ * - \ref dazeus::Network "libdazeus-irc, the IRC library used by DaZeus"
  * - \ref libdazeus.h "The C bindings"
  * - \ref dazeus.h "The C++/Qt bindings"
  * - <a href="http://dazeus.github.com/perl.html">The Perl bindings</a>
