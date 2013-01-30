@@ -6,9 +6,10 @@
  * Bindings are currently available in C, C++, Perl and Node.js.
  *
  * This is the documentation for DaZeus version @DAZEUS_VERSION@. An online
- * version of this documentation can be found at http://dazeus.github.com/; if
- * you have Doxygen installed you can also generate it in the source tree using
- * "make doc".
+ * version of this documentation can be found at <a
+ * href="http://dazeus.github.com/">http://dazeus.github.com</a>; if you have
+ * Doxygen installed you can also generate it in the source tree using "make
+ * doc".
  *
  * You can continue to the documentation of:
  *
