@@ -14,15 +14,29 @@ IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/CMakeLists.txt")
 	message("  git submodule update --init")
 	message(FATAL_ERROR "libdazeus-irc is not checked out")
 ENDIF()
+IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/jansson/README.rst")
+	message("It seems you do not have a checkout of jansson.")
+	message("It is required to compile dazeus, and can be automatically")
+	message("created by Git by running:")
+	message("  git submodule update --init")
+	message(FATAL_ERROR "jansson is not checked out")
+ENDIF()
 
-find_package(LibJson REQUIRED)
 find_package(LibMongoClient REQUIRED)
 
-include_directories(${LibJson_INCLUDE_DIRS})
 include_directories(${LibMongoClient_INCLUDE_DIRS})
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
+include_directories("${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 
-set(LIBS ${LIBS} ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${LibMongoClient_LIBRARIES})
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/jansson_config.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/jansson_config.h")
+file(GLOB jansson_sources "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.c")
+file(GLOB jansson_headers "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.h")
+
+add_library(jansson ${jansson_sources} ${jansson_headers})
+target_link_libraries(jansson)
+
+set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${LibMongoClient_LIBRARIES})
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

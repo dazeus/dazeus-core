@@ -5,7 +5,7 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
-#include <libjson.h>
+#include <jansson.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -587,72 +587,75 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	const std::vector<Network*> &networks = dazeus_->networks();
 	std::vector<Network*>::const_iterator nit;
 
-	JSONNode n;
-	try {
-		n = libjson::parse(line.c_str());
-	} catch(std::invalid_argument &exception) {
-		fprintf(stderr, "Got incorrect JSON, ignoring\n");
+	json_error_t error;
+	json_t *n = json_loads(line.c_str(), 0, &error);
+	if(!n) {
+		fprintf(stderr, "Got incorrect JSON, ignoring: %s\n", error.text);
 		return;
 	}
+
 	std::vector<std::string> params;
 	std::vector<std::string> scope;
-	JSONNode::const_iterator i = n.begin();
 	std::string action;
-	while(i != n.end()) {
-		if(i->name() == "params") {
-			if(i->type() != JSON_ARRAY) {
-				fprintf(stderr, "Got params, but not of array type\n");
-				continue;
+
+	json_t *jParams = json_object_get(n, "params");
+	if(jParams) {
+		if(!json_is_array(jParams)) {
+			fprintf(stderr, "Got params, but of the wrong type, ignoring");
+		} else {
+			for(unsigned i = 0; i < json_array_size(jParams); ++i) {
+				json_t *v = json_array_get(jParams, i);
+				params.push_back(json_is_string(v) ? json_string_value(v) : "");
 			}
-			JSONNode::const_iterator j = i->begin();
-			while(j != i->end()) {
-				std::string s = libjson::to_std_string(j->as_string());
-				params.push_back(s);
-				j++;
-			}
-		} else if(i->name() == "scope") {
-			if(i->type() != JSON_ARRAY) {
-				fprintf(stderr, "Got scope, but not of array type\n");
-				continue;
-			}
-			JSONNode::const_iterator j = i->begin();
-			while(j != i->end()) {
-				std::string s = libjson::to_std_string(j->as_string());
-				scope.push_back(s);
-				j++;
-			}
-		} else if(i->name() == "get") {
-			action = libjson::to_std_string(i->as_string());
-		} else if(i->name() == "do") {
-			action = libjson::to_std_string(i->as_string());
 		}
-		i++;
 	}
 
-	JSONNode response(JSON_NODE);
+	json_t *jScope = json_object_get(n, "scope");
+	if(jScope) {
+		if(!json_is_array(jScope)) {
+			fprintf(stderr, "Got params, but of the wrong type, ignoring");
+		} else {
+			for(unsigned int i = 0; i < json_array_size(jScope); ++i) {
+				json_t *v = json_array_get(jScope, i);
+				scope.push_back(json_is_string(v) ? json_string_value(v) : "");
+			}
+		}
+	}
+
+	json_t *jAction = json_object_get(n, "get");
+	if(!jAction)
+		jAction = json_object_get(n, "do");
+	if(jAction) {
+		if(!json_is_string(jAction)) {
+			fprintf(stderr, "Got action, but of the wrong type, ignoring");
+		} else {
+			action = json_string_value(jAction);
+		}
+	}
+
+	json_t *response = json_object();
 	// REQUEST WITHOUT A NETWORK
 	if(action == "networks") {
-		response.push_back(JSONNode("got", "networks"));
-		response.push_back(JSONNode("success", true));
-		JSONNode nets(JSON_ARRAY);
-		nets.set_name("networks");
+		json_object_set_new(response, "got", json_string("networks"));
+		json_object_set_new(response, "success", json_true());
+		json_t *nets = json_array();
 		for(nit = networks.begin(); nit != networks.end(); ++nit) {
-			nets.push_back(JSONNode("", libjson::to_json_string((*nit)->networkName())));
+			json_array_append_new(nets, json_string((*nit)->networkName().c_str()));
 		}
-		response.push_back(nets);
+		json_object_set_new(response, "networks", nets);
 	// REQUESTS ON A NETWORK
 	} else if(action == "channels" || action == "whois" || action == "join" || action == "part"
 	       || action == "nick") {
 		if(action == "channels" || action == "nick") {
-			response.push_back(JSONNode("got", libjson::to_json_string(action)));
+			json_object_set_new(response, "got", json_string(action.c_str()));
 		} else {
-			response.push_back(JSONNode("did", libjson::to_json_string(action)));
+			json_object_set_new(response, "did", json_string(action.c_str()));
 		}
 		std::string network = "";
 		if(params.size() > 0) {
 			network = params[0];
 		}
-		response.push_back(JSONNode("network", libjson::to_json_string(network)));
+		json_object_set_new(response, "network", json_string(network.c_str()));
 		Network *net = 0;
 		for(nit = networks.begin(); nit != networks.end(); ++nit) {
 			if((*nit)->networkName() == network) {
@@ -660,24 +663,23 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			}
 		}
 		if(net == 0) {
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Not on that network"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Not on that network"));
 		} else {
 			if(action == "channels") {
-				response.push_back(JSONNode("success", true));
-				JSONNode chans(JSON_ARRAY);
-				chans.set_name("channels");
+				json_object_set_new(response, "success", json_true());
+				json_t *chans = json_array();
 				const std::vector<std::string> &channels = net->joinedChannels();
 				for(unsigned i = 0; i < channels.size(); ++i) {
-					chans.push_back(JSONNode("", libjson::to_json_string(channels[i])));
+					json_array_append_new(chans, json_string(channels[i].c_str()));
 				}
-				response.push_back(chans);
+				json_object_set_new(response, "channels", chans);
 			} else if(action == "whois" || action == "join" || action == "part") {
 				if(params.size() < 2) {
-					response.push_back(JSONNode("success", false));
-					response.push_back(JSONNode("error", "Missing parameters"));
+					json_object_set_new(response, "success", json_false());
+					json_object_set_new(response, "error", json_string("Missing parameters"));
 				} else {
-					response.push_back(JSONNode("success", true));
+					json_object_set_new(response, "success", json_true());
 					if(action == "whois") {
 						net->sendWhois(params[1]);
 					} else if(action == "join") {
@@ -690,8 +692,8 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 					}
 				}
 			} else if(action == "nick") {
-				response.push_back(JSONNode("success", true));
-				response.push_back(JSONNode("nick", libjson::to_json_string(net->nick())));
+				json_object_set_new(response, "success", json_true());
+				json_object_set_new(response, "nick", json_string(net->nick().c_str()));
 			} else {
 				assert(false);
 				return;
@@ -699,7 +701,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		}
 	// REQUESTS ON A CHANNEL
 	} else if(action == "message" || action == "action" || action == "names") {
-		response.push_back(JSONNode("did", libjson::to_json_string(action)));
+		json_object_set_new(response, "did", json_string(action.c_str()));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
 			fprintf(stderr, "Wrong parameter size for message, skipping.\n");
 			return;
@@ -710,12 +712,12 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		if(action != "names") {
 			message = params[2];
 		}
-		response.push_back(JSONNode("network", libjson::to_json_string(network)));
+		json_object_set_new(response, "network", json_string(network.c_str()));
 		if(action == "names") {
-			response.push_back(JSONNode("channel", libjson::to_json_string(receiver)));
+			json_object_set_new(response, "channel", json_string(receiver.c_str()));
 		} else {
-			response.push_back(JSONNode("receiver", libjson::to_json_string(receiver)));
-			response.push_back(JSONNode("message", libjson::to_json_string(message)));
+			json_object_set_new(response, "receiver", json_string(receiver.c_str()));
+			json_object_set_new(response, "message", json_string(message.c_str()));
 		}
 
 		bool netfound = false;
@@ -724,7 +726,7 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 			if(n->networkName() == network) {
 				netfound = true;
 				if(receiver.substr(0, 1) != "#" || contains_ci(n->joinedChannels(), strToLower(receiver))) {
-					response.push_back(JSONNode("success", true));
+					json_object_set_new(response, "success", json_true());
 					if(action == "names") {
 						n->names(receiver);
 					} else if(action == "message") {
@@ -735,47 +737,47 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				} else {
 					fprintf(stderr, "Request for communication to network %s receiver %s, but not in that channel, dropping\n",
 						network.c_str(), receiver.c_str());
-					response.push_back(JSONNode("success", false));
-					response.push_back(JSONNode("error", "Not in that channel"));
+					json_object_set_new(response, "success", json_false());
+					json_object_set_new(response, "error", json_string("Not in that channel"));
 				}
 				break;
 			}
 		}
 		if(!netfound) {
 			fprintf(stderr, "Request for communication to network %s, but that network isn't joined, dropping\n", network.c_str());
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Not on that network"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Not on that network"));
 		}
 	// REQUESTS ON DAZEUS ITSELF
 	} else if(action == "subscribe") {
-		response.push_back(JSONNode("did", "subscribe"));
-		response.push_back(JSONNode("success", true));
+		json_object_set_new(response, "did", json_string("subscribe"));
+		json_object_set_new(response, "success", json_true());
 		int added = 0;
 		std::vector<std::string>::const_iterator pit;
 		for(pit = params.begin(); pit != params.end(); ++pit) {
 			if(info.subscribe(*pit))
 				++added;
 		}
-		response.push_back(JSONNode("added", added));
+		json_object_set_new(response, "added", json_integer(added));
 	} else if(action == "unsubscribe") {
-		response.push_back(JSONNode("did", "unsubscribe"));
-		response.push_back(JSONNode("success", true));
+		json_object_set_new(response, "did", json_string("unsubscribe"));
+		json_object_set_new(response, "success", json_true());
 		int removed = 0;
 		std::vector<std::string>::const_iterator pit;
 		for(pit = params.begin(); pit != params.end(); ++pit) {
 			if(info.unsubscribe(*pit))
 				++removed;
 		}
-		response.push_back(JSONNode("removed", removed));
+		json_object_set_new(response, "removed", json_integer(removed));
 	} else if(action == "command") {
-		response.push_back(JSONNode("did", "command"));
+		json_object_set_new(response, "did", json_string("command"));
 		// {"do":"command", "params":["cmdname"]}
 		// {"do":"command", "params":["cmdname", "network"]}
 		// {"do":"command", "params":["cmdname", "network", true, "sender"]}
 		// {"do":"command", "params":["cmdname", "network", false, "receiver"]}
 		if(params.size() == 0) {
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Missing parameters"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Missing parameters"));
 		} else {
 			std::string commandName = params.front();
 			params.erase(params.begin());
@@ -799,16 +801,16 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				bool isSender = params.at(1) == "true";
 				req = new RequirementInfo(net, params.at(2), isSender);
 			} else {
-				response.push_back(JSONNode("success", false));
-				response.push_back(JSONNode("error", "Wrong number of parameters"));
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Wrong number of parameters"));
 			}
 			if(req != NULL) {
 				info.subscribeToCommand(commandName, req);
-				response.push_back(JSONNode("success", true));
+				json_object_set_new(response, "success", json_true());
 			}
 		}
 	} else if(action == "property") {
-		response.push_back(JSONNode("did", "property"));
+		json_object_set_new(response, "did", json_string("property"));
 
 		std::string network, receiver, sender;
 		switch(scope.size()) {
@@ -820,57 +822,56 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 		}
 
 		if(params.size() < 2) {
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Missing parameters"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Missing parameters"));
 		} else if(params[0] == "get") {
 			std::string value = database_->property(params[1], network, receiver, sender);
-			response.push_back(JSONNode("success", true));
-			response.push_back(JSONNode("variable", libjson::to_json_string(params[1])));
+			json_object_set_new(response, "success", json_true());
+			json_object_set_new(response, "variable", json_string(params[1].c_str()));
 			if(value.length() > 0) {
-				response.push_back(JSONNode("value", libjson::to_json_string(value)));
+				json_object_set_new(response, "value", json_string(value.c_str()));
 			}
 		} else if(params[0] == "set") {
 			if(params.size() < 3) {
-				response.push_back(JSONNode("success", false));
-				response.push_back(JSONNode("error", "Missing parameters"));
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Missing parameters"));
 			} else {
 				database_->setProperty(params[1], params[2], network, receiver, sender);
-				response.push_back(JSONNode("success", true));
+				json_object_set_new(response, "success", json_true());
 			}
 		} else if(params[0] == "unset") {
 			if(params.size() < 2) {
-				response.push_back(JSONNode("success", false));
-				response.push_back(JSONNode("error", "Missing parameters"));
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Missing parameters"));
 			} else {
 				database_->setProperty(params[1], std::string(), network, receiver, sender);
-				response.push_back(JSONNode("success", true));
+				json_object_set_new(response, "success", json_true());
 			}
 		} else if(params[0] == "keys") {
 			std::vector<std::string> pKeys = database_->propertyKeys(params[1], network, receiver, sender);
-			JSONNode keys(JSON_ARRAY);
-			keys.set_name("keys");
+			json_t *keys = json_array();
 			std::vector<std::string>::iterator kit;
 			for(kit = pKeys.begin(); kit != pKeys.end(); ++kit) {
-				keys.push_back(JSONNode("", libjson::to_json_string(*kit)));
+				json_array_append_new(keys, json_string(kit->c_str()));
 			}
-			response.push_back(keys);
-			response.push_back(JSONNode("success", true));
+			json_object_set_new(response, "keys", keys);
+			json_object_set_new(response, "success", json_true());
 		} else {
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Did not understand request"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Did not understand request"));
 		}
 	} else if(action == "config") {
 		if(params.size() < 1) {
-			response.push_back(JSONNode("success", false));
-			response.push_back(JSONNode("error", "Missing parameters"));
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Missing parameters"));
 		} else {
 			std::vector<std::string> parts = split(params[0], ".");
 			std::string plugin = parts.front();
 			parts.erase(parts.begin());
 			std::string name = join(parts, ".");
 
-			response.push_back(JSONNode("success", true));
-			response.push_back(JSONNode("variable", libjson::to_json_string(params[0])));
+			json_object_set_new(response, "success", json_true());
+			json_object_set_new(response, "variable", json_string(params[0].c_str()));
 
 			// Get the right plugin config
 			const std::vector<PluginConfig*> &plugins = config_->getPlugins();
@@ -879,24 +880,26 @@ void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 				if(pc->name == plugin) {
 					std::map<std::string,std::string>::iterator configIt = pc->config.find(name);
 					if(configIt != pc->config.end()) {
-						response.push_back(JSONNode("value", libjson::to_json_string(configIt->second)));
+						json_object_set_new(response, "value", json_string(configIt->second.c_str()));
 						break;
 					}
 				}
 			}
 		}
 	} else {
-		response.push_back(JSONNode("success", false));
-		response.push_back(JSONNode("error", "Did not understand request"));
+		json_object_set_new(response, "success", json_false());
+		json_object_set_new(response, "error", json_string("Did not understand request"));
 	}
 
-	std::string jsonMsg = fix_unicode_in_json(
-		libjson::to_std_string(response.write()));
+	char *raw_json = json_dumps(response, 0);
+	std::string jsonMsg = raw_json;
+	free(raw_json);
 	std::stringstream mstr;
 	mstr << jsonMsg.length();
 	mstr << jsonMsg;
 	mstr << "\n";
-	if(write(dev, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
+	std::string finalResponse = mstr.str();
+	if(write(dev, finalResponse.c_str(), finalResponse.length()) != (unsigned)finalResponse.length()) {
 		fprintf(stderr, "Failed to write correct number of JSON bytes to client socket.\n");
 		close(dev);
 	}

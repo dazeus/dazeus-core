@@ -7,3 +7,6 @@
 [submodule "bindings/libdazeus/contrib/jansson"]
 	path = bindings/libdazeus/contrib/jansson
 	url = git://github.com/akheron/jansson.git
+[submodule "contrib/jansson"]
+	path = contrib/jansson
+	url = git://github.com/akheron/jansson.git

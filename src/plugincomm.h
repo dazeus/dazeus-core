@@ -9,7 +9,7 @@
 #include <sstream>
 #include <utility>
 #include <map>
-#include <libjson.h>
+#include <jansson.h>
 #include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
@@ -124,24 +124,25 @@ class PluginComm : public NetworkListener
     void dispatch(int d, std::string event, std::vector<std::string> parameters) {
       assert(!contains(event, ' '));
 
-      JSONNode params(JSON_ARRAY);
-      params.set_name("params");
+      json_t *params = json_array();
       std::vector<std::string>::iterator it;
       for(it = parameters.begin(); it != parameters.end(); ++it) {
-        params.push_back(JSONNode("", libjson::to_json_string(it->c_str())));
+        json_array_append_new(params, json_string(it->c_str()));
       }
 
-      JSONNode n(JSON_NODE);
-      n.push_back(JSONNode("event", libjson::to_json_string(event.c_str())));
-      n.push_back(params);
+      json_t *n = json_object();
+      json_object_set_new(n, "event", json_string(event.c_str()));
+      json_object_set_new(n, "params", params);
 
-      std::string jsonMsg = fix_unicode_in_json(
-          libjson::to_std_string(n.write()));
+      char *json_raw = json_dumps(n, 0);
+      std::string jsonMsg = json_raw;
+      free(json_raw);
       std::stringstream mstr;
       mstr << jsonMsg.length();
       mstr << jsonMsg;
       mstr << "\n";
-      if(write(d, mstr.str().c_str(), mstr.str().length()) != (unsigned)mstr.str().length()) {
+      std::string final_message = mstr.str();
+      if(write(d, final_message.c_str(), final_message.length()) != (unsigned)final_message.length()) {
         fprintf(stderr, "Failed to write correct number of JSON bytes to client socket in dispatch().\n");
         close(d);
       }
