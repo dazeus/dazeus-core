@@ -1,11 +1,11 @@
 /** \mainpage
  *
- * DaZeus is a simple and reliable IRC bot. It consists of the core bot, an
+ * %DaZeus is a simple and reliable IRC bot. It consists of the core bot, an
  * application written in C++ that exposes a socket interface, and plugins that
  * run in their own process and use the socket interface to connect to IRC.
  * Bindings are currently available in C, C++, Perl and Node.js.
  *
- * This is the documentation for DaZeus version @DAZEUS_VERSION@. An online
+ * This is the documentation for %DaZeus version @DAZEUS_VERSION@. An online
  * version of this documentation can be found at <a
  * href="http://dazeus.github.com/">http://dazeus.github.com</a>; if you have
  * Doxygen installed you can also generate it in the source tree using "make

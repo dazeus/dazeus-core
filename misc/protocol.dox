@@ -1,9 +1,9 @@
 /**
-\page pluginprotocoldocs DaZeus 2 Plugin Protocol
+\page pluginprotocoldocs %DaZeus 2 Plugin Protocol
 \section Introduction
 
-The DaZeus 2 plugin protocol links the core bot with the installed plugins, and
-is used to communicate events and their responses. Also, it exposes DaZeus' own
+The %DaZeus 2 plugin protocol links the core bot with the installed plugins, and
+is used to communicate events and their responses. Also, it exposes %DaZeus' own
 configuration and database APIs, so plugins can easily attach without requiring
 configuration of their own.
 
@@ -75,7 +75,7 @@ on the event (see the \ref Events "events section").
 There are three types of requests:
 - Get some information, like known networks or joined channels,
 - Do something on IRC, such as saying something or leaving a channel,
-- Accessing DaZeus internals, such as events or the database.
+- Accessing %DaZeus internals, such as events or the database.
 
 The "get all known networks" request looks like <tt>{"get":"networks"}</tt>.
 The response will have the list of networks in the <tt>networks</tt> field. The
@@ -144,7 +144,7 @@ depending on the event.
 
 \section Properties
 
-Properties can be sent and retrieved over the DaZeus 2 plugin protocol and act
+Properties can be sent and retrieved over the %DaZeus 2 plugin protocol and act
 as a database for zero-configuration plugins. Using the <tt>property set</tt>
 command a property can be stored:
 \code
@@ -181,7 +181,7 @@ For added functionality, you can look into variable scopes. Using the commands
 above, variables will be stored and returned "as is" (global scope). But,
 suppose you want to have a variable especially for a specific IRC channel, or
 even a specific user. You could use various different names per variable, but
-scoping allows you to let DaZeus do the work for you.
+scoping allows you to let %DaZeus do the work for you.
 
 There are four scopes, in order of specificity: Global scope, network scope,
 receiver scope and sender scope. When returning the variable, the `closest'
