@@ -38,7 +38,7 @@
 
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
-PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
+dazeus::PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
 : NetworkListener()
 , tcpServers_()
 , localServers_()
@@ -50,7 +50,7 @@ PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
 {
 }
 
-PluginComm::~PluginComm() {
+dazeus::PluginComm::~PluginComm() {
 	std::map<int,SocketInfo>::iterator it;
 	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
 		close(it->first);
@@ -64,7 +64,7 @@ PluginComm::~PluginComm() {
 	}
 }
 
-void PluginComm::run() {
+void dazeus::PluginComm::run() {
 	fd_set sockets, out_sockets;
 	int highest = 0;
 	struct timeval timeout;
@@ -145,7 +145,7 @@ void PluginComm::run() {
 	}
 }
 
-void PluginComm::init() {
+void dazeus::PluginComm::init() {
 	std::vector<SocketConfig*>::const_iterator it;
 
 	for(it = config_->getSockets().begin(); it != config_->getSockets().end(); ++it) {
@@ -216,7 +216,7 @@ void PluginComm::init() {
 	}
 }
 
-void PluginComm::newTcpConnection() {
+void dazeus::PluginComm::newTcpConnection() {
 	std::vector<int>::iterator it;
 	for(it = tcpServers_.begin(); it != tcpServers_.end(); ++it) {
 		while(1) {
@@ -232,7 +232,7 @@ void PluginComm::newTcpConnection() {
 	}
 }
 
-void PluginComm::newLocalConnection() {
+void dazeus::PluginComm::newLocalConnection() {
 	std::vector<int>::iterator it;
 	for(it = localServers_.begin(); it != localServers_.end(); ++it) {
 		while(1) {
@@ -248,7 +248,7 @@ void PluginComm::newLocalConnection() {
 	}
 }
 
-void PluginComm::poll() {
+void dazeus::PluginComm::poll() {
 	std::vector<int> toRemove;
 	std::map<int,SocketInfo>::iterator it;
 	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
@@ -335,7 +335,7 @@ void PluginComm::poll() {
 	}
 }
 
-void PluginComm::dispatch(const std::string &event, const std::vector<std::string> &parameters) {
+void dazeus::PluginComm::dispatch(const std::string &event, const std::vector<std::string> &parameters) {
 	std::map<int,SocketInfo>::iterator it;
 	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
 		SocketInfo &info = it->second;
@@ -345,7 +345,7 @@ void PluginComm::dispatch(const std::string &event, const std::vector<std::strin
 	}
 }
 
-void PluginComm::flushCommandQueue(const std::string &nick, bool identified) {
+void dazeus::PluginComm::flushCommandQueue(const std::string &nick, bool identified) {
 	std::vector<Command*>::iterator cit;
 	for(cit = commandQueue_.begin(); cit != commandQueue_.end(); ++cit) {
 		Command *cmd = *cit;
@@ -409,7 +409,7 @@ void PluginComm::flushCommandQueue(const std::string &nick, bool identified) {
 	}
 }
 
-void PluginComm::messageReceived( const std::string &origin, const std::string &message,
+void dazeus::PluginComm::messageReceived( const std::string &origin, const std::string &message,
                   const std::string &receiver, Network *n ) {
 	assert(n != 0);
 
@@ -473,7 +473,7 @@ void PluginComm::messageReceived( const std::string &origin, const std::string &
 	dispatch("PRIVMSG", args);
 }
 
-void PluginComm::ircEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Network *n) {
+void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &origin, const std::vector<std::string> &params, Network *n) {
 	assert(n != 0);
 	std::vector<std::string> args;
 	args << n->networkName();
@@ -583,7 +583,7 @@ void PluginComm::ircEvent(const std::string &event, const std::string &origin, c
 #undef MIN
 }
 
-void PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
+void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	const std::vector<Network*> &networks = dazeus_->networks();
 	std::vector<Network*>::const_iterator nit;
 

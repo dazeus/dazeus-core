@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <string>
 
+namespace dazeus {
+
 struct ConfigReaderState;
 
 struct GlobalConfig {
@@ -79,5 +81,7 @@ public:
 	DatabaseConfig *getDatabaseConfig() { return database; }
 	std::string &getFile() { return file; }
 };
+
+}
 
 #endif

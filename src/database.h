@@ -10,6 +10,8 @@
 #include <string>
 #include <stdint.h>
 
+namespace dazeus {
+
 struct DatabaseConfig {
   DatabaseConfig(std::string t = std::string(), std::string h = std::string("127.0.0.1"),
     uint16_t p = 27017, std::string user = std::string(), std::string pass =
@@ -85,5 +87,7 @@ class Database
     std::string username_;
     std::string password_;
 };
+
+}
 
 #endif

@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 
+namespace dazeus {
+
 class ConfigReader;
 class PluginComm;
 class Network;
@@ -43,5 +45,7 @@ class DaZeus
     Database        *database_;
     std::vector<Network*>  networks_;
 };
+
+}
 
 #endif

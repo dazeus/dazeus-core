@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	DaZeus d(configfile);
+	dazeus::DaZeus d(configfile);
 	if(!d.loadConfig()) {
 		fprintf(stderr, "Failed to load configuration, bailing out.\n");
 		return 3;

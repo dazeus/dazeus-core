@@ -20,7 +20,7 @@
 /**
  * @brief Constructor.
  */
-Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
+dazeus::Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
 : m_(0)
 , lastError_()
 , hostName_(hostname)
@@ -35,7 +35,7 @@ Database::Database( const std::string &hostname, uint16_t port, const std::strin
 /**
  * @brief Destructor.
  */
-Database::~Database()
+dazeus::Database::~Database()
 {
 	if(m_)
 		mongo_sync_disconnect(M);
@@ -44,12 +44,12 @@ Database::~Database()
 /**
  * @brief Returns the last error in the QSqlDatabase object.
  */
-std::string Database::lastError() const
+std::string dazeus::Database::lastError() const
 {
 	return lastError_;
 }
 
-bool Database::open()
+bool dazeus::Database::open()
 {
 #ifdef DEBUG
 	fprintf(stderr, "Initiating connection to Mongo daemon at %s:%d\n",
@@ -108,7 +108,7 @@ bool Database::open()
  * return the correct value of that key given that network, receiver and
  * sender scope are the same.
  */
-std::vector<std::string> Database::propertyKeys( const std::string &ns, const std::string &networkScope,
+std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, const std::string &networkScope,
  const std::string &receiverScope, const std::string &senderScope )
 {
 	std::stringstream regexStr;
@@ -201,7 +201,7 @@ std::vector<std::string> Database::propertyKeys( const std::string &ns, const st
  * could use:
  * <code>net.jondoe.myfirstplugin.foo</code>
  */
-std::string Database::property( const std::string &variable,
+std::string dazeus::Database::property( const std::string &variable,
  const std::string &networkScope, const std::string &receiverScope,
  const std::string &senderScope )
 {
@@ -323,7 +323,7 @@ std::string Database::property( const std::string &variable,
 	return res;
 }
 
-void Database::setProperty( const std::string &variable,
+void dazeus::Database::setProperty( const std::string &variable,
  const std::string &value, const std::string &networkScope,
  const std::string &receiverScope, const std::string &senderScope )
 {

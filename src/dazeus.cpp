@@ -20,7 +20,7 @@
  * @param configFileName optional path to the configuration file. Configuration
  * will not be loaded automatically, use loadConfig() for that.
  */
-DaZeus::DaZeus( std::string configFileName )
+dazeus::DaZeus::DaZeus( std::string configFileName )
 : config_( 0 )
 , configFileName_( configFileName )
 , plugins_( 0 )
@@ -33,7 +33,7 @@ DaZeus::DaZeus( std::string configFileName )
 /**
  * @brief Destructor.
  */
-DaZeus::~DaZeus()
+dazeus::DaZeus::~DaZeus()
 {
   std::vector<Network*>::iterator it;
   for(it = networks_.begin(); it != networks_.end(); ++it)
@@ -54,10 +54,10 @@ DaZeus::~DaZeus()
  * Warning: This method is usually called outside the event loop, just after
  * initialisation.
  */
-void DaZeus::autoConnect()
+void dazeus::DaZeus::autoConnect()
 {
 #ifdef DEBUG
-  fprintf(stderr, "DaZeus::autoConnect() called: looking for networks to connect to\n");
+  fprintf(stderr, "dazeus::DaZeus::autoConnect() called: looking for networks to connect to\n");
 #endif
   std::vector<Network*>::iterator it;
   for(it = networks_.begin(); it != networks_.end(); ++it)
@@ -80,14 +80,14 @@ void DaZeus::autoConnect()
 }
 
 
-std::string DaZeus::configFileName() const {
+std::string dazeus::DaZeus::configFileName() const {
 	return configFileName_;
 }
 
 /**
  * @brief Returns whether the configuration is loaded.
  */
-bool DaZeus::configLoaded() const
+bool dazeus::DaZeus::configLoaded() const
 {
   return config_->isRead();
 }
@@ -98,7 +98,7 @@ bool DaZeus::configLoaded() const
  *
  * Does nothing if already connected.
  */
-bool DaZeus::connectDatabase()
+bool dazeus::DaZeus::connectDatabase()
 {
   const DatabaseConfig *dbc = config_->getDatabaseConfig();
   if(dbc == 0) {
@@ -119,7 +119,7 @@ bool DaZeus::connectDatabase()
 /**
  * @brief Return the database.
  */
-Database *DaZeus::database() const
+dazeus::Database *dazeus::DaZeus::database() const
 {
   return database_;
 }
@@ -129,7 +129,7 @@ Database *DaZeus::database() const
 /**
  * @brief Initialises plugins from the configuration file.
  */
-bool DaZeus::initPlugins()
+bool dazeus::DaZeus::initPlugins()
 {
   assert(plugins_ != 0);
   plugins_->init();
@@ -145,7 +145,7 @@ bool DaZeus::initPlugins()
  * Note: this method is automatically called when setConfigFileName is called,
  * and by the constructor.
  */
-bool DaZeus::loadConfig()
+bool dazeus::DaZeus::loadConfig()
 {
   assert( configFileName_.length() != 0 );
 
@@ -209,13 +209,13 @@ bool DaZeus::loadConfig()
   return true;
 }
 
-void DaZeus::run()
+void dazeus::DaZeus::run()
 {
 	while(1) {
 		plugins_->run();
 	}
 }
 
-void DaZeus::setConfigFileName(std::string filename) {
+void dazeus::DaZeus::setConfigFileName(std::string filename) {
 	configFileName_ = filename;
 }

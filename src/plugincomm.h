@@ -17,6 +17,8 @@
 #include "../contrib/libdazeus-irc/src/utils.h"
 #include "network.h"
 
+namespace dazeus {
+
 class Database;
 class ConfigReader;
 class DaZeus;
@@ -183,5 +185,7 @@ class PluginComm : public NetworkListener
     void handle(int dev, const std::string &line, SocketInfo &info);
     void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);
 };
+
+}
 
 #endif

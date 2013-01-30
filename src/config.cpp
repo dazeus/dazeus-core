@@ -21,7 +21,7 @@ enum section {
 	S_PLUGIN
 };
 
-struct ConfigReaderState {
+struct dazeus::ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT),
 	global_progress(0), socket_progress(0), database_progress(0),
 	network_progress(0), server_progress(0), plugin_progress(0) {}
@@ -33,16 +33,16 @@ struct ConfigReaderState {
 	std::vector<NetworkConfig*> networks;
 	std::vector<PluginConfig*> plugins;
 
-	GlobalConfig *global_progress;
-	SocketConfig *socket_progress;
-	DatabaseConfig *database_progress;
-	NetworkConfig *network_progress;
-	ServerConfig *server_progress;
-	PluginConfig *plugin_progress;
+	dazeus::GlobalConfig *global_progress;
+	dazeus::SocketConfig *socket_progress;
+	dazeus::DatabaseConfig *database_progress;
+	dazeus::NetworkConfig *network_progress;
+	dazeus::ServerConfig *server_progress;
+	dazeus::PluginConfig *plugin_progress;
 	std::string error;
 };
 
-ConfigReader::ConfigReader(std::string file)
+dazeus::ConfigReader::ConfigReader(std::string file)
 : global(0)
 , database(0)
 , file(file)
@@ -50,7 +50,7 @@ ConfigReader::ConfigReader(std::string file)
 , is_read(false)
 {}
 
-ConfigReader::~ConfigReader() {
+dazeus::ConfigReader::~ConfigReader() {
 	delete database;
 	std::vector<NetworkConfig*>::const_iterator it;
 	for(it = networks.begin(); it != networks.end(); ++it) {
@@ -104,7 +104,7 @@ static bool bool_is_true(std::string s) {
 	return s == "true" || s == "yes" || s == "1";
 }
 
-void ConfigReader::read() {
+void dazeus::ConfigReader::read() {
 	if(is_read) return;
 
 	configfile_t *configfile = dotconf_create(
@@ -151,7 +151,7 @@ void ConfigReader::read() {
 
 FUNC_ERRORHANDLER(error_handler)
 {
-	ConfigReaderState *s = ((ConfigReader*)configfile->context)->_state();
+	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)configfile->context)->_state();
 	if(s->error.length() == 0) {
 		s->error = msg;
 	} else {
@@ -162,7 +162,7 @@ FUNC_ERRORHANDLER(error_handler)
 
 static DOTCONF_CB(sect_open)
 {
-	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 	std::string name(cmd->name);
 
 	switch(s->current_section) {
@@ -173,13 +173,13 @@ static DOTCONF_CB(sect_open)
 		assert(s->server_progress == NULL);
 		if(name == "<socket>") {
 			s->current_section = S_SOCKET;
-			s->socket_progress = new SocketConfig;
+			s->socket_progress = new dazeus::SocketConfig;
 		} else if(name == "<database>") {
 			if(s->database_progress != NULL) {
 				return "More than one Database block defined in configuration file.";
 			}
 			s->current_section = S_DATABASE;
-			s->database_progress = new DatabaseConfig;
+			s->database_progress = new dazeus::DatabaseConfig;
 		} else if(name == "<network") {
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
@@ -187,13 +187,13 @@ static DOTCONF_CB(sect_open)
 			std::string default_nick = s->global_progress->default_nickname;
 			std::string default_user = s->global_progress->default_username;
 			std::string default_full = s->global_progress->default_fullname;
-			s->network_progress = new NetworkConfig(networkname, networkname,
+			s->network_progress = new dazeus::NetworkConfig(networkname, networkname,
 				default_nick, default_user, default_full);
 		} else if(name == "<plugin") {
 			std::string pluginname = cmd->data.str;
 			pluginname.resize(pluginname.length() - 1);
 			s->current_section = S_PLUGIN;
-			s->plugin_progress = new PluginConfig(pluginname);
+			s->plugin_progress = new dazeus::PluginConfig(pluginname);
 		} else {
 			return "Logic error";
 		}
@@ -203,7 +203,7 @@ static DOTCONF_CB(sect_open)
 		assert(s->server_progress == NULL);
 		if(name == "<server>") {
 			s->current_section = S_SERVER;
-			s->server_progress = new ServerConfig("", s->network_progress);
+			s->server_progress = new dazeus::ServerConfig("", s->network_progress);
 		}
 		break;
 	default:
@@ -214,7 +214,7 @@ static DOTCONF_CB(sect_open)
 
 static DOTCONF_CB(sect_close)
 {
-	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 
 	std::string name(cmd->name);
 	switch(s->current_section) {
@@ -271,11 +271,11 @@ static DOTCONF_CB(sect_close)
 }
 static DOTCONF_CB(option)
 {
-	ConfigReaderState *s = ((ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 	std::string name(cmd->name);
 	switch(s->current_section) {
 	case S_ROOT: {
-		GlobalConfig *g = s->global_progress;
+		dazeus::GlobalConfig *g = s->global_progress;
 		assert(g);
 		if(name == "nickname") {
 			g->default_nickname = trim(cmd->data.str);
@@ -294,7 +294,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_SOCKET: {
-		SocketConfig *sc = s->socket_progress;
+		dazeus::SocketConfig *sc = s->socket_progress;
 		assert(sc);
 		if(name == "type") {
 			sc->type = trim(cmd->data.str);
@@ -314,7 +314,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_DATABASE: {
-		DatabaseConfig *dc = s->database_progress;
+		dazeus::DatabaseConfig *dc = s->database_progress;
 		assert(dc);
 		if(name == "type") {
 			dc->type = trim(cmd->data.str);
@@ -337,7 +337,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_NETWORK: {
-		NetworkConfig *nc = s->network_progress;
+		dazeus::NetworkConfig *nc = s->network_progress;
 		assert(nc);
 		if(name == "autoconnect") {
 			nc->autoConnect = bool_is_true(cmd->data.str);
@@ -356,7 +356,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_SERVER: {
-		ServerConfig *sc = s->server_progress;
+		dazeus::ServerConfig *sc = s->server_progress;
 		assert(sc);
 		if(name == "host") {
 			sc->host = trim(cmd->data.str);
@@ -373,7 +373,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_PLUGIN: {
-		PluginConfig *pc = s->plugin_progress;
+		dazeus::PluginConfig *pc = s->plugin_progress;
 		assert(pc);
 		if(name == "path") {
 			pc->path = trim(cmd->data.str);
