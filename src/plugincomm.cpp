@@ -601,7 +601,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	json_t *jParams = json_object_get(n, "params");
 	if(jParams) {
 		if(!json_is_array(jParams)) {
-			fprintf(stderr, "Got params, but of the wrong type, ignoring");
+			fprintf(stderr, "Got params, but of the wrong type, ignoring\n");
 		} else {
 			for(unsigned i = 0; i < json_array_size(jParams); ++i) {
 				json_t *v = json_array_get(jParams, i);
@@ -613,7 +613,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	json_t *jScope = json_object_get(n, "scope");
 	if(jScope) {
 		if(!json_is_array(jScope)) {
-			fprintf(stderr, "Got params, but of the wrong type, ignoring");
+			fprintf(stderr, "Got scope, but of the wrong type, ignoring\n");
 		} else {
 			for(unsigned int i = 0; i < json_array_size(jScope); ++i) {
 				json_t *v = json_array_get(jScope, i);
@@ -627,7 +627,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		jAction = json_object_get(n, "do");
 	if(jAction) {
 		if(!json_is_string(jAction)) {
-			fprintf(stderr, "Got action, but of the wrong type, ignoring");
+			fprintf(stderr, "Got action, but of the wrong type, ignoring\n");
 		} else {
 			action = json_string_value(jAction);
 		}
