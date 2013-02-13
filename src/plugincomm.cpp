@@ -903,4 +903,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		fprintf(stderr, "Failed to write correct number of JSON bytes to client socket.\n");
 		close(dev);
 	}
+
+	json_decref(n);
+	json_decref(response);
 }

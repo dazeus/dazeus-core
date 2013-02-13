@@ -46,6 +46,7 @@ dazeus::DaZeus::~DaZeus()
 
   delete plugins_;
   delete config_;
+  delete database_;
 }
 
 

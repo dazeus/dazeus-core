@@ -148,6 +148,7 @@ class PluginComm : public NetworkListener
         fprintf(stderr, "Failed to write correct number of JSON bytes to client socket in dispatch().\n");
         close(d);
       }
+      json_decref(n);
     }
     std::string type;
     std::vector<std::string> subscriptions;

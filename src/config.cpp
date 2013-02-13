@@ -52,11 +52,27 @@ dazeus::ConfigReader::ConfigReader(std::string file)
 
 dazeus::ConfigReader::~ConfigReader() {
 	delete database;
-	std::vector<NetworkConfig*>::const_iterator it;
+	std::vector<NetworkConfig*>::iterator it;
 	for(it = networks.begin(); it != networks.end(); ++it) {
+		std::vector<ServerConfig*>::iterator sit;
+		for(sit = (*it)->servers.begin(); sit != (*it)->servers.end(); ++sit) {
+			delete *sit;
+		}
+		(*it)->servers.clear();
 		delete *it;
 	}
 	networks.clear();
+	std::vector<SocketConfig*>::iterator sockit;
+	for(sockit = sockets.begin(); sockit != sockets.end(); ++sockit) {
+		delete *sockit;
+	}
+	sockets.clear();
+	std::vector<PluginConfig*>::iterator pit;
+	for(pit = plugins.begin(); pit != plugins.end(); ++pit) {
+		delete *pit;
+	}
+	plugins.clear();
+	delete global;
 	delete state;
 }
 
