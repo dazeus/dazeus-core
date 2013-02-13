@@ -26,6 +26,7 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
 , plugins_( 0 )
 , database_( 0 )
 , networks_()
+, running_(false)
 {
 }
 
@@ -209,9 +210,15 @@ bool dazeus::DaZeus::loadConfig()
   return true;
 }
 
+bool dazeus::DaZeus::stop()
+{
+	running_ = false;
+}
+
 void dazeus::DaZeus::run()
 {
-	while(1) {
+	running_ = true;
+	while(running_) {
 		plugins_->run();
 	}
 }

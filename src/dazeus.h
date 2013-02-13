@@ -33,6 +33,7 @@ class DaZeus
     bool     initPlugins();
     void     autoConnect();
     bool     connectDatabase();
+    bool     stop();
 
   private:
     // explicitly disable copy constructor
@@ -44,6 +45,7 @@ class DaZeus
     PluginComm      *plugins_;
     Database        *database_;
     std::vector<Network*>  networks_;
+    bool             running_;
 };
 
 }
