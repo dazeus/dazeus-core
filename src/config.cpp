@@ -136,7 +136,7 @@ void dazeus::ConfigReader::read() {
 	// Initialise global config in progress. Other fields will be
 	// initialised when a section is started, global starts now.
 	state->global_progress = new GlobalConfig();
-	if(dotconf_command_loop(configfile) == 0) {
+	if(dotconf_command_loop(configfile) == 0 || state->error.length() > 0) {
 		dotconf_cleanup(configfile);
 		if(state->error.size() == 0)
 			state->error = "Error reading config file.";
