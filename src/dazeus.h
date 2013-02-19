@@ -33,7 +33,7 @@ class DaZeus
     bool     initPlugins();
     void     autoConnect();
     bool     connectDatabase();
-    bool     stop();
+    void     stop();
 
   private:
     // explicitly disable copy constructor

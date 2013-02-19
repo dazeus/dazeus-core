@@ -217,7 +217,7 @@ bool dazeus::DaZeus::loadConfig()
   return true;
 }
 
-bool dazeus::DaZeus::stop()
+void dazeus::DaZeus::stop()
 {
 	running_ = false;
 }
