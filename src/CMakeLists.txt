@@ -6,7 +6,7 @@ file(GLOB sources "*.cpp")
 file(GLOB headers "*.h")
 
 add_executable(dazeus ${sources} ${headers} ${dotconf_sources})
-add_definitions("-Wall -Wextra -Weffc++ -Wno-long-long -pedantic -DNDEBUG")
+add_definitions("-Wall -Wextra -Weffc++ -Wno-long-long -pedantic")
 include_directories("../contrib/dotconf/src")
 target_link_libraries(dazeus ${LIBS})
 
