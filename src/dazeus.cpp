@@ -10,6 +10,7 @@
 #include "plugincomm.h"
 #include <cassert>
 #include <sstream>
+#include <iostream>
 
 // #define DEBUG
 #define VERBOSE
@@ -160,7 +161,12 @@ bool dazeus::DaZeus::loadConfig()
   if( !config_ )
     return false;
 
-  config_->read();
+  try {
+    config_->read();
+  } catch(ConfigReader::exception &e) {
+    std::cerr << "Failed to read configuration: " << e.what() << std::endl;
+    return false;
+  }
 
   const std::vector<NetworkConfig*> &networks = config_->getNetworks();
 
