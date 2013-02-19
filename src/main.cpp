@@ -10,8 +10,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <assert.h>
 
 void usage(char*);
+
+dazeus::DaZeus *d;
+
+void sigchild_handler(int sig);
+void sigchild_handler(int sig) {
+	assert(sig == SIGCHLD);
+	assert(d != NULL);
+	d->sigchild();
+
+	if(signal(sig, sigchild_handler) == SIG_ERR) {
+		perror("Failed to install SIGCHLD handler");
+	}
+}
 
 int main(int argc, char *argv[])
 {
@@ -45,14 +60,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	dazeus::DaZeus d(configfile);
-	if(!d.loadConfig()) {
+	if(signal(SIGCHLD, sigchild_handler) == SIG_ERR) {
+		perror("Failed to install SIGCHLD handler");
+	}
+
+	d = new dazeus::DaZeus(configfile);
+	if(!d->loadConfig()) {
 		fprintf(stderr, "Failed to load configuration, bailing out.\n");
 		return 3;
 	}
-	d.initPlugins();
-	d.autoConnect();
-	d.run();
+	d->initPlugins();
+	d->autoConnect();
+	d->run();
+	delete d;
 	return 0;
 }
 

@@ -209,6 +209,9 @@ static DOTCONF_CB(sect_open)
 		} else if(name == "<plugin") {
 			std::string pluginname = cmd->data.str;
 			pluginname.resize(pluginname.length() - 1);
+			if(pluginname.length() == 0) {
+				return "All plugins must have a name in their <Plugin> tag.";
+			}
 			s->current_section = S_PLUGIN;
 			s->plugin_progress = new dazeus::PluginConfig(pluginname);
 		} else {
@@ -399,7 +402,13 @@ static DOTCONF_CB(option)
 		} else if(name == "executable") {
 			pc->executable = trim(cmd->data.str);
 		} else if(name == "scope") {
-			pc->scope = trim(cmd->data.str);
+			std::string scope = strToLower(trim(cmd->data.str));
+			if(scope == "network") {
+				pc->per_network = true;
+			} else if(scope != "global") {
+				s->error = "Invalid value for Scope for plugin " + pc->name;
+				return "Configuration file contains errors";
+			}
 		} else if(name == "parameters") {
 			pc->parameters = trim(cmd->data.str);
 		} else if(name == "var") {

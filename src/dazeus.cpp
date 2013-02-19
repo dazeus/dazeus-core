@@ -8,6 +8,7 @@
 #include "network.h"
 #include "config.h"
 #include "plugincomm.h"
+#include "pluginmonitor.h"
 #include <cassert>
 #include <sstream>
 #include <iostream>
@@ -25,6 +26,7 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
 : config_( 0 )
 , configFileName_( configFileName )
 , plugins_( 0 )
+, plugin_monitor_( 0 )
 , database_( 0 )
 , networks_()
 , running_(false)
@@ -45,6 +47,7 @@ dazeus::DaZeus::~DaZeus()
   }
   networks_.clear();
 
+  delete plugin_monitor_;
   delete plugins_;
   delete config_;
   delete database_;
@@ -179,6 +182,10 @@ bool dazeus::DaZeus::loadConfig()
   if(plugins_)
     delete plugins_;
   plugins_ = new PluginComm( database_, config_, this );
+  plugin_monitor_ = new PluginMonitor(config_->getPluginSocket(),
+    config_->getGlobalConfig()->plugindirectory,
+    config_->getPlugins(),
+    config_->getNetworks());
 
   std::vector<NetworkConfig*>::const_iterator it;
   for(it = networks.begin(); it != networks.end(); ++it)
@@ -217,6 +224,11 @@ bool dazeus::DaZeus::loadConfig()
   return true;
 }
 
+void dazeus::DaZeus::sigchild()
+{
+	plugin_monitor_->sigchild();
+}
+
 void dazeus::DaZeus::stop()
 {
 	running_ = false;
@@ -226,7 +238,15 @@ void dazeus::DaZeus::run()
 {
 	running_ = true;
 	while(running_) {
-		plugins_->run(1);
+		plugin_monitor_->runOnce();
+		// The only non-socket processing in DaZeus is done by the
+		// plugin monitor. It works using signals (primarily SIGCHLD),
+		// which already interrupt select(). However, its timing in
+		// re-starting plugins has a granularity of 5 seconds, so if it
+		// is waiting to restart a plugin, we will decrease our timeout
+		// length to once every second. If it is in a normal state, we
+		// can use any granularity we want.
+		plugins_->run(plugin_monitor_->shouldRun() ? 1 : 30);
 	}
 }
 

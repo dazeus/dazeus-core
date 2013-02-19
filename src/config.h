@@ -34,11 +34,11 @@ struct GlobalConfig {
 };
 
 struct PluginConfig {
-	PluginConfig(std::string n) : name(n) {}
+	PluginConfig(std::string n) : name(n), per_network(false) {}
 	std::string name;
 	std::string path;
 	std::string executable;
-	std::string scope;
+	bool per_network;
 	std::string parameters;
 	std::map<std::string, std::string> config;
 };
@@ -90,6 +90,12 @@ public:
 	const std::vector<NetworkConfig*> &getNetworks() { return networks; }
 	const std::vector<PluginConfig*> &getPlugins() { return plugins; }
 	const std::vector<SocketConfig*> &getSockets() { return sockets; }
+	std::string getPluginSocket() {
+		if(sockets.size() == 0) {
+			throw std::runtime_error("No sockets defined, cannot run plugins");
+		}
+		return sockets.at(0)->toString();
+	}
 	GlobalConfig *getGlobalConfig() { return global; }
 	DatabaseConfig *getDatabaseConfig() { return database; }
 	std::string &getFile() { return file; }

@@ -101,7 +101,10 @@ void dazeus::PluginComm::run(int timeout_sec) {
 	timeout.tv_usec = 0;
 	int socks = select(highest + 1, &sockets, &out_sockets, NULL, &timeout);
 	if(socks < 0) {
-		fprintf(stderr, "select() failed: %s\n", strerror(errno));
+		if(errno != EINTR) {
+			fprintf(stderr, "select() failed: %s\n", strerror(errno));
+		}
+
 		if(errno == EBADF) {
 			// hopefully it was a regular plugin socket that went bad
 			// then poll() will notice it

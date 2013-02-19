@@ -15,6 +15,7 @@ class ConfigReader;
 class PluginComm;
 class Network;
 class Database;
+class PluginMonitor;
 
 class DaZeus
 {
@@ -34,6 +35,7 @@ class DaZeus
     void     autoConnect();
     bool     connectDatabase();
     void     stop();
+    void     sigchild();
 
   private:
     // explicitly disable copy constructor
@@ -43,6 +45,7 @@ class DaZeus
     ConfigReader    *config_;
     std::string      configFileName_;
     PluginComm      *plugins_;
+    PluginMonitor   *plugin_monitor_;
     Database        *database_;
     std::vector<Network*>  networks_;
     bool             running_;
