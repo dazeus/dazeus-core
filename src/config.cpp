@@ -168,6 +168,9 @@ void dazeus::ConfigReader::read() {
 
 FUNC_ERRORHANDLER(error_handler)
 {
+	(void)type;
+	(void)dc_errno;
+
 	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)configfile->context)->_state();
 	if(s->error.length() == 0) {
 		s->error = msg;
@@ -179,6 +182,8 @@ FUNC_ERRORHANDLER(error_handler)
 
 static DOTCONF_CB(sect_open)
 {
+	(void)ctx;
+
 	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 	std::string name(cmd->name);
 
@@ -234,6 +239,8 @@ static DOTCONF_CB(sect_open)
 
 static DOTCONF_CB(sect_close)
 {
+	(void)ctx;
+
 	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 
 	std::string name(cmd->name);
@@ -291,6 +298,8 @@ static DOTCONF_CB(sect_close)
 }
 static DOTCONF_CB(option)
 {
+	(void)ctx;
+
 	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
 	std::string name(cmd->name);
 	switch(s->current_section) {
