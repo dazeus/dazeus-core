@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
+#include <sstream>
+#include <assert.h>
 
 namespace dazeus {
 
@@ -43,6 +45,17 @@ struct PluginConfig {
 
 struct SocketConfig {
 	SocketConfig() : port(0) {}
+	std::string toString() {
+		if(type == "unix") {
+			return "unix:" + path;
+		} else if(type == "tcp") {
+			std::stringstream ss;
+			ss << "tcp: " << host << ":" << port;
+			return ss.str();
+		}
+		assert(!"Unknown type in SocketConfig::toString()");
+		return "";
+	}
 	std::string type;
 	std::string host;
 	uint16_t port;
