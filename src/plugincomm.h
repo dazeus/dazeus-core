@@ -164,7 +164,7 @@ class PluginComm : public NetworkListener
   void init();
   void ircEvent(const std::string &event, const std::string &origin,
                 const std::vector<std::string> &params, Network *n );
-  void run();
+  void run(int timeout);
 
   private:
     // explicitly disable copy constructor

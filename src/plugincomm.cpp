@@ -64,7 +64,7 @@ dazeus::PluginComm::~PluginComm() {
 	}
 }
 
-void dazeus::PluginComm::run() {
+void dazeus::PluginComm::run(int timeout_sec) {
 	fd_set sockets, out_sockets;
 	int highest = 0;
 	struct timeval timeout;
@@ -97,8 +97,7 @@ void dazeus::PluginComm::run() {
 				highest = ircmaxfd;
 		}
 	}
-	// TODO dynamic?
-	timeout.tv_sec = 1;
+	timeout.tv_sec = timeout_sec;
 	timeout.tv_usec = 0;
 	int socks = select(highest + 1, &sockets, &out_sockets, NULL, &timeout);
 	if(socks < 0) {

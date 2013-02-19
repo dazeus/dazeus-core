@@ -226,7 +226,7 @@ void dazeus::DaZeus::run()
 {
 	running_ = true;
 	while(running_) {
-		plugins_->run();
+		plugins_->run(1);
 	}
 }
 
