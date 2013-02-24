@@ -15,7 +15,7 @@
 
 void usage(char*);
 
-dazeus::DaZeus *d;
+dazeus::DaZeus *d = NULL;
 
 void sigchild_handler(int sig);
 void sigchild_handler(int sig) {
