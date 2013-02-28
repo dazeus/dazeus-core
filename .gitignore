@@ -2,3 +2,4 @@ Makefile
 build
 .DS_Store
 doc
+bin
