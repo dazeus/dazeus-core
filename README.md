@@ -9,7 +9,6 @@ via UNIX or TCP sockets to its plugins.
 This application has the following dependencies:
 
 * libircclient (tested against 1.3 and 1.6)
-* libjson (tested against 7.4.1)
 * libmongo-client (tested against 0.1.4)
 * cmake (tested against 2.8.7 and 2.8.9)
 
