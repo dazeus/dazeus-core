@@ -9,10 +9,12 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <assert.h>
 #include <iostream>
 #include <errno.h>
+#include <string.h>
 
 #define PLUGIN_EXIT_VALUE_CHDIR -7
 #define PLUGIN_EXIT_VALUE_EXEC -8
