@@ -1,8 +1,8 @@
 # DaZeus
 
-This is DaZeus 2.0, a tiny IRC bot that works with
-out-of-process plugins. It provides a configuration, database and IRC interface
-via UNIX or TCP sockets to its plugins.
+This is DaZeus 2.0, a tiny IRC bot that works with out-of-process plugins. It
+provides a configuration, database and IRC interface via UNIX or TCP sockets to
+its plugins.
 
 # Installing
 
@@ -12,7 +12,7 @@ This application has the following dependencies:
 * libmongo-client (tested against 0.1.4)
 * cmake (tested against 2.8.7 and 2.8.9)
 
-To compile DaZeus, first checkout the Git submodule, then use CMake:
+To compile DaZeus, first checkout the Git submodules, then use CMake:
 
     git submodule update --init
     mkdir -p build
@@ -40,10 +40,11 @@ Daemon is required for now, and can be retrieved at
 # Plugins
 
 The API that plugins use over the socket interface is described in the `doc`
-directory. Bindings are available for Perl, C and C++/Qt, see the `bindings`
-directory.
+directory. Bindings are available for Perl, C, C++/Qt and NodeJS at the DaZeus
+project on GitHub.
 
-A list of supported plugins is available at <https://github.com/dazeus>:
+A list of supported plugins is available at <https://github.com/dazeus>, for
+example:
 
 * `dazeus-legacyd`: A Perl daemon that runs the DaZeus 1 Legacy plugins as
   DaZeus 2 plugins
