@@ -211,6 +211,15 @@ void dazeus::PluginComm::init() {
 			if(listen(server, 5) < 0) {
 				close(server);
 			}
+
+			// Now, if the IP is inaddr_any, change it to localhost
+			if(result->ai_family == AF_INET) {
+				sockaddr_in *addr = (sockaddr_in*)result->ai_addr;
+				if(addr->sin_addr.s_addr == INADDR_ANY) {
+					sc->host = "127.0.0.1";
+				}
+			}
+
 			tcpServers_.push_back(server);
 		} else {
 			fprintf(stderr, "(PluginComm) Skipping socket: unknown type >%s<\n", sc->type.c_str());
