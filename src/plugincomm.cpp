@@ -248,6 +248,7 @@ void dazeus::PluginComm::newTcpConnection() {
 			}
 			NOTBLOCKING(sock);
 			sockets_[sock] = SocketInfo("tcp");
+			assert(!sockets_[sock].didHandshake());
 		}
 	}
 }
@@ -264,6 +265,7 @@ void dazeus::PluginComm::newLocalConnection() {
 			}
 			NOTBLOCKING(sock);
 			sockets_[sock] = SocketInfo("unix");
+			assert(!sockets_[sock].didHandshake());
 		}
 	}
 }
@@ -672,6 +674,29 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 			json_array_append_new(nets, json_string((*nit)->networkName().c_str()));
 		}
 		json_object_set_new(response, "networks", nets);
+	} else if(action == "handshake") {
+		json_object_set_new(response, "did", json_string("handshake"));
+		if(info.didHandshake()) {
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Already did handshake"));
+		} else if(params.size() < 4) {
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Missing parameters"));
+		} else if(params[2] != "1") {
+			json_object_set_new(response, "succes", json_false());
+			json_object_set_new(response, "error", json_string("Protocol version must be '1'"));
+		} else {
+			json_object_set_new(response, "success", json_true());
+			info.plugin_name = params[0];
+			info.plugin_version = params[1];
+			std::stringstream version(params[2]);
+			version >> info.protocol_version;
+			info.config_group = params[3];
+			std::cout << "Plugin handshake: " << info.plugin_name << " v"
+			          << info.plugin_version << " (protocol version "
+			          << info.protocol_version << ", config group "
+			          << info.config_group << ")" << std::endl;
+		}
 	// REQUESTS ON A NETWORK
 	} else if(action == "channels" || action == "whois" || action == "join" || action == "part"
 	       || action == "nick") {

@@ -75,7 +75,8 @@ class PluginComm : public NetworkListener
   struct SocketInfo {
    public:
     SocketInfo(std::string t = std::string()) : type(t),
-      subscriptions(), commands(), waitingSize(0), readahead() {}
+      subscriptions(), commands(), waitingSize(0), readahead(),
+      protocol_version(0) {}
     bool isSubscribed(std::string t) const {
       return contains(subscriptions, strToUpper(t));
     }
@@ -150,11 +151,18 @@ class PluginComm : public NetworkListener
       }
       json_decref(n);
     }
+    bool didHandshake() {
+      return protocol_version != 0;
+    }
     std::string type;
     std::vector<std::string> subscriptions;
     std::multimap<std::string,RequirementInfo*> commands;
     int waitingSize;
     std::string readahead;
+    std::string plugin_name;
+    std::string plugin_version;
+    int protocol_version;
+    std::string config_group;
   };
 
   public:
