@@ -50,7 +50,7 @@ struct SocketConfig {
 			return "unix:" + path;
 		} else if(type == "tcp") {
 			std::stringstream ss;
-			ss << "tcp: " << host << ":" << port;
+			ss << "tcp:" << host << ":" << port;
 			return ss.str();
 		}
 		assert(!"Unknown type in SocketConfig::toString()");
