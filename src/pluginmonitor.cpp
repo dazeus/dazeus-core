@@ -65,7 +65,7 @@ bool executable_exists(std::string file) {
 	return access(file.c_str(), X_OK) == 0;
 }
 
-dazeus::PluginMonitor::PluginMonitor(std::string socket, std::string plugindir,
+dazeus::PluginMonitor::PluginMonitor(SocketConfig *socket, std::string plugindir,
 	const std::vector<PluginConfig*> &plugins,
 	const std::vector<NetworkConfig*> &networks)
 : pluginDirectory_(plugindir)
@@ -211,7 +211,7 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 			} else {
 				char d = config->parameters[i+1];
 				switch(d) {
-				case 's': current_arg += socket_; ++i; break;
+				case 's': current_arg += socket_->toString(); ++i; break;
 				case 'n': current_arg += state->network; ++i; break;
 				default:  current_arg += '%'; break;
 				}

@@ -90,11 +90,11 @@ public:
 	const std::vector<NetworkConfig*> &getNetworks() { return networks; }
 	const std::vector<PluginConfig*> &getPlugins() { return plugins; }
 	const std::vector<SocketConfig*> &getSockets() { return sockets; }
-	std::string getPluginSocket() {
+	SocketConfig *getPluginSocket() {
 		if(sockets.size() == 0) {
 			throw std::runtime_error("No sockets defined, cannot run plugins");
 		}
-		return sockets.at(0)->toString();
+		return sockets.at(0);
 	}
 	GlobalConfig *getGlobalConfig() { return global; }
 	DatabaseConfig *getDatabaseConfig() { return database; }
