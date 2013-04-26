@@ -625,7 +625,16 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		} else {
 			for(unsigned i = 0; i < json_array_size(jParams); ++i) {
 				json_t *v = json_array_get(jParams, i);
-				params.push_back(json_is_string(v) ? json_string_value(v) : "");
+				std::stringstream value;
+				switch(json_typeof(v)) {
+				case JSON_STRING: value << json_string_value(v); break;
+				case JSON_INTEGER: value << json_integer_value(v); break;
+				case JSON_REAL: value << json_real_value(v); break;
+				case JSON_TRUE: value << "true"; break;
+				case JSON_FALSE: value << "false"; break;
+				default: std::cerr << "Param " << i << " is of wrong type, ignoring\n";
+				}
+				params.push_back(value.str());
 			}
 		}
 	}
