@@ -36,6 +36,12 @@
 #include "database.h"
 #include "utils.h"
 
+static std::string realpath(std::string path) {
+	char newpath[PATH_MAX];
+	realpath(path.c_str(), newpath);
+	return std::string(newpath);
+}
+
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
 dazeus::PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
@@ -172,6 +178,9 @@ void dazeus::PluginComm::init() {
 				close(server);
 				unlink(sc->path.c_str());
 			}
+			// Plugins run in a different working directory, so
+			// make sure the socket path is an absolute path
+			sc->path = realpath(sc->path);
 			localServers_.push_back(server);
 		} else if(sc->type == "tcp") {
 			std::string portStr;
