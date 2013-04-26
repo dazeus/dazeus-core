@@ -915,29 +915,50 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 			json_object_set_new(response, "error", json_string("Did not understand request"));
 		}
 	} else if(action == "config") {
-		if(params.size() < 1) {
+		if(params.size() != 2) {
 			json_object_set_new(response, "success", json_false());
 			json_object_set_new(response, "error", json_string("Missing parameters"));
 		} else {
-			std::vector<std::string> parts = split(params[0], ".");
-			std::string plugin = parts.front();
-			parts.erase(parts.begin());
-			std::string name = join(parts, ".");
+			std::string configtype = params[0];
+			std::string configvar  = params[1];
 
-			json_object_set_new(response, "success", json_true());
-			json_object_set_new(response, "variable", json_string(params[0].c_str()));
+			if(configtype == "plugin" && !info.didHandshake()) {
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Need to do handshake for retrieving plugin configuration"));
+			} else if(configtype == "plugin") {
+				json_object_set_new(response, "success", json_true());
+				json_object_set_new(response, "group", json_string(configtype.c_str()));
+				json_object_set_new(response, "variable", json_string(configvar.c_str()));
 
-			// Get the right plugin config
-			const std::vector<PluginConfig*> &plugins = config_->getPlugins();
-			for(std::vector<PluginConfig*>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
-				PluginConfig *pc = *cit;
-				if(pc->name == plugin) {
-					std::map<std::string,std::string>::iterator configIt = pc->config.find(name);
-					if(configIt != pc->config.end()) {
-						json_object_set_new(response, "value", json_string(configIt->second.c_str()));
-						break;
+				// Get the right plugin config
+				const std::vector<PluginConfig*> &plugins = config_->getPlugins();
+				for(std::vector<PluginConfig*>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
+					PluginConfig *pc = *cit;
+					if(pc->name == info.config_group) {
+						std::map<std::string,std::string>::iterator configIt = pc->config.find(configvar);
+						if(configIt != pc->config.end()) {
+							json_object_set_new(response, "value", json_string(configIt->second.c_str()));
+							break;
+						}
 					}
 				}
+			} else if(configtype == "core") {
+				GlobalConfig *global = config_->getGlobalConfig();
+				json_object_set_new(response, "success", json_true());
+				json_object_set_new(response, "group", json_string(configtype.c_str()));
+				json_object_set_new(response, "variable", json_string(configvar.c_str()));
+				if(configvar == "nickname") {
+					json_object_set_new(response, "value", json_string(global->default_nickname.c_str()));
+				} else if(configvar == "username") {
+					json_object_set_new(response, "value", json_string(global->default_username.c_str()));
+				} else if(configvar == "fullname") {
+					json_object_set_new(response, "value", json_string(global->default_fullname.c_str()));
+				} else if(configvar == "highlight") {
+					json_object_set_new(response, "value", json_string(global->highlight.c_str()));
+				}
+			} else {
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Unrecognised config group"));
 			}
 		}
 	} else {
