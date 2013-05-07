@@ -23,6 +23,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <poll.h>
+#include <limits.h>
 
 #include <string>
 #include <sstream>
