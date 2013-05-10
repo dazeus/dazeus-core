@@ -342,7 +342,7 @@ void dazeus::PluginComm::poll() {
 				if(info.waitingSize != 0) {
 					if((signed)info.readahead.length() >= info.waitingSize) {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
-						info.readahead = info.readahead.substr(info.waitingSize + 1);
+						info.readahead = info.readahead.substr(info.waitingSize);
 						handle(dev, packet, info);
 						info.waitingSize = 0;
 						parsedPacket = true;
