@@ -916,6 +916,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 			json_object_set_new(response, "error", json_string("Did not understand request"));
 		}
 	} else if(action == "config") {
+		json_object_set_new(response, "got", json_string("config"));
 		if(params.size() != 2) {
 			json_object_set_new(response, "success", json_false());
 			json_object_set_new(response, "error", json_string("Missing parameters"));
