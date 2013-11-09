@@ -113,6 +113,13 @@ The "subscribe to events" request will look like:
 To unsubscribe, change <tt>subscribe</tt> into <tt>unsubscribe</tt>. See the
 next section for more information.
 
+To subscribe to commands:
+\code
+  {"do":"command", "params":["helloworld"]}
+\endcode
+There are several optional parameters, too. See the Commands section for more
+information.
+
 For all database actions, the action keyword is <tt>property</tt>, and the specific
 action is in the first parameter. For example, to retrieve the <tt>count</tt>
 property, the <tt>counter</tt> example Perl script sends:
@@ -141,6 +148,34 @@ strings, and a <tt>params</tt> field that will contain an array with parameters
 depending on the event.
 
 \todo Describe parameters for events
+
+\subsection Commands
+
+Plugins can subscribe to commands, so that DaZeus can do the decoding,
+identification and authorization for them. Of those three goals, two are
+currently implemented -- authorization is a work-in-progress.
+
+To register a 'helloworld' command, send:
+\code
+  {"do":"command", "params":["helloworld"]}
+  {"do":"command", "params":["helloworld", "networkname"]}
+  {"do":"command", "params":["helloworld", "networkname", true, "sender"]}
+  {"do":"command", "params":["helloworld", "networkname", false, "receiver"]}
+\endcode
+This will cause the DaZeus core, when it receives such a command (which,
+depending on core configuration, could be by messaging "helloworld" to it or
+saying something like "!helloworld" or "DaZeus: helloworld" in a channel), to
+send COMMAND events to the plugin like:
+\code
+  {'event':'COMMAND', 'params':['network', 'sender', 'channel', 'command', 'arguments', 'arg1', 'arg2' ...]}
+\endcode
+
+When a sender filter is given, the core will only forward commands to plugins
+if the sender is identified to services. If this is unknown at the time the
+command is received, the core will only forward the command after a WHOIS
+confirms the user is identified. This is done automatically by the core, but
+you may need to be aware that this can cause these commands to come in in a
+different order than they were received from the network.
 
 \section Properties
 
