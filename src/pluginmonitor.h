@@ -15,7 +15,7 @@ namespace dazeus {
 struct PluginState;
 struct PluginConfig;
 struct NetworkConfig;
-struct SocketConfig;
+class ConfigReader;
 
 /**
  * @class PluginMonitor
@@ -34,9 +34,7 @@ struct SocketConfig;
 class PluginMonitor
 {
   public:
-          PluginMonitor(SocketConfig *socket, std::string pluginDirectory,
-              const std::vector<PluginConfig*> &plugins,
-              const std::vector<NetworkConfig*> &networks);
+          PluginMonitor(ConfigReader *config);
          ~PluginMonitor();
 
     bool  shouldRun() { return should_run_; }
@@ -54,7 +52,7 @@ class PluginMonitor
     static void plugin_failed(PluginState *state, bool permanent = false);
 
     std::string pluginDirectory_;
-    SocketConfig *socket_;
+    ConfigReader *config_;
     std::vector<PluginState*> state_;
     volatile sig_atomic_t should_run_;
 };

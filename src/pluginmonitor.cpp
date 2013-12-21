@@ -65,13 +65,12 @@ bool executable_exists(std::string file) {
 	return access(file.c_str(), X_OK) == 0;
 }
 
-dazeus::PluginMonitor::PluginMonitor(SocketConfig *socket, std::string plugindir,
-	const std::vector<PluginConfig*> &plugins,
-	const std::vector<NetworkConfig*> &networks)
-: pluginDirectory_(plugindir)
-, socket_(socket)
+dazeus::PluginMonitor::PluginMonitor(ConfigReader *config)
+: pluginDirectory_(config->getGlobalConfig().plugindirectory)
+, config_(config)
 , should_run_(1)
 {
+	const std::vector<PluginConfig*> &plugins = config_->getPlugins();
 	std::vector<PluginConfig*>::const_iterator it;
 	for(it = plugins.begin(); it != plugins.end(); ++it) {
 		PluginConfig *config = *it;
@@ -84,6 +83,7 @@ dazeus::PluginMonitor::PluginMonitor(SocketConfig *socket, std::string plugindir
 			}
 		}
 		if(config->per_network) {
+			const std::vector<NetworkConfig*> &networks = config_->getNetworks();
 			std::vector<NetworkConfig*>::const_iterator nit;
 			for(nit = networks.begin(); nit != networks.end(); ++nit) {
 				PluginState *s = new PluginState(config, (*nit)->name);
@@ -211,7 +211,7 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 			} else {
 				char d = config->parameters[i+1];
 				switch(d) {
-				case 's': current_arg += socket_->toString(); ++i; break;
+				case 's': current_arg += config_->getPluginSocket()->toString(); ++i; break;
 				case 'n': current_arg += state->network; ++i; break;
 				default:  current_arg += '%'; break;
 				}

@@ -178,10 +178,7 @@ bool dazeus::DaZeus::loadConfig()
   if(plugins_)
     delete plugins_;
   plugins_ = new PluginComm( database_, config_, this );
-  plugin_monitor_ = new PluginMonitor(config_->getPluginSocket(),
-    config_->getGlobalConfig().plugindirectory,
-    config_->getPlugins(),
-    config_->getNetworks());
+  plugin_monitor_ = new PluginMonitor(config_);
 
   std::vector<NetworkConfig*>::const_iterator it;
   for(it = networks.begin(); it != networks.end(); ++it)
