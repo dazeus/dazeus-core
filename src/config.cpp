@@ -23,7 +23,7 @@ enum section {
 
 struct dazeus::ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT),
-	socket_progress(0), database_progress(0),
+	socket_progress(0),
 	network_progress(0), server_progress(0), plugin_progress(0) {}
 	ConfigReaderState(ConfigReaderState const&);
 	ConfigReaderState &operator=(ConfigReaderState const&);
@@ -35,7 +35,7 @@ struct dazeus::ConfigReaderState {
 
 	boost::optional<dazeus::GlobalConfig> global_progress;
 	dazeus::SocketConfig *socket_progress;
-	dazeus::DatabaseConfig *database_progress;
+	boost::optional<dazeus::DatabaseConfig> database_progress;
 	dazeus::NetworkConfig *network_progress;
 	dazeus::ServerConfig *server_progress;
 	dazeus::PluginConfig *plugin_progress;
@@ -43,14 +43,12 @@ struct dazeus::ConfigReaderState {
 };
 
 dazeus::ConfigReader::ConfigReader(std::string file)
-: database(0)
-, file(file)
+: file(file)
 , state(new ConfigReaderState())
 , is_read(false)
 {}
 
 dazeus::ConfigReader::~ConfigReader() {
-	delete database;
 	std::vector<NetworkConfig*>::iterator it;
 	for(it = networks.begin(); it != networks.end(); ++it) {
 		std::vector<ServerConfig*>::iterator sit;
@@ -141,7 +139,7 @@ void dazeus::ConfigReader::read() {
 		throw exception(state->error);
 	}
 
-	if(state->database_progress == 0) {
+	if(!state->database_progress) {
 		throw exception("No Database block defined in config file.");
 	}
 
@@ -195,11 +193,11 @@ static DOTCONF_CB(sect_open)
 			s->current_section = S_SOCKET;
 			s->socket_progress = new dazeus::SocketConfig;
 		} else if(name == "<database>") {
-			if(s->database_progress != NULL) {
+			if(s->database_progress) {
 				return "More than one Database block defined in configuration file.";
 			}
 			s->current_section = S_DATABASE;
-			s->database_progress = new dazeus::DatabaseConfig;
+			s->database_progress.reset(dazeus::DatabaseConfig());
 		} else if(name == "<network") {
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
@@ -340,22 +338,21 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_DATABASE: {
-		dazeus::DatabaseConfig *dc = s->database_progress;
-		assert(dc);
+		dazeus::DatabaseConfig &dc = *s->database_progress;
 		if(name == "type") {
-			dc->type = trim(cmd->data.str);
+			dc.type = trim(cmd->data.str);
 		} else if(name == "host") {
-			dc->hostname = trim(cmd->data.str);
+			dc.hostname = trim(cmd->data.str);
 		} else if(name == "port") {
-			dc->port = cmd->data.value;
+			dc.port = cmd->data.value;
 		} else if(name == "username") {
-			dc->username = trim(cmd->data.str);
+			dc.username = trim(cmd->data.str);
 		} else if(name == "password") {
-			dc->password = trim(cmd->data.str);
+			dc.password = trim(cmd->data.str);
 		} else if(name == "database") {
-			dc->database = trim(cmd->data.str);
+			dc.database = trim(cmd->data.str);
 		} else if(name == "options") {
-			dc->options = trim(cmd->data.str);
+			dc.options = trim(cmd->data.str);
 		} else {
 			s->error = "Invalid option name in database context: " + name;
 			return "Configuration file contains errors";

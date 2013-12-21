@@ -106,12 +106,8 @@ bool dazeus::DaZeus::configLoaded() const
  */
 bool dazeus::DaZeus::connectDatabase()
 {
-  const DatabaseConfig *dbc = config_->getDatabaseConfig();
-  if(dbc == 0) {
-    fprintf(stderr, "Database configuration is absent, cannot continue.\n");
-    return false;
-  }
-  database_ = new Database(dbc->hostname, dbc->port, dbc->database, dbc->username, dbc->password);
+  const DatabaseConfig &dbc = config_->getDatabaseConfig();
+  database_ = new Database(dbc.hostname, dbc.port, dbc.database, dbc.username, dbc.password);
 
   if( !database_->open() )
   {

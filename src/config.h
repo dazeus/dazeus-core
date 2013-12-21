@@ -68,7 +68,7 @@ class ConfigReader {
 	std::vector<PluginConfig*> plugins;
 	std::vector<SocketConfig*> sockets;
 	boost::optional<GlobalConfig> global;
-	DatabaseConfig *database;
+	boost::optional<DatabaseConfig> database;
 	std::string file;
 	ConfigReaderState *state;
 	bool is_read;
@@ -98,7 +98,7 @@ public:
 		return sockets.at(0);
 	}
 	const GlobalConfig &getGlobalConfig() { return *global; }
-	DatabaseConfig *getDatabaseConfig() { return database; }
+	const DatabaseConfig &getDatabaseConfig() { return *database; }
 	std::string &getFile() { return file; }
 };
 
