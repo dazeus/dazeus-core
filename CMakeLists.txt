@@ -23,8 +23,10 @@ IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/jansson/README.rst")
 ENDIF()
 
 find_package(LibMongoClient REQUIRED)
+find_package(Boost REQUIRED)
 
 include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
 
@@ -36,7 +38,7 @@ file(GLOB jansson_headers "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.h")
 add_library(jansson ${jansson_sources} ${jansson_headers})
 target_link_libraries(jansson)
 
-set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${LibMongoClient_LIBRARIES})
+set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${LibMongoClient_LIBRARIES} ${Boost_LIBRARIES})
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
