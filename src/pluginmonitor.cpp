@@ -29,16 +29,15 @@
 
 namespace dazeus {
 	struct PluginState {
-		PluginState(PluginConfig *c, std::string network)
+		PluginState(const PluginConfig &c, std::string network)
 		: config(c), will_autostart(true), pid(0), network(network)
 		, num_failures(0), last_start(0) {
-			assert(config != NULL);
-			assert(config->per_network || network.length() == 0);
-			assert(!config->per_network || network.length() > 0);
+			assert(config.per_network || network.length() == 0);
+			assert(!config.per_network || network.length() > 0);
 		}
 		~PluginState() {}
 
-		PluginConfig *config;
+		PluginConfig config;
 		bool will_autostart;
 		pid_t pid;
 		std::string network;
@@ -70,19 +69,19 @@ dazeus::PluginMonitor::PluginMonitor(ConfigReader *config)
 , config_(config)
 , should_run_(1)
 {
-	const std::vector<PluginConfig*> &plugins = config_->getPlugins();
-	std::vector<PluginConfig*>::const_iterator it;
+	const std::vector<PluginConfig> &plugins = config_->getPlugins();
+	std::vector<PluginConfig>::const_iterator it;
 	for(it = plugins.begin(); it != plugins.end(); ++it) {
-		PluginConfig *config = *it;
-		assert(config->name.length() > 0);
+		const PluginConfig &config = *it;
+		assert(config.name.length() > 0);
 
 		std::vector<PluginState*>::const_iterator sit;
 		for(sit = state_.begin(); sit != state_.end(); ++sit) {
-			if((*sit)->config->name == config->name) {
-				throw std::runtime_error("Multiple plugins exist with name " + config->name);
+			if((*sit)->config.name == config.name) {
+				throw std::runtime_error("Multiple plugins exist with name " + config.name);
 			}
 		}
-		if(config->per_network) {
+		if(config.per_network) {
 			const std::vector<NetworkConfig*> &networks = config_->getNetworks();
 			std::vector<NetworkConfig*>::const_iterator nit;
 			for(nit = networks.begin(); nit != networks.end(); ++nit) {
@@ -118,7 +117,7 @@ dazeus::PluginMonitor::~PluginMonitor() {
 
 	for(it = state_.begin(); it != state_.end(); ++it) {
 		if((*it)->pid != 0) {
-			std::cerr << "In PluginMonitor destructor, failed to stop plugin " << (*it)->config->name << std::endl;
+			std::cerr << "In PluginMonitor destructor, failed to stop plugin " << (*it)->config.name << std::endl;
 		}
 		delete *it;
 	}
@@ -127,13 +126,12 @@ dazeus::PluginMonitor::~PluginMonitor() {
 void dazeus::PluginMonitor::stop_plugin(PluginState *state, bool hard) {
 	assert(state != NULL);
 	assert(state->pid != 0);
-	PluginConfig *config = state->config;
-	assert(config != NULL);
+	const PluginConfig &config = state->config;
 
 	int signal = hard ? SIGKILL : SIGINT;
 
 	if(kill(state->pid, signal) < 0) {
-		std::cerr << "Failed to kill plugin " << config->name << ": " << strerror(errno) << std::endl;
+		std::cerr << "Failed to kill plugin " << config.name << ": " << strerror(errno) << std::endl;
 	}
 	// If succesfully killed, runOnce() will set the pid to 0
 }
@@ -149,16 +147,15 @@ void dazeus::PluginMonitor::plugin_failed(PluginState *state, bool permanent) {
 bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 	assert(state != NULL);
 	assert(state->pid == 0);
-	PluginConfig *config = state->config;
-	assert(config != NULL);
+	const PluginConfig &config = state->config;
 
 	state->last_start = time(NULL);
 
 	// Configuration loading
-	std::string path = config->path;
+	std::string path = config.path;
 	if(path.length() == 0) {
 		// If not set, defaults to the name of the plugin
-		path = config->name;
+		path = config.name;
 	}
 	if(path[0] != '/') {
 		// If relative, counts from the Plugins directory as set in
@@ -166,10 +163,10 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 		path = pluginDirectory_ + "/" + path;
 	}
 
-	std::string executable = config->executable;
+	std::string executable = config.executable;
 	if(executable.length() == 0) {
 		// If not set, defaults to the name of the plugin.
-		executable = config->name;
+		executable = config.name;
 	}
 
 	std::vector<std::string> arguments;
@@ -177,8 +174,8 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 	bool in_quotes = false;
 	bool in_doublequotes = false;
 	bool in_escape = false;
-	for(unsigned i = 0; i < config->parameters.length(); ++i) {
-		char c = config->parameters[i];
+	for(unsigned i = 0; i < config.parameters.length(); ++i) {
+		char c = config.parameters[i];
 		if(in_escape) {
 			current_arg += c;
 			in_escape = false;
@@ -206,10 +203,10 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 			}
 		}
 		else if(c == '%') {
-			if(i + 1 == config->parameters.length()) {
+			if(i + 1 == config.parameters.length()) {
 				current_arg += '%';
 			} else {
-				char d = config->parameters[i+1];
+				char d = config.parameters[i+1];
 				switch(d) {
 				case 's': current_arg += config_->getPluginSocket().toString(); ++i; break;
 				case 'n': current_arg += state->network; ++i; break;
@@ -227,7 +224,7 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 
 	// Sanity checking (to decrease the chance of errors in the child)
 	if(!directory_exists(path)) {
-		std::cerr << "Failed to run plugin " << config->name << ": its directory does not exist" << std::endl;
+		std::cerr << "Failed to run plugin " << config.name << ": its directory does not exist" << std::endl;
 		plugin_failed(state);
 		return false;
 	}
@@ -238,25 +235,25 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 		full_executable = path + '/' + executable;
 	}
 	if(!file_exists(full_executable)) {
-		std::cerr << "Failed to run plugin " << config->name << ": its executable does not exist" << std::endl;
+		std::cerr << "Failed to run plugin " << config.name << ": its executable does not exist" << std::endl;
 		plugin_failed(state);
 		return false;
 	} else if(!executable_exists(full_executable)) {
-		std::cerr << "Failed to run plugin " << config->name << ": its executable is not executable" << std::endl;
+		std::cerr << "Failed to run plugin " << config.name << ": its executable is not executable" << std::endl;
 		plugin_failed(state);
 		return false;
 	}
 
 	pid_t res = fork_plugin(path, arguments, executable);
 	if(res == -1) {
-		std::cerr << "Failed to run plugin " << config->name << ": " << strerror(errno) << std::endl;
+		std::cerr << "Failed to run plugin " << config.name << ": " << strerror(errno) << std::endl;
 		plugin_failed(state);
 		return false;
 	}
 
 	// we are the parent, plugin is running
 	state->pid = res;
-	std::cout << "Plugin " << config->name << " started, PID " << state->pid << std::endl;
+	std::cout << "Plugin " << config.name << " started, PID " << state->pid << std::endl;
 	return true;
 }
 
@@ -323,13 +320,11 @@ void dazeus::PluginMonitor::runOnce() {
 			continue;
 		}
 
-		assert(state->config);
-
 		if(WIFEXITED(child_status)) {
-			std::cerr << "Plugin " << state->config->name << " exited with code " << WEXITSTATUS(child_status) << std::endl;
+			std::cerr << "Plugin " << state->config.name << " exited with code " << WEXITSTATUS(child_status) << std::endl;
 		} else if(WIFSIGNALED(child_status)) {
 			std::string coredumped = WCOREDUMP(child_status) ? " (core dumped)" : "";
-			std::cerr << "Plugin " << state->config->name << " killed by signal " << WTERMSIG(child_status) << coredumped << std::endl;
+			std::cerr << "Plugin " << state->config.name << " killed by signal " << WTERMSIG(child_status) << coredumped << std::endl;
 		} else {
 			std::cerr << "Plugin signaled but did not quit? Ignoring..." << std::endl;
 			continue;

@@ -934,12 +934,12 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 				json_object_set_new(response, "variable", json_string(configvar.c_str()));
 
 				// Get the right plugin config
-				const std::vector<PluginConfig*> &plugins = config_->getPlugins();
-				for(std::vector<PluginConfig*>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
-					PluginConfig *pc = *cit;
-					if(pc->name == info.config_group) {
-						std::map<std::string,std::string>::iterator configIt = pc->config.find(configvar);
-						if(configIt != pc->config.end()) {
+				const std::vector<PluginConfig> &plugins = config_->getPlugins();
+				for(std::vector<PluginConfig>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
+					const PluginConfig &pc = *cit;
+					if(pc.name == info.config_group) {
+						std::map<std::string,std::string>::const_iterator configIt = pc.config.find(configvar);
+						if(configIt != pc.config.end()) {
 							json_object_set_new(response, "value", json_string(configIt->second.c_str()));
 							break;
 						}

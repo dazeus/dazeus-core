@@ -23,21 +23,21 @@ enum section {
 
 struct dazeus::ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT),
-	network_progress(0), server_progress(0), plugin_progress(0) {}
+	network_progress(0), server_progress(0) {}
 	ConfigReaderState(ConfigReaderState const&);
 	ConfigReaderState &operator=(ConfigReaderState const&);
 
 	int current_section;
 	std::vector<SocketConfig> sockets;
 	std::vector<NetworkConfig*> networks;
-	std::vector<PluginConfig*> plugins;
+	std::vector<PluginConfig> plugins;
 
 	boost::optional<dazeus::GlobalConfig> global_progress;
 	boost::optional<dazeus::SocketConfig> socket_progress;
 	boost::optional<dazeus::DatabaseConfig> database_progress;
 	dazeus::NetworkConfig *network_progress;
 	dazeus::ServerConfig *server_progress;
-	dazeus::PluginConfig *plugin_progress;
+	boost::optional<dazeus::PluginConfig> plugin_progress;
 	std::string error;
 };
 
@@ -59,10 +59,6 @@ dazeus::ConfigReader::~ConfigReader() {
 	}
 	networks.clear();
 	sockets.clear();
-	std::vector<PluginConfig*>::iterator pit;
-	for(pit = plugins.begin(); pit != plugins.end(); ++pit) {
-		delete *pit;
-	}
 	plugins.clear();
 	delete state;
 }
@@ -141,7 +137,7 @@ void dazeus::ConfigReader::read() {
 	assert(!state->socket_progress);
 	assert(state->network_progress == 0);
 	assert(state->server_progress == 0);
-	assert(state->plugin_progress == 0);
+	assert(!state->plugin_progress);
 
 	sockets = state->sockets;
 	networks = state->networks;
@@ -209,7 +205,7 @@ static DOTCONF_CB(sect_open)
 				return "All plugins must have a name in their <Plugin> tag.";
 			}
 			s->current_section = S_PLUGIN;
-			s->plugin_progress = new dazeus::PluginConfig(pluginname);
+			s->plugin_progress.reset(dazeus::PluginConfig(pluginname));
 		} else {
 			return "Logic error";
 		}
@@ -274,8 +270,8 @@ static DOTCONF_CB(sect_close)
 		break;
 	case S_PLUGIN:
 		if(name == "</plugin>") {
-			s->plugins.push_back(s->plugin_progress);
-			s->plugin_progress = 0;
+			s->plugins.push_back(*s->plugin_progress);
+			s->plugin_progress.reset();
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";
@@ -392,28 +388,27 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_PLUGIN: {
-		dazeus::PluginConfig *pc = s->plugin_progress;
-		assert(pc);
+		dazeus::PluginConfig &pc = *s->plugin_progress;
 		if(name == "path") {
-			pc->path = trim(cmd->data.str);
+			pc.path = trim(cmd->data.str);
 		} else if(name == "executable") {
-			pc->executable = trim(cmd->data.str);
+			pc.executable = trim(cmd->data.str);
 		} else if(name == "scope") {
 			std::string scope = strToLower(trim(cmd->data.str));
 			if(scope == "network") {
-				pc->per_network = true;
+				pc.per_network = true;
 			} else if(scope != "global") {
-				s->error = "Invalid value for Scope for plugin " + pc->name;
+				s->error = "Invalid value for Scope for plugin " + pc.name;
 				return "Configuration file contains errors";
 			}
 		} else if(name == "parameters") {
-			pc->parameters = trim(cmd->data.str);
+			pc.parameters = trim(cmd->data.str);
 		} else if(name == "var") {
 			if(cmd->arg_count != 2) {
 				s->error = "Invalid amount of parameters to Var in plugin context";
 				return "Configuration file contains errors";
 			}
-			pc->config[trim(cmd->data.list[0])] = trim(cmd->data.list[1]);
+			pc.config[trim(cmd->data.list[0])] = trim(cmd->data.list[1]);
 		} else {
 			s->error = "Invalid option name in plugin context: " + name;
 			return "Configuration file contains errors";
