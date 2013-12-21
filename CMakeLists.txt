@@ -24,9 +24,9 @@ ENDIF()
 
 find_package(LibMongoClient REQUIRED)
 
-include_directories(${LibMongoClient_INCLUDE_DIRS})
+include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
+include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
-include_directories("${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/jansson_config.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/jansson_config.h")
