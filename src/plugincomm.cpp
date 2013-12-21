@@ -436,14 +436,14 @@ void dazeus::PluginComm::messageReceived( const std::string &origin, const std::
                   const std::string &receiver, Network *n ) {
 	assert(n != 0);
 
-	GlobalConfig *c = config_->getGlobalConfig();
+	const GlobalConfig &c = config_->getGlobalConfig();
 
 	std::string payload;
 	if( startsWith(message, n->nick() + ":", true)
 	 || startsWith(message, n->nick() + ",", true)) {
 		payload = trim(message.substr(n->nick().length() + 1));
-	} else if(startsWith(message, c->highlight, true)) {
-		payload = trim(message.substr(c->highlight.length()));
+	} else if(startsWith(message, c.highlight, true)) {
+		payload = trim(message.substr(c.highlight.length()));
 	}
 
 	if(payload.length() != 0) {
@@ -945,18 +945,18 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 					}
 				}
 			} else if(configtype == "core") {
-				GlobalConfig *global = config_->getGlobalConfig();
+				const GlobalConfig &global = config_->getGlobalConfig();
 				json_object_set_new(response, "success", json_true());
 				json_object_set_new(response, "group", json_string(configtype.c_str()));
 				json_object_set_new(response, "variable", json_string(configvar.c_str()));
 				if(configvar == "nickname") {
-					json_object_set_new(response, "value", json_string(global->default_nickname.c_str()));
+					json_object_set_new(response, "value", json_string(global.default_nickname.c_str()));
 				} else if(configvar == "username") {
-					json_object_set_new(response, "value", json_string(global->default_username.c_str()));
+					json_object_set_new(response, "value", json_string(global.default_username.c_str()));
 				} else if(configvar == "fullname") {
-					json_object_set_new(response, "value", json_string(global->default_fullname.c_str()));
+					json_object_set_new(response, "value", json_string(global.default_fullname.c_str()));
 				} else if(configvar == "highlight") {
-					json_object_set_new(response, "value", json_string(global->highlight.c_str()));
+					json_object_set_new(response, "value", json_string(global.highlight.c_str()));
 				}
 			} else {
 				json_object_set_new(response, "success", json_false());

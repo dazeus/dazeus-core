@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <assert.h>
+#include <boost/optional.hpp>
 
 namespace dazeus {
 
@@ -66,7 +67,7 @@ class ConfigReader {
 	std::vector<NetworkConfig*> networks;
 	std::vector<PluginConfig*> plugins;
 	std::vector<SocketConfig*> sockets;
-	GlobalConfig *global;
+	boost::optional<GlobalConfig> global;
 	DatabaseConfig *database;
 	std::string file;
 	ConfigReaderState *state;
@@ -96,7 +97,7 @@ public:
 		}
 		return sockets.at(0);
 	}
-	GlobalConfig *getGlobalConfig() { return global; }
+	const GlobalConfig &getGlobalConfig() { return *global; }
 	DatabaseConfig *getDatabaseConfig() { return database; }
 	std::string &getFile() { return file; }
 };

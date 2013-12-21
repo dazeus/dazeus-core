@@ -23,7 +23,7 @@ enum section {
 
 struct dazeus::ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT),
-	global_progress(0), socket_progress(0), database_progress(0),
+	socket_progress(0), database_progress(0),
 	network_progress(0), server_progress(0), plugin_progress(0) {}
 	ConfigReaderState(ConfigReaderState const&);
 	ConfigReaderState &operator=(ConfigReaderState const&);
@@ -33,7 +33,7 @@ struct dazeus::ConfigReaderState {
 	std::vector<NetworkConfig*> networks;
 	std::vector<PluginConfig*> plugins;
 
-	dazeus::GlobalConfig *global_progress;
+	boost::optional<dazeus::GlobalConfig> global_progress;
 	dazeus::SocketConfig *socket_progress;
 	dazeus::DatabaseConfig *database_progress;
 	dazeus::NetworkConfig *network_progress;
@@ -43,8 +43,7 @@ struct dazeus::ConfigReaderState {
 };
 
 dazeus::ConfigReader::ConfigReader(std::string file)
-: global(0)
-, database(0)
+: database(0)
 , file(file)
 , state(new ConfigReaderState())
 , is_read(false)
@@ -72,7 +71,6 @@ dazeus::ConfigReader::~ConfigReader() {
 		delete *pit;
 	}
 	plugins.clear();
-	delete global;
 	delete state;
 }
 
@@ -135,7 +133,7 @@ void dazeus::ConfigReader::read() {
 
 	// Initialise global config in progress. Other fields will be
 	// initialised when a section is started, global starts now.
-	state->global_progress = new GlobalConfig();
+	state->global_progress.reset(GlobalConfig());
 	if(dotconf_command_loop(configfile) == 0 || state->error.length() > 0) {
 		dotconf_cleanup(configfile);
 		if(state->error.size() == 0)
@@ -189,7 +187,7 @@ static DOTCONF_CB(sect_open)
 
 	switch(s->current_section) {
 	case S_ROOT:
-		assert(s->global_progress != NULL);
+		assert(s->global_progress);
 		assert(s->socket_progress == NULL);
 		assert(s->network_progress == NULL);
 		assert(s->server_progress == NULL);
@@ -304,18 +302,17 @@ static DOTCONF_CB(option)
 	std::string name(cmd->name);
 	switch(s->current_section) {
 	case S_ROOT: {
-		dazeus::GlobalConfig *g = s->global_progress;
-		assert(g);
+		dazeus::GlobalConfig &g = *s->global_progress;
 		if(name == "nickname") {
-			g->default_nickname = trim(cmd->data.str);
+			g.default_nickname = trim(cmd->data.str);
 		} else if(name == "username") {
-			g->default_username = trim(cmd->data.str);
+			g.default_username = trim(cmd->data.str);
 		} else if(name == "fullname") {
-			g->default_fullname = trim(cmd->data.str);
+			g.default_fullname = trim(cmd->data.str);
 		} else if(name == "plugindirectory") {
-			g->plugindirectory = trim(cmd->data.str);
+			g.plugindirectory = trim(cmd->data.str);
 		} else if(name == "highlight") {
-			g->highlight = trim(cmd->data.str);
+			g.highlight = trim(cmd->data.str);
 		} else {
 			s->error = "Invalid option name in root context: " + name;
 			return "Configuration file contains errors";

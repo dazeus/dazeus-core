@@ -183,7 +183,7 @@ bool dazeus::DaZeus::loadConfig()
     delete plugins_;
   plugins_ = new PluginComm( database_, config_, this );
   plugin_monitor_ = new PluginMonitor(config_->getPluginSocket(),
-    config_->getGlobalConfig()->plugindirectory,
+    config_->getGlobalConfig().plugindirectory,
     config_->getPlugins(),
     config_->getNetworks());
 
