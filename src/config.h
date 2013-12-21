@@ -66,7 +66,7 @@ struct SocketConfig {
 class ConfigReader {
 	std::vector<NetworkConfig*> networks;
 	std::vector<PluginConfig*> plugins;
-	std::vector<SocketConfig*> sockets;
+	std::vector<SocketConfig> sockets;
 	boost::optional<GlobalConfig> global;
 	boost::optional<DatabaseConfig> database;
 	std::string file;
@@ -90,8 +90,9 @@ public:
 
 	const std::vector<NetworkConfig*> &getNetworks() { return networks; }
 	const std::vector<PluginConfig*> &getPlugins() { return plugins; }
-	const std::vector<SocketConfig*> &getSockets() { return sockets; }
-	SocketConfig *getPluginSocket() {
+	// socket configs may be changed when creating one (but this should change)
+	std::vector<SocketConfig> &getSockets() { return sockets; }
+	SocketConfig &getPluginSocket() {
 		if(sockets.size() == 0) {
 			throw std::runtime_error("No sockets defined, cannot run plugins");
 		}

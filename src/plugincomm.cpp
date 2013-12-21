@@ -155,39 +155,40 @@ void dazeus::PluginComm::run(int timeout_sec) {
 }
 
 void dazeus::PluginComm::init() {
-	std::vector<SocketConfig*>::const_iterator it;
+	std::vector<SocketConfig>::iterator it;
 
 	for(it = config_->getSockets().begin(); it != config_->getSockets().end(); ++it) {
-		SocketConfig *sc = *it;
-		if(sc->type == "unix") {
-			unlink(sc->path.c_str());
+		// socket properties may be changed
+		SocketConfig &sc = *it;
+		if(sc.type == "unix") {
+			unlink(sc.path.c_str());
 			int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
 			if(server <= 0) {
-				fprintf(stderr, "(PluginComm) Failed to create socket at %s: %s\n", sc->path.c_str(), strerror(errno));
+				fprintf(stderr, "(PluginComm) Failed to create socket at %s: %s\n", sc.path.c_str(), strerror(errno));
 				continue;
 			}
 			NOTBLOCKING(server);
 			struct sockaddr_un addr;
 			addr.sun_family = AF_UNIX;
-			strcpy(addr.sun_path, sc->path.c_str());
+			strcpy(addr.sun_path, sc.path.c_str());
 			if(bind(server, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
 				close(server);
-				fprintf(stderr, "(PluginComm) Failed to start listening for local connections on %s: %s\n", sc->path.c_str(), strerror(errno));
+				fprintf(stderr, "(PluginComm) Failed to start listening for local connections on %s: %s\n", sc.path.c_str(), strerror(errno));
 				continue;
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
-				unlink(sc->path.c_str());
+				unlink(sc.path.c_str());
 			}
 			// Plugins run in a different working directory, so
 			// make sure the socket path is an absolute path
-			sc->path = realpath(sc->path);
+			sc.path = realpath(sc.path);
 			localServers_.push_back(server);
-		} else if(sc->type == "tcp") {
+		} else if(sc.type == "tcp") {
 			std::string portStr;
 			{
 				std::stringstream portStrSs;
-				portStrSs << sc->port;
+				portStrSs << sc.port;
 				portStr = portStrSs.str();
 			}
 
@@ -198,7 +199,7 @@ void dazeus::PluginComm::init() {
 			hints->ai_socktype = SOCK_STREAM;
 			hints->ai_protocol = 0;
 
-			int s = getaddrinfo(sc->host.c_str(), portStr.c_str(), hints, &result);
+			int s = getaddrinfo(sc.host.c_str(), portStr.c_str(), hints, &result);
 			free(hints);
 			hints = 0;
 
@@ -216,7 +217,7 @@ void dazeus::PluginComm::init() {
 			if(bind(server, result->ai_addr, result->ai_addrlen) < 0) {
 				close(server);
 				fprintf(stderr, "(PluginComm) Failed to start listening for TCP connections on %s:%d: %s\n",
-					sc->host.c_str(), sc->port, strerror(errno));
+					sc.host.c_str(), sc.port, strerror(errno));
 			}
 			if(listen(server, 5) < 0) {
 				close(server);
@@ -226,13 +227,13 @@ void dazeus::PluginComm::init() {
 			if(result->ai_family == AF_INET) {
 				sockaddr_in *addr = (sockaddr_in*)result->ai_addr;
 				if(addr->sin_addr.s_addr == INADDR_ANY) {
-					sc->host = "127.0.0.1";
+					sc.host = "127.0.0.1";
 				}
 			}
 
 			tcpServers_.push_back(server);
 		} else {
-			fprintf(stderr, "(PluginComm) Skipping socket: unknown type >%s<\n", sc->type.c_str());
+			fprintf(stderr, "(PluginComm) Skipping socket: unknown type >%s<\n", sc.type.c_str());
 		}
 	}
 }

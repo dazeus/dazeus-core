@@ -211,7 +211,7 @@ bool dazeus::PluginMonitor::start_plugin(PluginState *state) {
 			} else {
 				char d = config->parameters[i+1];
 				switch(d) {
-				case 's': current_arg += config_->getPluginSocket()->toString(); ++i; break;
+				case 's': current_arg += config_->getPluginSocket().toString(); ++i; break;
 				case 'n': current_arg += state->network; ++i; break;
 				default:  current_arg += '%'; break;
 				}

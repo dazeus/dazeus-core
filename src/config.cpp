@@ -23,18 +23,17 @@ enum section {
 
 struct dazeus::ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT),
-	socket_progress(0),
 	network_progress(0), server_progress(0), plugin_progress(0) {}
 	ConfigReaderState(ConfigReaderState const&);
 	ConfigReaderState &operator=(ConfigReaderState const&);
 
 	int current_section;
-	std::vector<SocketConfig*> sockets;
+	std::vector<SocketConfig> sockets;
 	std::vector<NetworkConfig*> networks;
 	std::vector<PluginConfig*> plugins;
 
 	boost::optional<dazeus::GlobalConfig> global_progress;
-	dazeus::SocketConfig *socket_progress;
+	boost::optional<dazeus::SocketConfig> socket_progress;
 	boost::optional<dazeus::DatabaseConfig> database_progress;
 	dazeus::NetworkConfig *network_progress;
 	dazeus::ServerConfig *server_progress;
@@ -59,10 +58,6 @@ dazeus::ConfigReader::~ConfigReader() {
 		delete *it;
 	}
 	networks.clear();
-	std::vector<SocketConfig*>::iterator sockit;
-	for(sockit = sockets.begin(); sockit != sockets.end(); ++sockit) {
-		delete *sockit;
-	}
 	sockets.clear();
 	std::vector<PluginConfig*>::iterator pit;
 	for(pit = plugins.begin(); pit != plugins.end(); ++pit) {
@@ -143,7 +138,7 @@ void dazeus::ConfigReader::read() {
 		throw exception("No Database block defined in config file.");
 	}
 
-	assert(state->socket_progress == 0);
+	assert(!state->socket_progress);
 	assert(state->network_progress == 0);
 	assert(state->server_progress == 0);
 	assert(state->plugin_progress == 0);
@@ -186,12 +181,12 @@ static DOTCONF_CB(sect_open)
 	switch(s->current_section) {
 	case S_ROOT:
 		assert(s->global_progress);
-		assert(s->socket_progress == NULL);
+		assert(!s->socket_progress);
 		assert(s->network_progress == NULL);
 		assert(s->server_progress == NULL);
 		if(name == "<socket>") {
 			s->current_section = S_SOCKET;
-			s->socket_progress = new dazeus::SocketConfig;
+			s->socket_progress.reset(dazeus::SocketConfig());
 		} else if(name == "<database>") {
 			if(s->database_progress) {
 				return "More than one Database block defined in configuration file.";
@@ -245,8 +240,8 @@ static DOTCONF_CB(sect_close)
 	case S_ROOT: return "Logic error";
 	case S_SOCKET:
 		if(name == "</socket>") {
-			s->sockets.push_back(s->socket_progress);
-			s->socket_progress = 0;
+			s->sockets.push_back(*s->socket_progress);
+			s->socket_progress.reset();
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";
@@ -318,19 +313,18 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_SOCKET: {
-		dazeus::SocketConfig *sc = s->socket_progress;
-		assert(sc);
+		dazeus::SocketConfig &sc = *s->socket_progress;
 		if(name == "type") {
-			sc->type = trim(cmd->data.str);
+			sc.type = trim(cmd->data.str);
 		} else if(name == "path") {
-			sc->path = trim(cmd->data.str);
+			sc.path = trim(cmd->data.str);
 		} else if(name == "host") {
-			sc->host = trim(cmd->data.str);
+			sc.host = trim(cmd->data.str);
 		} else if(name == "port") {
 			if(cmd->data.value > std::numeric_limits<uint16_t>::max() || cmd->data.value < 0) {
 				return "Invalid value for 'port'";
 			}
-			sc->port = cmd->data.value;
+			sc.port = cmd->data.value;
 		} else {
 			s->error = "Invalid option name in socket context: " + name;
 			return "Configuration file contains errors";
