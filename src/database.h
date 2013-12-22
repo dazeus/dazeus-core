@@ -41,10 +41,7 @@ struct DatabaseConfig {
 class Database
 {
   public:
-          Database( const std::string &hostname, uint16_t port,
-                    const std::string &database = std::string("dazeus"),
-                    const std::string &username = std::string(),
-                    const std::string &password = std::string() );
+          Database(DatabaseConfig dbc);
          ~Database();
 
     bool            open();
@@ -71,11 +68,7 @@ class Database
 
     void *m_;
     std::string lastError_;
-    std::string hostName_;
-    std::string databaseName_;
-    uint16_t    port_;
-    std::string username_;
-    std::string password_;
+    DatabaseConfig dbc_;
 };
 
 }

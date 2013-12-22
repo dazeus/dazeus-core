@@ -15,19 +15,15 @@
 // #define DEBUG
 
 #define M (mongo_sync_connection*)m_
-#define PROPERTIES std::string(databaseName_ + ".properties").c_str()
+#define PROPERTIES std::string(dbc_.database + ".properties").c_str()
 
 /**
  * @brief Constructor.
  */
-dazeus::Database::Database( const std::string &hostname, uint16_t port, const std::string &database, const std::string &username, const std::string &password )
+dazeus::Database::Database(DatabaseConfig dbc)
 : m_(0)
 , lastError_()
-, hostName_(hostname)
-, databaseName_(database)
-, port_(port)
-, username_(username)
-, password_(password)
+, dbc_(dbc)
 {
 }
 
@@ -53,9 +49,9 @@ bool dazeus::Database::open()
 {
 #ifdef DEBUG
 	fprintf(stderr, "Initiating connection to Mongo daemon at %s:%d\n",
-	  hostName_.c_str(), port_);
+	  dbc_.hostname.c_str(), dbc_.port);
 #endif
-	m_ = (void*)mongo_sync_connect(hostName_.c_str(), port_, TRUE);
+	m_ = (void*)mongo_sync_connect(dbc_.hostname.c_str(), dbc_.port, TRUE);
 	if(!m_) {
 		lastError_ = strerror(errno);
 #ifdef DEBUG

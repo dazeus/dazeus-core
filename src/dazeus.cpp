@@ -106,8 +106,7 @@ bool dazeus::DaZeus::configLoaded() const
 bool dazeus::DaZeus::connectDatabase()
 {
   assert(config_->isRead());
-  const DatabaseConfig &dbc = config_->getDatabaseConfig();
-  database_ = new Database(dbc.hostname, dbc.port, dbc.database, dbc.username, dbc.password);
+  database_ = new Database(config_->getDatabaseConfig());
 
   if( !database_->open() )
   {
