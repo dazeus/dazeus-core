@@ -36,40 +36,18 @@ dazeus::Database::~Database()
 		mongo_sync_disconnect(M);
 }
 
-/**
- * @brief Returns the last error in the QSqlDatabase object.
- */
-std::string dazeus::Database::lastError() const
+void dazeus::Database::open()
 {
-	return lastError_;
-}
-
-bool dazeus::Database::open()
-{
-#ifdef DEBUG
-	fprintf(stderr, "Initiating connection to Mongo daemon at %s:%d\n",
-	  dbc_.hostname.c_str(), dbc_.port);
-#endif
 	m_ = (void*)mongo_sync_connect(dbc_.hostname.c_str(), dbc_.port, TRUE);
 	if(!m_) {
-		lastError_ = strerror(errno);
-#ifdef DEBUG
-		fprintf(stderr, "Connection error: %s\n", lastError_.c_str());
-#endif
-		return false;
+		throw exception("Failed to connect to database: " + std::string(strerror(errno)));
 	}
 	if(!mongo_sync_conn_set_auto_reconnect(M, TRUE)) {
-		lastError_ = strerror(errno);
 		mongo_sync_disconnect(M);
-#ifdef DEBUG
-		fprintf(stderr, "Cannot set auto-reconnect: %s\n", lastError_.c_str());
-#endif
-		return false;
+		m_ = 0;
+		throw exception("Failed to set autoreconnect");
 	}
 
-#ifdef DEBUG
-	fprintf(stderr, "Building index on table %s...\n", PROPERTIES);
-#endif
 	bson *index = bson_build(
 		BSON_TYPE_INT32, "network", 1,
 		BSON_TYPE_INT32, "receiver", 1,
@@ -81,16 +59,11 @@ bool dazeus::Database::open()
 	std::string properties = dbc_.database + ".properties";
 	if(!mongo_sync_cmd_index_create(M, properties.c_str(), index, 0))
 	{
-#ifdef DEBUG
-		fprintf(stderr, "Index create error: %s\n", strerror(errno));
-#endif
-		lastError_ = strerror(errno);
 		bson_free(index);
-		return false;
+		throw exception("Failed to create property index");
 	}
 
 	bson_free(index);
-	return true;
 }
 
 /**

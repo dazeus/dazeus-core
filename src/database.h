@@ -44,8 +44,12 @@ class Database
           Database(DatabaseConfig dbc);
          ~Database();
 
-    bool            open();
-    std::string     lastError() const;
+    struct exception : public std::runtime_error {
+        exception(std::string error) : std::runtime_error(error) {}
+    };
+
+    // Connect or re-connect to the database. Throws an exception if connecting failed.
+    void            open();
 
     std::string     property( const std::string &variable,
                               const std::string &networkScope  = std::string(),

@@ -99,18 +99,16 @@ bool dazeus::DaZeus::configLoaded() const
 
 
 /**
- * @brief Start connecting to the database.
- *
- * Does nothing if already connected.
+ * @brief (Re-)connect to the database.
  */
 bool dazeus::DaZeus::connectDatabase()
 {
   assert(config_->isRead());
   database_ = new Database(config_->getDatabaseConfig());
-
-  if( !database_->open() )
-  {
-    fprintf(stderr, "Could not connect to database: %s\n", database_->lastError().c_str());
+  try {
+    database_->open();
+  } catch(Database::exception &e) {
+    fprintf(stderr, "Could not connect to database: %s\n", e.what());
     return false;
   }
 
