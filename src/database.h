@@ -13,17 +13,7 @@
 namespace dazeus {
 
 struct DatabaseConfig {
-  DatabaseConfig(std::string t = std::string(), std::string h = std::string("127.0.0.1"),
-    uint16_t p = 27017, std::string user = std::string(), std::string pass =
-    std::string(), std::string db = std::string("dazeus"), std::string opt =
-    std::string()) : type(t), hostname(h), port(p), username(user),
-    password(pass), database(db), options(opt) {}
-  DatabaseConfig(const DatabaseConfig &s) : type(s.type),
-    hostname(s.hostname), port(s.port), username(s.username),
-    password(s.password), database(s.database), options(s.options) {}
-  const DatabaseConfig &operator=(const DatabaseConfig &s) { type = s.type;
-    hostname = s.hostname; port = s.port; username = s.username; password =
-    s.password; database = s.database; options = s.options; return *this; }
+  DatabaseConfig() : hostname("127.0.0.1"), port(27017), database("dazeus") {}
 
   std::string type;
   std::string hostname;
