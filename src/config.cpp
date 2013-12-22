@@ -40,11 +40,6 @@ struct ConfigReaderState {
 };
 }
 
-dazeus::ConfigReader::ConfigReader(std::string file)
-: file(file)
-, is_read(false)
-{}
-
 static DOTCONF_CB(sect_open);
 static DOTCONF_CB(sect_close);
 static DOTCONF_CB(option);
@@ -90,7 +85,7 @@ static bool bool_is_true(std::string s) {
 	return s == "true" || s == "yes" || s == "1";
 }
 
-void dazeus::ConfigReader::read() {
+void dazeus::ConfigReader::read(std::string file) {
 	if(is_read) return;
 
 	std::shared_ptr<ConfigReaderState> state = std::make_shared<ConfigReaderState>();

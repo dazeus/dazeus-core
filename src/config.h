@@ -67,7 +67,6 @@ class ConfigReader {
 	std::vector<SocketConfig> sockets;
 	boost::optional<GlobalConfig> global;
 	boost::optional<DatabaseConfig> database;
-	std::string file;
 	bool is_read;
 
 public:
@@ -75,11 +74,11 @@ public:
 		exception(std::string e) : std::runtime_error(e) {}
 	};
 
-	ConfigReader(std::string file);
+	ConfigReader() : is_read(false) {}
 
 	bool isRead() const { return is_read; }
 	// Re-reads all configuration. Throws ConfigReader::exception if something failed.
-	void read();
+	void read(std::string file);
 
 	const std::vector<NetworkConfigPtr> &getNetworks() const { return networks; }
 	const std::vector<PluginConfig> &getPlugins() const { return plugins; }
@@ -93,7 +92,6 @@ public:
 	}
 	const GlobalConfig &getGlobalConfig() const { return *global; }
 	const DatabaseConfig &getDatabaseConfig() const { return *database; }
-	const std::string &getFile() const { return file; }
 };
 
 }

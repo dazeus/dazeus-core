@@ -155,13 +155,13 @@ bool dazeus::DaZeus::loadConfig()
     delete config_;
   }
 
-  config_ = new ConfigReader(configFileName_);
+  config_ = new ConfigReader();
 
   if( !config_ )
     return false;
 
   try {
-    config_->read();
+    config_->read(configFileName_);
   } catch(ConfigReader::exception &e) {
     std::cerr << "Failed to read configuration: " << e.what() << std::endl;
     return false;
