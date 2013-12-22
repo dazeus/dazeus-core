@@ -12,8 +12,6 @@
 #include <sstream>
 #include <stdio.h>
 
-// #define DEBUG
-
 #define M (mongo_sync_connection*)m_
 
 /**
@@ -21,7 +19,6 @@
  */
 dazeus::Database::Database(DatabaseConfig dbc)
 : m_(0)
-, lastError_()
 , dbc_(dbc)
 {
 }
@@ -112,44 +109,28 @@ std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, 
 	bson_free(selector);
 
 	if(!p) {
-		lastError_ = strerror(errno);
-#ifdef DEBUG
-		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
-#endif
-		return std::vector<std::string>();
+		throw exception("Failed to execute query");
 	}
 
 	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, properties.c_str(), p);
 	if(!cursor) {
-		lastError_ = strerror(errno);
-#ifdef DEBUG
-		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
-#endif
-		return std::vector<std::string>();
+		throw exception("Failed to create cursor");
 	}
 
 	std::vector<std::string> res;
 	while(mongo_sync_cursor_next(cursor)) {
 		bson *result = mongo_sync_cursor_get_data(cursor);
 		if(!result) {
-			lastError_ = strerror(errno);
-#ifdef DEBUG
-			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
-#endif
 			mongo_sync_cursor_free(cursor);
-			return res;
+			throw exception("Failed to get data from cursor");
 		}
 
 		bson_cursor *c = bson_find(result, "variable");
 		const char *value;
 		if(!bson_cursor_get_string(c, &value)) {
-			lastError_ = strerror(errno);
-#ifdef DEBUG
-			fprintf(stderr, "Database error: %s\n", lastError_.c_str());
-#endif
 			mongo_sync_cursor_free(cursor);
 			bson_cursor_free(c);
-			return res;
+			throw exception("Failed to get string form cursor");
 		}
 
 		value += ns.length() + 1;
@@ -247,39 +228,29 @@ std::string dazeus::Database::property( const std::string &variable,
 	if(sender) bson_free(sender);
 
 	if(!p) {
-		lastError_ = strerror(errno);
+		// error asking, or no results, assume it's the second
 		return std::string();
 	}
 
 	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, properties.c_str(), p);
 	if(!cursor) {
-		lastError_ = strerror(errno);
-		return std::string();
+		throw exception("Failed to allocate cursor");
 	}
 
-	if(!mongo_sync_cursor_next(cursor)) {
-#ifdef DEBUG
-		fprintf(stderr, "Variable %s not found within given scope.\n", variable.c_str());
-#endif
-	}
+	mongo_sync_cursor_next(cursor);
 
 	bson *result = mongo_sync_cursor_get_data(cursor);
 	if(!result) {
-		lastError_ = strerror(errno);
 		mongo_sync_cursor_free(cursor);
-		return std::string();
+		throw exception("Failed to retrieve data from cursor");
 	}
 
 	bson_cursor *c = bson_find(result, "value");
 	const char *value;
 	if(!bson_cursor_get_string(c, &value)) {
-		lastError_ = strerror(errno);
-#ifdef DEBUG
-		fprintf(stderr, "Database error: %s\n", lastError_.c_str());
-#endif
 		mongo_sync_cursor_free(cursor);
 		bson_cursor_free(c);
-		return std::string();
+		throw exception("Failed to retrieve data from cursor");
 	}
 
 	std::string res(value);
@@ -335,24 +306,22 @@ void dazeus::Database::setProperty( const std::string &variable,
 	bson_finish(selector);
 
 	std::string properties = dbc_.database + ".properties";
+	std::string error;
 	// if the value length is zero, run a delete instead
 	if(value.length() == 0) {
 		if(!mongo_sync_cmd_delete(M, properties.c_str(),
 			0, selector))
 		{
-			lastError_ = strerror(errno);
-#ifdef DEBUG
-			fprintf(stderr, "Error: %s\n", lastError_.c_str());
-#endif
+			error = "Failed to delete property";
 		}
 	} else if(!mongo_sync_cmd_update(M, properties.c_str(),
 		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, object))
 	{
-		lastError_ = strerror(errno);
-#ifdef DEBUG
-		fprintf(stderr, "Error: %s\n", lastError_.c_str());
-#endif
+		error = "Failed to update property";
 	}
 	bson_free(object);
 	bson_free(selector);
+	if(!error.empty()) {
+		throw exception(error);
+	}
 }

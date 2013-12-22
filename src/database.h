@@ -71,7 +71,6 @@ class Database
     void operator=(const Database&);
 
     void *m_;
-    std::string lastError_;
     DatabaseConfig dbc_;
 };
 
