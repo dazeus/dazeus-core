@@ -103,7 +103,7 @@ void dazeus::ConfigReader::read() {
 
 	configfile_t *configfile = dotconf_create(
 		const_cast<char*>(file.c_str()), options,
-		this, CASE_INSENSITIVE);
+		state, CASE_INSENSITIVE);
 	if(!configfile) {
 		throw exception(state->error = "Error opening config file.");
 	}
@@ -148,7 +148,7 @@ FUNC_ERRORHANDLER(error_handler)
 	(void)type;
 	(void)dc_errno;
 
-	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)configfile->context)->_state();
+	dazeus::ConfigReaderState *s = (dazeus::ConfigReaderState*)configfile->context;
 	if(s->error.length() == 0) {
 		s->error = msg;
 	} else {
@@ -161,7 +161,7 @@ static DOTCONF_CB(sect_open)
 {
 	(void)ctx;
 
-	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = (dazeus::ConfigReaderState*)cmd->context;
 	std::string name(cmd->name);
 
 	switch(s->current_section) {
@@ -221,7 +221,7 @@ static DOTCONF_CB(sect_close)
 {
 	(void)ctx;
 
-	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = (dazeus::ConfigReaderState*)cmd->context;
 
 	std::string name(cmd->name);
 	switch(s->current_section) {
@@ -280,7 +280,7 @@ static DOTCONF_CB(option)
 {
 	(void)ctx;
 
-	dazeus::ConfigReaderState *s = ((dazeus::ConfigReader*)cmd->context)->_state();
+	dazeus::ConfigReaderState *s = (dazeus::ConfigReaderState*)cmd->context;
 	std::string name(cmd->name);
 	switch(s->current_section) {
 	case S_ROOT: {

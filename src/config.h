@@ -86,7 +86,6 @@ public:
 	bool isRead() { return is_read; }
 	void read();
 	std::string error();
-	ConfigReaderState *_state() { return state; }
 
 	const std::vector<NetworkConfigPtr> &getNetworks() { return networks; }
 	const std::vector<PluginConfig> &getPlugins() { return plugins; }
