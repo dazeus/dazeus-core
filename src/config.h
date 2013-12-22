@@ -17,8 +17,6 @@
 
 namespace dazeus {
 
-struct ConfigReaderState;
-
 struct GlobalConfig {
 	GlobalConfig()
 	: default_nickname("DaZeus")
@@ -70,7 +68,6 @@ class ConfigReader {
 	boost::optional<GlobalConfig> global;
 	boost::optional<DatabaseConfig> database;
 	std::string file;
-	ConfigReaderState *state;
 	bool is_read;
 
 public:
@@ -79,9 +76,6 @@ public:
 	};
 
 	ConfigReader(std::string file);
-	ConfigReader(ConfigReader const&);
-	ConfigReader &operator=(ConfigReader const&);
-	~ConfigReader();
 
 	bool isRead() { return is_read; }
 	void read();

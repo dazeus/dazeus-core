@@ -21,10 +21,9 @@ enum section {
 	S_PLUGIN
 };
 
-struct dazeus::ConfigReaderState {
+namespace dazeus {
+struct ConfigReaderState {
 	ConfigReaderState() : current_section(S_ROOT) {}
-	ConfigReaderState(ConfigReaderState const&);
-	ConfigReaderState &operator=(ConfigReaderState const&);
 
 	int current_section;
 	std::vector<SocketConfig> sockets;
@@ -39,19 +38,12 @@ struct dazeus::ConfigReaderState {
 	boost::optional<dazeus::PluginConfig> plugin_progress;
 	std::string error;
 };
+}
 
 dazeus::ConfigReader::ConfigReader(std::string file)
 : file(file)
-, state(new ConfigReaderState())
 , is_read(false)
 {}
-
-dazeus::ConfigReader::~ConfigReader() {
-	networks.clear();
-	sockets.clear();
-	plugins.clear();
-	delete state;
-}
 
 static DOTCONF_CB(sect_open);
 static DOTCONF_CB(sect_close);
@@ -101,9 +93,11 @@ static bool bool_is_true(std::string s) {
 void dazeus::ConfigReader::read() {
 	if(is_read) return;
 
+	std::shared_ptr<ConfigReaderState> state = std::make_shared<ConfigReaderState>();
+
 	configfile_t *configfile = dotconf_create(
 		const_cast<char*>(file.c_str()), options,
-		state, CASE_INSENSITIVE);
+		state.get(), CASE_INSENSITIVE);
 	if(!configfile) {
 		throw exception(state->error = "Error opening config file.");
 	}
@@ -119,6 +113,7 @@ void dazeus::ConfigReader::read() {
 			state->error = "Error reading config file.";
 		throw exception(state->error);
 	}
+	dotconf_cleanup(configfile);
 
 	if(!state->database_progress) {
 		throw exception("No Database block defined in config file.");
@@ -135,11 +130,6 @@ void dazeus::ConfigReader::read() {
 	global = state->global_progress;
 	database = state->database_progress;
 
-	state->sockets.clear();
-	state->networks.clear();
-	state->plugins.clear();
-
-	dotconf_cleanup(configfile);
 	is_read = true;
 }
 
