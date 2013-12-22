@@ -211,7 +211,9 @@ static DOTCONF_CB(sect_open)
 		assert(!s->server_progress);
 		if(name == "<server>") {
 			s->current_section = S_SERVER;
-			s->server_progress = std::make_shared<dazeus::ServerConfig>("", s->network_progress);
+			s->server_progress = std::make_shared<dazeus::ServerConfig>();
+			s->server_progress->host = "";
+			s->server_progress->network = s->network_progress;
 		}
 		break;
 	default:
