@@ -193,11 +193,12 @@ static DOTCONF_CB(sect_open)
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
 			s->current_section = S_NETWORK;
-			std::string default_nick = s->global_progress->default_nickname;
-			std::string default_user = s->global_progress->default_username;
-			std::string default_full = s->global_progress->default_fullname;
-			s->network_progress = new dazeus::NetworkConfig(networkname, networkname,
-				default_nick, default_user, default_full);
+			s->network_progress = new dazeus::NetworkConfig();
+			s->network_progress->name = networkname;
+			s->network_progress->displayName = networkname;
+			s->network_progress->nickName = s->global_progress->default_nickname;
+			s->network_progress->userName = s->global_progress->default_username;
+			s->network_progress->fullName = s->global_progress->default_fullname;
 		} else if(name == "<plugin") {
 			std::string pluginname = cmd->data.str;
 			pluginname.resize(pluginname.length() - 1);
