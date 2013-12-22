@@ -344,7 +344,14 @@ void dazeus::PluginComm::poll() {
 					if((signed)info.readahead.length() >= info.waitingSize) {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
 						info.readahead = info.readahead.substr(info.waitingSize);
-						handle(dev, packet, info);
+						try {
+							handle(dev, packet, info);
+						} catch(std::exception &e) {
+							std::cerr << "Ignoring unhandled exception handling a plugin packet: \n  " << e.what() << std::endl;
+						} catch(...) {
+							std::cerr << "Ignoring unhandled non-exception throw handling a plugin packet." << std::endl;
+						}
+
 						info.waitingSize = 0;
 						parsedPacket = true;
 					}
