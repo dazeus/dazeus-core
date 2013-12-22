@@ -44,7 +44,7 @@ struct PluginConfig {
 
 struct SocketConfig {
 	SocketConfig() : port(0) {}
-	std::string toString() {
+	std::string toString() const {
 		if(type == "unix") {
 			return "unix:" + path;
 		} else if(type == "tcp") {
@@ -77,23 +77,23 @@ public:
 
 	ConfigReader(std::string file);
 
-	bool isRead() { return is_read; }
+	bool isRead() const { return is_read; }
+	// Re-reads all configuration. Throws ConfigReader::exception if something failed.
 	void read();
-	std::string error();
 
-	const std::vector<NetworkConfigPtr> &getNetworks() { return networks; }
-	const std::vector<PluginConfig> &getPlugins() { return plugins; }
+	const std::vector<NetworkConfigPtr> &getNetworks() const { return networks; }
+	const std::vector<PluginConfig> &getPlugins() const { return plugins; }
 	// socket configs may be changed when creating one (but this should change)
 	std::vector<SocketConfig> &getSockets() { return sockets; }
-	SocketConfig &getPluginSocket() {
+	const SocketConfig &getPluginSocket() const {
 		if(sockets.size() == 0) {
 			throw std::runtime_error("No sockets defined, cannot run plugins");
 		}
 		return sockets.at(0);
 	}
-	const GlobalConfig &getGlobalConfig() { return *global; }
-	const DatabaseConfig &getDatabaseConfig() { return *database; }
-	std::string &getFile() { return file; }
+	const GlobalConfig &getGlobalConfig() const { return *global; }
+	const DatabaseConfig &getDatabaseConfig() const { return *database; }
+	const std::string &getFile() const { return file; }
 };
 
 }
