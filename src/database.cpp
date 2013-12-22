@@ -15,7 +15,6 @@
 // #define DEBUG
 
 #define M (mongo_sync_connection*)m_
-#define PROPERTIES std::string(dbc_.database + ".properties").c_str()
 
 /**
  * @brief Constructor.
@@ -79,7 +78,8 @@ bool dazeus::Database::open()
 	);
 	bson_finish(index);
 
-	if(!mongo_sync_cmd_index_create(M, PROPERTIES, index, 0))
+	std::string properties = dbc_.database + ".properties";
+	if(!mongo_sync_cmd_index_create(M, properties.c_str(), index, 0))
 	{
 #ifdef DEBUG
 		fprintf(stderr, "Index create error: %s\n", strerror(errno));
@@ -133,7 +133,8 @@ std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, 
 	}
 	bson_finish(selector);
 
-	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 0, selector, NULL /* TODO: variable only? */);
+	std::string properties = dbc_.database + ".properties";
+	mongo_packet *p = mongo_sync_cmd_query(M, properties.c_str(), 0, 0, 0, selector, NULL /* TODO: variable only? */);
 
 	bson_free(selector);
 
@@ -145,7 +146,7 @@ std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, 
 		return std::vector<std::string>();
 	}
 
-	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, properties.c_str(), p);
 	if(!cursor) {
 		lastError_ = strerror(errno);
 #ifdef DEBUG
@@ -263,7 +264,8 @@ std::string dazeus::Database::property( const std::string &variable,
 	bson_append_document(query, "$query", selector);
 	bson_finish(query);
 
-	mongo_packet *p = mongo_sync_cmd_query(M, PROPERTIES, 0, 0, 1, query, NULL /* TODO: value only? */);
+	std::string properties = dbc_.database + ".properties";
+	mongo_packet *p = mongo_sync_cmd_query(M, properties.c_str(), 0, 0, 1, query, NULL /* TODO: value only? */);
 
 	bson_free(query);
 	bson_free(selector);
@@ -276,7 +278,7 @@ std::string dazeus::Database::property( const std::string &variable,
 		return std::string();
 	}
 
-	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, PROPERTIES, p);
+	mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, properties.c_str(), p);
 	if(!cursor) {
 		lastError_ = strerror(errno);
 		return std::string();
@@ -359,9 +361,10 @@ void dazeus::Database::setProperty( const std::string &variable,
 	}
 	bson_finish(selector);
 
+	std::string properties = dbc_.database + ".properties";
 	// if the value length is zero, run a delete instead
 	if(value.length() == 0) {
-		if(!mongo_sync_cmd_delete(M, PROPERTIES,
+		if(!mongo_sync_cmd_delete(M, properties.c_str(),
 			0, selector))
 		{
 			lastError_ = strerror(errno);
@@ -369,7 +372,7 @@ void dazeus::Database::setProperty( const std::string &variable,
 			fprintf(stderr, "Error: %s\n", lastError_.c_str());
 #endif
 		}
-	} else if(!mongo_sync_cmd_update(M, PROPERTIES,
+	} else if(!mongo_sync_cmd_update(M, properties.c_str(),
 		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, object))
 	{
 		lastError_ = strerror(errno);
