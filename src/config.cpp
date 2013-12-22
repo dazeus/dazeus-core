@@ -22,20 +22,19 @@ enum section {
 };
 
 struct dazeus::ConfigReaderState {
-	ConfigReaderState() : current_section(S_ROOT),
-	network_progress(0) {}
+	ConfigReaderState() : current_section(S_ROOT) {}
 	ConfigReaderState(ConfigReaderState const&);
 	ConfigReaderState &operator=(ConfigReaderState const&);
 
 	int current_section;
 	std::vector<SocketConfig> sockets;
-	std::vector<NetworkConfig*> networks;
+	std::vector<NetworkConfigPtr> networks;
 	std::vector<PluginConfig> plugins;
 
 	boost::optional<dazeus::GlobalConfig> global_progress;
 	boost::optional<dazeus::SocketConfig> socket_progress;
 	boost::optional<dazeus::DatabaseConfig> database_progress;
-	dazeus::NetworkConfig *network_progress;
+	std::shared_ptr<dazeus::NetworkConfig> network_progress;
 	std::shared_ptr<dazeus::ServerConfig> server_progress;
 	boost::optional<dazeus::PluginConfig> plugin_progress;
 	std::string error;
@@ -48,10 +47,6 @@ dazeus::ConfigReader::ConfigReader(std::string file)
 {}
 
 dazeus::ConfigReader::~ConfigReader() {
-	std::vector<NetworkConfig*>::iterator it;
-	for(it = networks.begin(); it != networks.end(); ++it) {
-		delete *it;
-	}
 	networks.clear();
 	sockets.clear();
 	plugins.clear();
@@ -130,7 +125,7 @@ void dazeus::ConfigReader::read() {
 	}
 
 	assert(!state->socket_progress);
-	assert(state->network_progress == 0);
+	assert(!state->network_progress);
 	assert(!state->server_progress);
 	assert(!state->plugin_progress);
 
@@ -173,7 +168,7 @@ static DOTCONF_CB(sect_open)
 	case S_ROOT:
 		assert(s->global_progress);
 		assert(!s->socket_progress);
-		assert(s->network_progress == NULL);
+		assert(!s->network_progress);
 		assert(!s->server_progress);
 		if(name == "<socket>") {
 			s->current_section = S_SOCKET;
@@ -188,7 +183,7 @@ static DOTCONF_CB(sect_open)
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
 			s->current_section = S_NETWORK;
-			s->network_progress = new dazeus::NetworkConfig();
+			s->network_progress = std::make_shared<dazeus::NetworkConfig>();
 			s->network_progress->name = networkname;
 			s->network_progress->displayName = networkname;
 			s->network_progress->nickName = s->global_progress->default_nickname;
@@ -207,7 +202,7 @@ static DOTCONF_CB(sect_open)
 		}
 		break;
 	case S_NETWORK:
-		assert(s->network_progress != NULL);
+		assert(s->network_progress);
 		assert(!s->server_progress);
 		if(name == "<server>") {
 			s->current_section = S_SERVER;
@@ -251,7 +246,7 @@ static DOTCONF_CB(sect_close)
 	case S_NETWORK:
 		if(name == "</network>") {
 			s->networks.push_back(s->network_progress);
-			s->network_progress = 0;
+			s->network_progress.reset();
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";
@@ -348,7 +343,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_NETWORK: {
-		dazeus::NetworkConfig *nc = s->network_progress;
+		dazeus::NetworkConfigPtr nc = s->network_progress;
 		assert(nc);
 		if(name == "autoconnect") {
 			nc->autoConnect = bool_is_true(cmd->data.str);

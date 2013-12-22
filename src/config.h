@@ -64,7 +64,7 @@ struct SocketConfig {
 };
 
 class ConfigReader {
-	std::vector<NetworkConfig*> networks;
+	std::vector<NetworkConfigPtr> networks;
 	std::vector<PluginConfig> plugins;
 	std::vector<SocketConfig> sockets;
 	boost::optional<GlobalConfig> global;
@@ -88,7 +88,7 @@ public:
 	std::string error();
 	ConfigReaderState *_state() { return state; }
 
-	const std::vector<NetworkConfig*> &getNetworks() { return networks; }
+	const std::vector<NetworkConfigPtr> &getNetworks() { return networks; }
 	const std::vector<PluginConfig> &getPlugins() { return plugins; }
 	// socket configs may be changed when creating one (but this should change)
 	std::vector<SocketConfig> &getSockets() { return sockets; }

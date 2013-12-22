@@ -167,7 +167,7 @@ bool dazeus::DaZeus::loadConfig()
     return false;
   }
 
-  const std::vector<NetworkConfig*> &networks = config_->getNetworks();
+  const std::vector<NetworkConfigPtr> &networks = config_->getNetworks();
 
   if(!connectDatabase()) {
     delete config_;
@@ -180,7 +180,7 @@ bool dazeus::DaZeus::loadConfig()
   plugins_ = new PluginComm( database_, config_, this );
   plugin_monitor_ = new PluginMonitor(config_);
 
-  std::vector<NetworkConfig*>::const_iterator it;
+  std::vector<NetworkConfigPtr>::const_iterator it;
   for(it = networks.begin(); it != networks.end(); ++it)
   {
     Network *net = new Network( *it );
