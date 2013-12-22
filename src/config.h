@@ -61,6 +61,9 @@ struct SocketConfig {
 	std::string path;
 };
 
+class ConfigReader;
+typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
+
 class ConfigReader {
 	std::vector<NetworkConfigPtr> networks;
 	std::vector<PluginConfig> plugins;

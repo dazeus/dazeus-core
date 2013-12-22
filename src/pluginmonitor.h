@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace dazeus {
 
@@ -16,6 +17,7 @@ struct PluginState;
 struct PluginConfig;
 struct NetworkConfig;
 class ConfigReader;
+typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 
 /**
  * @class PluginMonitor
@@ -34,7 +36,7 @@ class ConfigReader;
 class PluginMonitor
 {
   public:
-          PluginMonitor(ConfigReader *config);
+          PluginMonitor(ConfigReaderPtr config);
          ~PluginMonitor();
 
     bool  shouldRun() { return should_run_; }
@@ -52,7 +54,7 @@ class PluginMonitor
     static void plugin_failed(PluginState *state, bool permanent = false);
 
     std::string pluginDirectory_;
-    ConfigReader *config_;
+    ConfigReaderPtr config_;
     std::vector<PluginState*> state_;
     volatile sig_atomic_t should_run_;
 };

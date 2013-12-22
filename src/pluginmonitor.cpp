@@ -64,7 +64,7 @@ bool executable_exists(std::string file) {
 	return access(file.c_str(), X_OK) == 0;
 }
 
-dazeus::PluginMonitor::PluginMonitor(ConfigReader *config)
+dazeus::PluginMonitor::PluginMonitor(ConfigReaderPtr config)
 : pluginDirectory_(config->getGlobalConfig().plugindirectory)
 , config_(config)
 , should_run_(1)

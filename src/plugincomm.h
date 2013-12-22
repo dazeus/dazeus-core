@@ -16,11 +16,13 @@
 #include "utils.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
 #include "network.h"
+#include <memory>
 
 namespace dazeus {
 
 class Database;
 class ConfigReader;
+typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 class DaZeus;
 
 class PluginComm : public NetworkListener
@@ -166,7 +168,7 @@ class PluginComm : public NetworkListener
   };
 
   public:
-            PluginComm( Database *d, ConfigReader *c, DaZeus *bot );
+            PluginComm( Database *d, ConfigReaderPtr c, DaZeus *bot );
   virtual  ~PluginComm();
   void dispatch(const std::string &event, const std::vector<std::string> &parameters);
   void init();
@@ -189,7 +191,7 @@ class PluginComm : public NetworkListener
     std::vector<Command*> commandQueue_;
     std::map<int,SocketInfo> sockets_;
     Database *database_;
-    ConfigReader *config_;
+    ConfigReaderPtr config_;
     DaZeus *dazeus_;
     void handle(int dev, const std::string &line, SocketInfo &info);
     void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);

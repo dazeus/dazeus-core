@@ -8,10 +8,12 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace dazeus {
 
 class ConfigReader;
+typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 class PluginComm;
 class Network;
 class Database;
@@ -42,7 +44,7 @@ class DaZeus
     DaZeus(const DaZeus&);
     void operator=(const DaZeus&);
 
-    ConfigReader    *config_;
+    ConfigReaderPtr  config_;
     std::string      configFileName_;
     PluginComm      *plugins_;
     PluginMonitor   *plugin_monitor_;

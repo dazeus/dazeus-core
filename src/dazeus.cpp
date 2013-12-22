@@ -23,7 +23,7 @@
  * will not be loaded automatically, use loadConfig() for that.
  */
 dazeus::DaZeus::DaZeus( std::string configFileName )
-: config_( 0 )
+: config_(std::make_shared<ConfigReader>())
 , configFileName_( configFileName )
 , plugins_( 0 )
 , plugin_monitor_( 0 )
@@ -49,7 +49,6 @@ dazeus::DaZeus::~DaZeus()
 
   delete plugin_monitor_;
   delete plugins_;
-  delete config_;
   delete database_;
 }
 
@@ -106,6 +105,7 @@ bool dazeus::DaZeus::configLoaded() const
  */
 bool dazeus::DaZeus::connectDatabase()
 {
+  assert(config_->isRead());
   const DatabaseConfig &dbc = config_->getDatabaseConfig();
   database_ = new Database(dbc.hostname, dbc.port, dbc.database, dbc.username, dbc.password);
 
@@ -150,15 +150,7 @@ bool dazeus::DaZeus::initPlugins()
 bool dazeus::DaZeus::loadConfig()
 {
   assert( configFileName_.length() != 0 );
-
-  if( config_ != 0 ) {
-    delete config_;
-  }
-
-  config_ = new ConfigReader();
-
-  if( !config_ )
-    return false;
+  assert(config_);
 
   try {
     config_->read(configFileName_);
@@ -166,12 +158,11 @@ bool dazeus::DaZeus::loadConfig()
     std::cerr << "Failed to read configuration: " << e.what() << std::endl;
     return false;
   }
+  assert(config_->isRead());
 
   const std::vector<NetworkConfigPtr> &networks = config_->getNetworks();
 
   if(!connectDatabase()) {
-    delete config_;
-    config_ = 0;
     return false;
   }
 
@@ -186,8 +177,6 @@ bool dazeus::DaZeus::loadConfig()
     Network *net = new Network( *it );
     net->addListener(plugins_);
     if( net == 0 ) {
-      delete config_;
-      config_ = 0;
       return false;
     }
 

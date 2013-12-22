@@ -45,7 +45,7 @@ static std::string realpath(std::string path) {
 
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
-dazeus::PluginComm::PluginComm(Database *d, ConfigReader *c, DaZeus *bot)
+dazeus::PluginComm::PluginComm(Database *d, ConfigReaderPtr c, DaZeus *bot)
 : NetworkListener()
 , tcpServers_()
 , localServers_()
