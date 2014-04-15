@@ -5,7 +5,7 @@ file(GLOB dotconf_sources "../contrib/dotconf/src/*.c")
 file(GLOB sources "*.cpp")
 file(GLOB headers "*.h")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11"}
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 
 add_executable(dazeus ${sources} ${headers} ${dotconf_sources})
 add_definitions("-Wall -Wextra -Weffc++ -Wno-long-long")
