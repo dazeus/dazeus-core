@@ -65,6 +65,21 @@ class Database
                                   const std::string &receiverScope = std::string(),
                                   const std::string &senderScope   = std::string() );
 
+    bool            hasPermission(const std::string &perm_name,
+                                  const std::string &network,
+                                  const std::string &channel,
+                                  const std::string &sender,
+                                  bool defaultPermission) const;
+    void          unsetPermission(const std::string &perm_name,
+                                  const std::string &network,
+                                  const std::string &receiver = std::string(),
+                                  const std::string &sender   = std::string());
+    void            setPermission(bool permission,
+                                  const std::string &perm_name,
+                                  const std::string &network,
+                                  const std::string &receiver = std::string(),
+                                  const std::string &sender   = std::string());
+
   private:
     // explicitly disable copy constructor
     Database(const Database&);

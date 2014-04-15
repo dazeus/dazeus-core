@@ -325,3 +325,159 @@ void dazeus::Database::setProperty( const std::string &variable,
 		throw exception(error);
 	}
 }
+
+bool dazeus::Database::hasPermission(const std::string &permission, const std::string &network,
+const std::string &channel, const std::string &sender, bool defaultPermission) const
+{
+	// variable, network, channel, sender
+	// variable, network, sender
+	// variable, network, channel
+
+	// db.c.
+	//   find({name:'PERMISSION', network:'NETWORKNAME', channel:'CHANNELNAME', sender:'SENDERNAME'})
+	//   find({name:'PERMISSION', network:'NETWORKNAME', channel:null, sender:'SENDERNAME'})
+	//   find({name:'PERMISSION', network:'NETWORKNAME', channel:'CHANNELNAME', sender:null})
+
+	enum PermSelectMode { ALL = 0, SENDER = 1, CHANNEL = 2, NETWORK = 3, END = 4 };
+	PermSelectMode modes = ALL;
+
+	while(modes < END) {
+		bson *selector = bson_build(
+			BSON_TYPE_STRING, "name", permission.c_str(), -1,
+			BSON_TYPE_STRING, "network", network.c_str(), -1,
+			BSON_TYPE_NONE
+		);
+		if(modes == ALL || modes == CHANNEL) {
+			bson_append_string(selector, "channel", channel.c_str(), -1);
+		} else {
+			bson_append_null(selector, "channel");
+		}
+		if(modes == ALL || modes == SENDER) {
+			bson_append_string(selector, "sender", sender.c_str(), -1);
+		} else {
+			bson_append_null(selector, "sender");
+		}
+		bson_finish(selector);
+		modes = PermSelectMode(int(modes) + 1);
+
+		bson *query = bson_new();
+		bson_append_document(query, "$query", selector);
+		bson_finish(query);
+
+		std::string collection = dbc_.database + ".permissions";
+		mongo_packet *p = mongo_sync_cmd_query(M, collection.c_str(), 0, 0, 1, query, NULL /* TODO: value only? */);
+
+		bson_free(query);
+		bson_free(selector);
+
+		if(!p) {
+			// error asking, or no results, assume it's the second
+			continue;
+		}
+
+		mongo_sync_cursor *cursor = mongo_sync_cursor_new(M, collection.c_str(), p);
+		if(!cursor) {
+			throw exception("Failed to allocate cursor");
+		}
+
+		mongo_sync_cursor_next(cursor);
+
+		bson *result = mongo_sync_cursor_get_data(cursor);
+		if(!result) {
+			mongo_sync_cursor_free(cursor);
+			throw exception("Failed to retrieve data from cursor");
+		}
+
+		bson_cursor *c = bson_find(result, "permission");
+		gboolean permission;
+		if(!bson_cursor_get_boolean(c, &permission)) {
+			mongo_sync_cursor_free(cursor);
+			bson_cursor_free(c);
+			throw exception("Failed to retrieve data from cursor");
+		}
+
+		bson_free(result);
+		bson_cursor_free(c);
+
+		// only one result
+		assert(!mongo_sync_cursor_next(cursor));
+
+		mongo_sync_cursor_free(cursor);
+		return permission;
+	}
+
+	// no results
+	return defaultPermission;
+}
+
+void dazeus::Database::unsetPermission(const std::string &perm_name, const std::string &network,
+const std::string &channel, const std::string &sender)
+{
+	bson *selector = bson_build(
+		BSON_TYPE_STRING, "name", perm_name.c_str(), -1,
+		BSON_TYPE_STRING, "network", network.c_str(), -1,
+		BSON_TYPE_NONE
+	);
+	if(channel.empty()) {
+		bson_append_null(selector, "channel");
+	} else {
+		bson_append_string(selector, "channel", channel.c_str(), -1);
+	}
+	if(sender.empty()) {
+		bson_append_null(selector, "sender");
+	} else {
+		bson_append_string(selector, "sender", sender.c_str(), -1);
+	}
+	bson_finish(selector);
+
+	std::string collection = dbc_.database + ".permissions";
+	if(!mongo_sync_cmd_delete(M, collection.c_str(), 0, selector))
+	{
+		throw std::runtime_error("Failed to delete property");
+	}
+
+	bson_free(selector);
+}
+
+void dazeus::Database::setPermission(bool permission, const std::string &perm_name,
+const std::string &network, const std::string &channel, const std::string &sender)
+{
+	bson *selector = bson_build(
+		BSON_TYPE_STRING, "name", perm_name.c_str(), -1,
+		BSON_TYPE_STRING, "network", network.c_str(), -1,
+		BSON_TYPE_NONE
+	);
+	bson *new_object = bson_build(
+		BSON_TYPE_STRING, "name", perm_name.c_str(), -1,
+		BSON_TYPE_STRING, "network", network.c_str(), -1,
+		BSON_TYPE_BOOLEAN, "permission", permission,
+		BSON_TYPE_NONE
+	);
+	if(channel.empty()) {
+		bson_append_null(selector, "channel");
+		bson_append_null(new_object, "channel");
+	} else {
+		bson_append_string(selector, "channel", channel.c_str(), -1);
+		bson_append_string(new_object, "channel", channel.c_str(), -1);
+	}
+	if(sender.empty()) {
+		bson_append_null(selector, "sender");
+		bson_append_null(new_object, "sender");
+	} else {
+		bson_append_string(selector, "sender", sender.c_str(), -1);
+		bson_append_string(new_object, "sender", sender.c_str(), -1);
+	}
+	bson_finish(selector);
+	bson_finish(new_object);
+
+	std::string collection = dbc_.database + ".permissions";
+	if(!mongo_sync_cmd_update(M, collection.c_str(),
+		MONGO_WIRE_FLAG_UPDATE_UPSERT, selector, new_object))
+	{
+		throw std::runtime_error("Failed to update permission");
+	}
+
+	bson_free(selector);
+	bson_free(new_object);
+}
+

@@ -251,4 +251,39 @@ requests. Some examples follow:
 < {"did":"property", "success":true, "variable":"examples.scope.foo"}
 \endcode
 
+\section Permissions
+
+Next to properties, DaZeus can store and check permissions for you, in a
+similar way to storing properties as above. Permissions are a mapping of
+scope and permission name to booleans; they can be set, unset and requested:
+
+\code
+# Give all users on Freenode permission to EatCake
+> {"do":"permission", "scope":["freenode"], "params":["set","EatCake", true]}
+< {"did":"permission", "success":true}
+
+# Does ChanServ Freenode have permission to EatCake in #freenode?  (the "false"
+# is a default: if no permission state can be found, this value is returned.)
+> {"do":"permission", "scope":["freenode", "#freenode", "ChanServ"], "params":["has", "EatCake", false]}
+< {"did":"permission", "success":true, "has_permission":true}
+
+# Explicitly deny EatCake in #freenode
+> {"do":"permission", "scope":["freenode", "#freenode"], "params":["set","EatCake", false]}
+< {"did":"permission", "success":true}
+> {"do":"permission", "scope":["freenode", "#freenode", "ChanServ"], "params":["has", "EatCake", false]}
+< {"did":"permission", "success":true, "has_permission":false}
+
+# Revoke both permissions
+> {"do":"permission", "scope":["freenode"], "params":["unset","EatCake"]}
+> {"do":"permission", "scope":["freenode", "#freenode"], "params":["unset","EatCake"]}
+# Now, the default value is returned
+> {"do":"permission", "scope":["freenode", "#freenode", "ChanServ"], "params":["has", "EatCake", false]}
+< {"did":"permission", "success":true, "has_permission":false}
+\endcode
+
+It's important to note that this is, currently, a simple boolean store; no
+active checking of identification state is done. This will be integrated with
+command support in due time, so that you can request a command is only
+forwarded to you if the user sending the command is fully authorized to use it.
+
 */

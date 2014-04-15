@@ -971,6 +971,45 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 				json_object_set_new(response, "error", json_string("Unrecognised config group"));
 			}
 		}
+	} else if(action == "permission") {
+		json_object_set_new(response, "did", json_string("permission"));
+
+		if(scope.size() == 0) {
+			json_object_set_new(response, "success", json_false());
+			json_object_set_new(response, "error", json_string("Missing scope"));
+		} else {
+			std::string network = scope[0];
+			std::string channel = scope.size() >= 2 ? scope[1] : "";
+			std::string sender = scope.size() >= 3 ? scope[2] : "";
+
+			if(params.size() < 2) {
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Missing parameters"));
+			} else if(params[0] == "set") {
+				std::string name = params[1];
+				bool permission = params[2] == "true" || params[2] == "1";
+				database_->setPermission(permission, name, network, channel, sender);
+				json_object_set_new(response, "success", json_true());
+			} else if(params[0] == "unset") {
+				std::string name = params[1];
+				database_->unsetPermission(name, network, channel, sender);
+				json_object_set_new(response, "success", json_true());
+			} else if(params[0] == "has") {
+				if(params.size() < 3) {
+					json_object_set_new(response, "success", json_false());
+					json_object_set_new(response, "error", json_string("Missing parameters"));
+				} else {
+					std::string name = params[1];
+					bool defaultPermission = params[2] == "true" || params[2] == "1";
+					bool permission = database_->hasPermission(name, network, channel, sender, defaultPermission);
+					json_object_set_new(response, "success", json_true());
+					json_object_set_new(response, "has_permission", permission ? json_true() : json_false());
+				}
+			} else {
+				json_object_set_new(response, "success", json_false());
+				json_object_set_new(response, "error", json_string("Did not understand request"));
+			}
+		}
 	} else {
 		json_object_set_new(response, "success", json_false());
 		json_object_set_new(response, "error", json_string("Did not understand request"));
