@@ -270,7 +270,7 @@ pid_t dazeus::PluginMonitor::fork_plugin(const std::string path, const std::vect
 	}
 
 	// prepare *char[] arguments
-	char **child_argv = (char**)malloc(arguments.size() * sizeof(char*) + 2);
+	char **child_argv = (char**)malloc((2 + arguments.size()) * sizeof(char*));
 	child_argv[0] = strdup(executable.c_str());
 	for(unsigned i = 0; i < arguments.size(); ++i) {
 		child_argv[i + 1] = strdup(arguments[i].c_str());
