@@ -95,6 +95,11 @@ For a CTCP ACTION (/me), use <tt>action</tt> instead of the first
   {"do":"action", "params":["network","channel","message"]}
 \endcode
 
+For a NOTICE, use <tt>notice</tt>:
+\code
+  {"do":"notice", "params":["network","channel","message"]}
+\endcode
+
 For joining a channel: (same for leaving a channel)
 \code
   {"do":"join", "params":["network","channel"]}
@@ -140,7 +145,7 @@ response. The following events exist:
 \code
   CONNECT, DISCONNECT, JOIN, PART, QUIT, NICK, MODE, TOPIC, INVITE, KICK,
   PRIVMSG, NOTICE, CTCP, CTCP_REP, ACTION, NUMERIC, UNKNOWN, WHOIS, NAMES,
-  PRIVMSG_ME, CTCP_ME, ACTION_ME, PONG
+  PRIVMSG_ME, NOTICE_ME, CTCP_ME, ACTION_ME, PONG
 \endcode
 
 All events will have have an <tt>event</tt> field set to one of the above

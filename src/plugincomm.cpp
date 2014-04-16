@@ -599,7 +599,7 @@ void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &o
 		MIN(1);
 		args << origin << params[0] << params;
 		dispatch("NUMERIC", args);
-	} else if(event == "ACTION_ME" || event == "CTCP_ME" || event == "PRIVMSG_ME") {
+	} else if(event == "ACTION_ME" || event == "CTCP_ME" || event == "PRIVMSG_ME" || event == "NOTICE_ME") {
 		MIN(2);
 		args << origin << params;
 		dispatch(event, args);
@@ -763,7 +763,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 			}
 		}
 	// REQUESTS ON A CHANNEL
-	} else if(action == "message" || action == "action" || action == "names") {
+	} else if(action == "message" || action == "notice" || action == "action" || action == "names") {
 		json_object_set_new(response, "did", json_string(action.c_str()));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
 			fprintf(stderr, "Wrong parameter size for message, skipping.\n");
@@ -794,6 +794,8 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 						n->names(receiver);
 					} else if(action == "message") {
 						n->say(receiver, message);
+					} else if(action == "notice") {
+						n->notice(receiver, message);
 					} else {
 						n->action(receiver, message);
 					}
