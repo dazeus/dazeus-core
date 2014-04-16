@@ -457,6 +457,7 @@ void dazeus::PluginComm::messageReceived( const std::string &origin, const std::
 	if(payload.length() != 0) {
 		// parse arguments from this string
 		bool inQuoteArg = false;
+		bool hadQuotesThisArg = false;
 		bool inEscape = false;
 		bool hasCommand = false;
 		std::vector<std::string> args;
@@ -472,17 +473,21 @@ void dazeus::PluginComm::messageReceived( const std::string &origin, const std::
 			} else if(payload.at(i) == '\\') {
 				inEscape = true;
 			} else if(!inQuoteArg && payload.at(i) == ' ') {
-				// finish this word
-				args.push_back(stringBuilder);
+				// finish this word, unless it's empty and we had no quotes (i.e. multiple spaces between args)
+				if(stringBuilder.length() != 0 || hadQuotesThisArg) {
+					args.push_back(stringBuilder);
+				}
 				stringBuilder.clear();
 				hasCommand = true;
+				hadQuotesThisArg = false;
 			} else if(payload.at(i) == '"') {
 				inQuoteArg = !inQuoteArg;
+				hadQuotesThisArg = true;
 			} else {
 				stringBuilder += payload.at(i);
 			}
 		}
-		if(stringBuilder.length() != 0)
+		if(stringBuilder.length() != 0 || hadQuotesThisArg)
 			args.push_back(stringBuilder);
 
 		if(args.size() > 0) {
