@@ -8,7 +8,7 @@ file(GLOB headers "*.h")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 
 add_executable(dazeus ${sources} ${headers} ${dotconf_sources})
-add_definitions("-Wall -Wextra -Weffc++ -Wno-long-long")
+add_definitions("-Wall -Wextra -Wno-long-long")
 # dotconf has unused variables
 add_definitions("-Wno-unused-parameter")
 # dotconf has wrong pointer signedness
