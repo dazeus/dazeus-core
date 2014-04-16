@@ -25,6 +25,12 @@ ENDIF()
 find_package(LibMongoClient REQUIRED)
 find_package(Boost REQUIRED)
 
+option(USE_ASAN "Enable Address Sanitizer" OFF)
+if(USE_ASAN)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif(USE_ASAN)
+
 include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
