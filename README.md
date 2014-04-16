@@ -58,5 +58,5 @@ example:
 
 # Authors
 
-The maintainer of DaZeus is Sjors Gielen <dazeus@sjorsgielen.nl>. Also,
-Ferdi van der Werf <pyromani@gmail.com> provided patches to the core bot.
+The maintainer of DaZeus is Sjors Gielen <dazeus@sjorsgielen.nl>. Some more
+authors who contributed to the core bot can be found in git history.
