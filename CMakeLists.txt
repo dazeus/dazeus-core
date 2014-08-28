@@ -57,6 +57,15 @@ if(${LibPqxx_FOUND})
 	add_definitions(-DDB_POSTGRES)
 endif()
 
+# SQLite
+find_package(Sqlite3 REQUIRED)
+if(${SQLITE3_FOUND})
+	include_directories(SYSTEM ${SQLITE3_INCLUDE_DIR})
+	set(LIBS ${LIBS} ${SQLITE3_LIBRARY_RELEASE})
+	set(DB_SQLITE true)
+	add_definitions(-DDB_SQLITE)
+endif()
+
 # MongoDB
 find_package(LibMongoClient)
 if(${LibMongoClient_FOUND})

@@ -7,6 +7,10 @@
 #include "postgres.h"
 #endif
 
+#ifdef DB_SQLITE
+#include "sqlite.h"
+#endif
+
 #ifdef DB_MONGO
 #include "mongo.h"
 #endif
@@ -24,6 +28,12 @@ class Factory {
     if (dbc.type == "postgres" || dbc.type == "postgresql"
         || dbc.type == "pq" || dbc.type == "psql") {
       instance = new PostgreSQLDatabase(dbc);
+    }
+    #endif
+
+    #ifdef DB_SQLITE
+    if (dbc.type == "sqlite" || dbc.type == "sqlite3") {
+      instance = new SQLiteDatabase(dbc);
     }
     #endif
 

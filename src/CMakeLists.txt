@@ -13,6 +13,13 @@ if(${DB_POSTGRES})
   set(headers ${headers} ${postgres_headers})
 endif()
 
+if(${DB_SQLITE})
+  file(GLOB sqlite_sources "db/sqlite.cpp")
+  file(GLOB sqlite_headers "db/sqlite.h")
+  set(sources ${sources} ${sqlite_sources})
+  set(headers ${headers} ${sqlite_headers})
+endif()
+
 if(${DB_MONGO})
   file(GLOB mongo_sources "db/mongo.cpp")
   file(GLOB mongo_headers "db/mongo.h")
