@@ -33,11 +33,11 @@ void SQLiteDatabase::open()
     if (result == 0) {
         bootstrapDB();
         upgradeDB();
-  }
+	}
     else {
         fprintf(stderr, "An error occured (code %d) whilst connecting to SQLite database %s", result, dbc_.filename.c_str());
         throw new exception("Could not connect to SQLite database!");
-  }
+	}
 }
 
 void SQLiteDatabase::bootstrapDB()
@@ -111,27 +111,27 @@ void SQLiteDatabase::upgradeDB()
     }
 
     const char *upgrades[] = {
-    "CREATE TABLE dazeus_properties( "
-      "key VARCHAR(255) NOT NULL, "
-      "value TEXT NOT NULL, "
-      "network VARCHAR(255) NOT NULL, "
-      "receiver VARCHAR(255) NOT NULL, "
-      "sender VARCHAR(255) NOT NULL, "
-      "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-      "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+		"CREATE TABLE dazeus_properties( "
+			"key VARCHAR(255) NOT NULL, "
+			"value TEXT NOT NULL, "
+			"network VARCHAR(255) NOT NULL, "
+			"receiver VARCHAR(255) NOT NULL, "
+			"sender VARCHAR(255) NOT NULL, "
+			"created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+			"updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
             "PRIMARY KEY(key, value, network, receiver, sender) "
-    ")"
-    ,
-    "CREATE TABLE dazeus_permissions( "
-      "permission VARCHAR(255) NOT NULL, "
-      "network VARCHAR(255) NOT NULL, "
-      "receiver VARCHAR(255) NOT NULL, "
-      "sender VARCHAR(255) NOT NULL, "
-      "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-      "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+		")"
+		,
+		"CREATE TABLE dazeus_permissions( "
+			"permission VARCHAR(255) NOT NULL, "
+			"network VARCHAR(255) NOT NULL, "
+			"receiver VARCHAR(255) NOT NULL, "
+			"sender VARCHAR(255) NOT NULL, "
+			"created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+			"updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
             "PRIMARY KEY(permission, network, receiver, sender) "
         ")"
-  };
+	};
 
     static int current_db_version = std::end(upgrades) - std::begin(upgrades);
     if (db_version < current_db_version) {
@@ -140,46 +140,59 @@ void SQLiteDatabase::upgradeDB()
             sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
         }
         std::cout << "Upgrade completed. Will now update dazeus_version to " << current_db_version << std::endl;
-        //w.prepared("update_property")("dazeus_version")(current_db_version)("")("")("").exec();
-        //w.commit();
+        setProperty("dazeus_version", std::to_string(current_db_version), "", "", "");
     }
 }
 
 std::string SQLiteDatabase::property(const std::string &variable,
-      const std::string &networkScope,
-      const std::string &receiverScope,
-      const std::string &senderScope)
+			const std::string &networkScope,
+			const std::string &receiverScope,
+			const std::string &senderScope)
 {
-/*  // TODO: handle errors
-  pqxx::work w(*conn_);
-  pqxx::result r = w.prepared("find_property")(variable)(networkScope)(receiverScope)(senderScope).exec();
-  if (!r.empty()) {
-    return r[0]["value"].as<std::string>();
-  }*/
-  // TODO: what should we do if there is no result for us?
-  return "";
+    sqlite3_bind_text(find_property, 1, variable.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(find_property, 2, networkScope.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(find_property, 3, receiverScope.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(find_property, 4, senderScope.c_str(), -1, SQLITE_STATIC);
+    int errc = sqlite3_step(find_property);
+
+    if (errc > SQLITE_OK && errc < SQLITE_ROW) {
+        const char *zErrMsg = sqlite3_errmsg(conn_);
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(&zErrMsg);
+        throw new exception("Could not get property from SQLite database!");
+    }
+
+    std::string value = reinterpret_cast<const char *>(sqlite3_column_text(find_property, 0));
+    sqlite3_reset(find_property);
+    return value;
 }
 
 void SQLiteDatabase::setProperty(const std::string &variable,
-      const std::string &value, const std::string &networkScope,
-      const std::string &receiverScope,
-      const std::string &senderScope)
+			const std::string &value, const std::string &networkScope,
+			const std::string &receiverScope,
+			const std::string &senderScope)
 {
-    /*
-  // TODO: handle errors
-  pqxx::work w(*conn_);
-  if (value == "") {
-    w.prepared("remove_property")(variable)(networkScope)(receiverScope)(senderScope).exec();
-  } else {
-    w.prepared("update_property")(variable)(value)(networkScope)(receiverScope)(senderScope).exec();
-  }
-  w.commit();*/
+    sqlite3_bind_text(update_property, 1, variable.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(update_property, 2, value.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(update_property, 3, networkScope.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(update_property, 4, receiverScope.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(update_property, 5, senderScope.c_str(), -1, SQLITE_STATIC);
+    int errc = sqlite3_step(update_property);
+
+    if (errc != SQLITE_OK && errc != SQLITE_DONE) {
+        const char *zErrMsg = sqlite3_errmsg(conn_);
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(&zErrMsg);
+        throw new exception("Could not set property in SQLite database!");
+    }
+
+    sqlite3_reset(update_property);
 }
 
 std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
-      const std::string &networkScope,
-      const std::string &receiverScope,
-      const std::string &senderScope)
+			const std::string &networkScope,
+			const std::string &receiverScope,
+			const std::string &senderScope)
 {
     /*pqxx::work w(*conn_);
     pqxx::result r = w.prepared("properties")(ns)(networkScope)(receiverScope)(senderScope).exec(); */
@@ -193,8 +206,8 @@ std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
 }
 
 bool SQLiteDatabase::hasPermission(const std::string &perm_name,
-      const std::string &network, const std::string &channel,
-      const std::string &sender, bool defaultPermission) const
+			const std::string &network, const std::string &channel,
+			const std::string &sender, bool defaultPermission) const
 {
     /*pqxx::work w(*conn_);
     pqxx::result r = w.prepared("ḥas_permission")(perm_name)(network)(channel)(sender).exec();
@@ -203,8 +216,8 @@ bool SQLiteDatabase::hasPermission(const std::string &perm_name,
 }
 
 void SQLiteDatabase::unsetPermission(const std::string &perm_name,
-      const std::string &network, const std::string &receiver,
-      const std::string &sender)
+			const std::string &network, const std::string &receiver,
+			const std::string &sender)
 {
 //    pqxx::work w(*conn_);
 //    pqxx::result r = w.prepared("remove_permission")(perm_name)(network)(receiver)(sender).exec();
@@ -212,8 +225,8 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
 }
 
 void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name,
-      const std::string &network, const std::string &receiver,
-      const std::string &sender)
+			const std::string &network, const std::string &receiver,
+			const std::string &sender)
 {
 //    pqxx::work w(*conn_);
 //    pqxx::result r = w.prepared("add_permission")(perm_name)(network)(receiver)(sender).exec();
