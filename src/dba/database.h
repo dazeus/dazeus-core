@@ -26,13 +26,13 @@ struct DatabaseConfig {
 			std::string user = std::string(), std::string pass = std::string(),
 			std::string file = std::string(), std::string db = std::string("dazeus"),
 			std::string opt = std::string()) :
-			type(t), hostname(h), port(p), username(user), password(pass), database(
-					db), options(opt) {
+            type(t), hostname(h), port(p), username(user), password(pass), filename(file),
+                database(db), options(opt) {
 	}
 
 	DatabaseConfig(const DatabaseConfig &s) :
 			type(s.type), hostname(s.hostname), port(s.port), username(s.username), password(
-					s.password), database(s.database), options(s.options) {
+                    s.password), filename(s.filename), database(s.database), options(s.options) {
 	}
 
 	const DatabaseConfig &operator=(const DatabaseConfig &s) {

@@ -58,10 +58,10 @@ if(${LibPqxx_FOUND})
 endif()
 
 # SQLite
-find_package(Sqlite3 REQUIRED)
+find_package(Sqlite3)
 if(${SQLITE3_FOUND})
 	include_directories(SYSTEM ${SQLITE3_INCLUDE_DIR})
-	set(LIBS ${LIBS} ${SQLITE3_LIBRARY_RELEASE})
+	set(LIBS ${LIBS} ${SQLITE3_LIBRARY})
 	set(DB_SQLITE true)
 	add_definitions(-DDB_SQLITE)
 endif()
