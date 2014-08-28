@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Ruben Nijveld, Aaron van Geffen, 2014
+ * Copyright (c) 2014 Ruben Nijveld, Aaron van Geffen
  * See LICENSE for license.
  */
 
@@ -22,14 +22,14 @@ SQLiteDatabase::~SQLiteDatabase()
         sqlite3_finalize(add_permission);
         sqlite3_finalize(remove_permission);
         sqlite3_finalize(has_permission);
-        sqlite3_close(conn_);
+        sqlite3_close_v2(conn_);
     }
 }
 
 void SQLiteDatabase::open()
 {
     // Connect the lot!
-    int result = sqlite3_open_v2(dbc_.hostname.c_str(), &conn_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    int result = sqlite3_open_v2(dbc_.filename.c_str(), &conn_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
     if (result == 0) {
         bootstrapDB();
         upgradeDB();
@@ -76,7 +76,7 @@ void SQLiteDatabase::upgradeDB()
     // Find out whether there's a properties table in place already.
     sqlite3_bind_text(find_table, 1, "dazeus_properties", -1, SQLITE_STATIC);
     errc = sqlite3_step(find_table);
-    if (errc != SQLITE_OK) {
+    if (errc != SQLITE_OK && errc != SQLITE_ROW && errc != SQLITE_DONE) {
         const char *zErrMsg = sqlite3_errmsg(conn_);
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(&zErrMsg);
@@ -85,32 +85,32 @@ void SQLiteDatabase::upgradeDB()
 
     // If there is a properties table, find out what version we're on.
     int db_version = 0;
-    std::string table_name = reinterpret_cast<const char *>(sqlite3_column_text(find_table, 0));
-    if (table_name == "dazeus_properties") {
-        sqlite3_bind_text(find_property, 1, "dazeus_version", -1, SQLITE_STATIC);
-        sqlite3_bind_text(find_property, 2, "", -1, SQLITE_STATIC);
-        sqlite3_bind_text(find_property, 3, "", -1, SQLITE_STATIC);
-        sqlite3_bind_text(find_property, 4, "", -1, SQLITE_STATIC);
+    if (errc != SQLITE_DONE) {
+        std::string table_name = reinterpret_cast<const char *>(sqlite3_column_text(find_table, 0));
+        if (table_name == "dazeus_properties") {
+            sqlite3_bind_text(find_property, 1, "dazeus_version", -1, SQLITE_STATIC);
+            sqlite3_bind_text(find_property, 2, "", -1, SQLITE_STATIC);
+            sqlite3_bind_text(find_property, 3, "", -1, SQLITE_STATIC);
+            sqlite3_bind_text(find_property, 4, "", -1, SQLITE_STATIC);
 
-        errc = sqlite3_step(find_property);
+            errc = sqlite3_step(find_property);
 
-        if (errc != SQLITE_OK) {
-            const char *zErrMsg = sqlite3_errmsg(conn_);
-            fprintf(stderr, "SQL error: %s\n", zErrMsg);
-            sqlite3_free(&zErrMsg);
-            throw new exception("Could not get database version!");
+            if (errc != SQLITE_OK && errc != SQLITE_ROW && errc != SQLITE_DONE) {
+                const char *zErrMsg = sqlite3_errmsg(conn_);
+                fprintf(stderr, "SQL error: %s\n", zErrMsg);
+                sqlite3_free(&zErrMsg);
+                throw new exception("Could not get database version!");
+            }
+
+            db_version = sqlite3_column_int(find_property, 0);
+            sqlite3_reset(find_property);
         }
 
-        db_version = sqlite3_column_int(find_property, 0);
-        sqlite3_reset(find_property);
+        // Free the lot.
+        sqlite3_reset(find_table);
     }
 
-    // Free the lot.
-    sqlite3_reset(find_table);
-
-
-
-  std::string upgrades[] = {
+    const char *upgrades[] = {
     "CREATE TABLE dazeus_properties( "
       "key VARCHAR(255) NOT NULL, "
       "value TEXT NOT NULL, "
@@ -119,7 +119,7 @@ void SQLiteDatabase::upgradeDB()
       "sender VARCHAR(255) NOT NULL, "
       "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
       "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-      "CONSTRAINT dazeus_properties_pk PRIMARY KEY(key, value, network, receiver, sender) "
+            "PRIMARY KEY(key, value, network, receiver, sender) "
     ")"
     ,
     "CREATE TABLE dazeus_permissions( "
@@ -129,35 +129,20 @@ void SQLiteDatabase::upgradeDB()
       "sender VARCHAR(255) NOT NULL, "
       "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
       "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-      "CONSTRAINT dazeus_permissions_pk PRIMARY KEY(permission, network, receiver, sender) "
-    ")"
-    ,
-    "CREATE OR REPLACE FUNCTION dazeus_update_timestamp_column() "
-    "RETURNS TRIGGER AS ' "
-    "BEGIN NEW.updated = CURRENT_TIMESTAMP; RETURN NEW; END; "
-    "' LANGUAGE 'plpgsql' "
-    ,
-    "CREATE TRIGGER dazeus_update_timestamp_properties "
-    "BEFORE UPDATE ON dazeus_properties "
-    "FOR EACH ROW "
-    "EXECUTE PROCEDURE dazeus_update_timestamp_column() "
-    ,
-    "CREATE TRIGGER dazeus_update_timestamp_permissions "
-    "BEFORE UPDATE ON dazeus_permissions "
-    "FOR EACH ROW "
-    "EXECUTE PROCEDURE dazeus_update_timestamp_column() "
+            "PRIMARY KEY(permission, network, receiver, sender) "
+        ")"
   };
-/*
+
     static int current_db_version = std::end(upgrades) - std::begin(upgrades);
     if (db_version < current_db_version) {
         std::cout << "Will now upgrade database from version " << db_version << " to version " << current_db_version << "." << std::endl;
         for (int i = db_version; i < current_db_version; ++i) {
-            w.exec(upgrades[i]);
+            sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
         }
         std::cout << "Upgrade completed. Will now update dazeus_version to " << current_db_version << std::endl;
-        w.prepared("update_property")("dazeus_version")(current_db_version)("")("")("").exec();
-        w.commit();
-    }*/
+        //w.prepared("update_property")("dazeus_version")(current_db_version)("")("")("").exec();
+        //w.commit();
+    }
 }
 
 std::string SQLiteDatabase::property(const std::string &variable,
