@@ -1,7 +1,7 @@
 # DaZeus
 
-This is DaZeus 2.0, a tiny IRC bot that works with out-of-process plugins. It
-provides a configuration, database and IRC interface via UNIX or TCP sockets to
+This is DaZeus 2.0, a modular IRC bot that utilizes out-of-process plugins. It
+provides a configuration, database and IRC interface through UNIX and TCP sockets to
 its plugins.
 
 # Installing
@@ -33,9 +33,9 @@ project source root, called `dazeus.sample.conf`.
 
 When DaZeus is started, it connects to the database and to the IRC servers as
 defined in the configuration file. It also sets up the UNIX and TCP sockets
-as configured. To get a useful interface with the bot, the DaZeus 1 Legacy
-Daemon is required for now, and can be retrieved at
-<https://github.com/dazeus/dazeus-legacyd>.
+as configured.
+
+To get a useful interface with the bot, plugins are required. The section below covers a few of the basic plugins.
 
 # Plugins
 
@@ -43,20 +43,28 @@ The API that plugins use over the socket interface is described in the `doc`
 directory. Bindings are available for Perl, C, C++/Qt and NodeJS at the DaZeus
 project on GitHub.
 
-A list of supported plugins is available at <https://github.com/dazeus>, for
-example:
+**Please note:** bindings need to be installed separately!
 
-* `dazeus-legacyd`: A Perl daemon that runs the DaZeus 1 Legacy plugins as
-  DaZeus 2 plugins
-* `dazeus-plugin-twitter`: A plugin for integrating with Twitter users, lists
-  and search queries
-* `dazeus-plugin-channellink`: A plugin for linking two IRC channels together,
+A list of supported plugins is available at <https://github.com/dazeus>. A few commonly used examples are:
+
+* `dazeus-plugin-channels`: manages DaZeus's presence in channels, including automatic (re)joining after (re)connecting.
+* `dazeus-plugin-channellink`: a plugin for linking two IRC channels together,
   causing their message lines to be shared (one-way or two-way)
-* `dazeus-plugin-commits`: A plugin for reporting Git commits on IRC
-* `dazeus-plugin-mediawiki`: A plugin for integrating MediaWiki edits with IRC
+* `dazeus-plugin-commits`: a plugin for reporting Git commits on IRC
+* `dazeus-plugin-factoids`: allows users to set and recall _factoids_ from DaZeus' database.
 * `dazeus-plugin-karma`: A plugin for keeping karma scores
+* `dazeus-plugin-mediawiki`: a plugin for integrating MediaWiki edits with IRC
+* `dazeus-plugin-twitter`: a plugin for integrating with Twitter users, lists
+  and search queries
 
-# Authors
+# Contributing
 
-The maintainer of DaZeus is Sjors Gielen <dazeus@sjorsgielen.nl>. Some more
-authors who contributed to the core bot can be found in git history.
+Contributions, be it amendments to the core bot or to any plugins, are most welcome! Simply fork one or more of our repositories and submit pull requests for each of your patches.
+
+# Acknowledgements
+
+The lead developer for DaZeus is Sjors Gielen <dazeus@sjorsgielen.nl>. Currently it is co-authored by Ruben Nijveld <ruben@gewooniets.nl> and Aaron van Geffen <aaron@aaronweb.net>.
+
+Several more contributors can be found in Git history.
+
+To everyone who helped make DaZeus what it is today: thank you!
