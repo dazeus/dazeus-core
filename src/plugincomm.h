@@ -78,7 +78,7 @@ class PluginComm : public NetworkListener
    public:
     SocketInfo(std::string t = std::string()) : type(t),
       subscriptions(), commands(), waitingSize(0), readahead(),
-      protocol_version(0) {}
+      writebuffer(), protocol_version(0) {}
     bool isSubscribed(std::string t) const {
       return contains(subscriptions, strToUpper(t));
     }
@@ -161,6 +161,7 @@ class PluginComm : public NetworkListener
     std::multimap<std::string,RequirementInfo*> commands;
     int waitingSize;
     std::string readahead;
+    std::string writebuffer;
     std::string plugin_name;
     std::string plugin_version;
     int protocol_version;
@@ -193,7 +194,7 @@ class PluginComm : public NetworkListener
     Database *database_;
     ConfigReaderPtr config_;
     DaZeus *dazeus_;
-    void handle(int dev, const std::string &line, SocketInfo &info);
+    std::string handle(int dev, const std::string &line, SocketInfo &info);
     void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);
 };
 
