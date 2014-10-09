@@ -93,6 +93,9 @@ void dazeus::PluginComm::run(int timeout_sec) {
 		if(it2->first > highest)
 			highest = it2->first;
 		FD_SET(it2->first, &sockets);
+		if(!it2->second.writebuffer.empty()) {
+			FD_SET(it2->first, &out_sockets);
+		}
 	}
 	// and add the IRC descriptors
 	std::vector<Network*>::const_iterator nit;
@@ -141,7 +144,7 @@ void dazeus::PluginComm::run(int timeout_sec) {
 		}
 	}
 	for(it2 = sockets_.begin(); it2 != sockets_.end(); ++it2) {
-		if(FD_ISSET(it2->first, &sockets)) {
+		if(FD_ISSET(it2->first, &sockets) || FD_ISSET(it2->first, &out_sockets)) {
 			poll();
 			break;
 		}
@@ -345,7 +348,7 @@ void dazeus::PluginComm::poll() {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
 						info.readahead = info.readahead.substr(info.waitingSize);
 						try {
-							handle(dev, packet, info);
+							info.writebuffer += handle(dev, packet, info);
 						} catch(std::exception &e) {
 							std::cerr << "Ignoring unhandled exception handling a plugin packet: \n  " << e.what() << std::endl;
 						} catch(...) {
@@ -357,6 +360,21 @@ void dazeus::PluginComm::poll() {
 					}
 				}
 			} while(parsedPacket);
+		}
+
+		while(!info.writebuffer.empty()) {
+			size_t length = info.writebuffer.length();
+			ssize_t written = write(dev, info.writebuffer.c_str(), length);
+			if(written < 0) {
+				if(errno != EWOULDBLOCK) {
+					fprintf(stderr, "Socket error: %s\n", strerror(errno));
+					close(dev);
+					toRemove.push_back(dev);
+				}
+				break;
+			} else {
+				info.writebuffer = info.writebuffer.substr(written, length - written);
+			}
 		}
 		it->second = info;
 	}
@@ -619,7 +637,7 @@ void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &o
 #undef MIN
 }
 
-void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
+std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	const std::vector<Network*> &networks = dazeus_->networks();
 	std::vector<Network*>::const_iterator nit;
 
@@ -627,7 +645,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	json_t *n = json_loads(line.c_str(), 0, &error);
 	if(!n) {
 		fprintf(stderr, "Got incorrect JSON, ignoring: %s\n", error.text);
-		return;
+		return "";
 	}
 
 	std::vector<std::string> params;
@@ -756,7 +774,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 						net->leaveChannel(params[1]);
 					} else {
 						assert(false);
-						return;
+						return "";
 					}
 				}
 			} else if(action == "nick") {
@@ -764,7 +782,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 				json_object_set_new(response, "nick", json_string(net->nick().c_str()));
 			} else {
 				assert(false);
-				return;
+				return "";
 			}
 		}
 	// REQUESTS ON A CHANNEL
@@ -772,7 +790,7 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		json_object_set_new(response, "did", json_string(action.c_str()));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
 			fprintf(stderr, "Wrong parameter size for message, skipping.\n");
-			return;
+			return "";
 		}
 		std::string network = params[0];
 		std::string receiver = params[1];
@@ -1034,11 +1052,8 @@ void dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	mstr << jsonMsg;
 	mstr << "\n";
 	std::string finalResponse = mstr.str();
-	if(write(dev, finalResponse.c_str(), finalResponse.length()) != (unsigned)finalResponse.length()) {
-		fprintf(stderr, "Failed to write correct number of JSON bytes to client socket.\n");
-		close(dev);
-	}
 
 	json_decref(n);
 	json_decref(response);
+	return finalResponse;
 }
