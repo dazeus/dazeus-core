@@ -166,6 +166,10 @@ void dazeus::PluginComm::init() {
 		if(sc.type == "unix") {
 			unlink(sc.path.c_str());
 			int server = ::socket(AF_UNIX, SOCK_STREAM, 0);
+			#if defined(SO_NOSIGPIPE)
+			int set = 1;
+			setsockopt(server, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
+			#endif
 			if(server <= 0) {
 				fprintf(stderr, "(PluginComm) Failed to create socket at %s: %s\n", sc.path.c_str(), strerror(errno));
 				continue;
@@ -364,7 +368,11 @@ void dazeus::PluginComm::poll() {
 
 		while(!info.writebuffer.empty()) {
 			size_t length = info.writebuffer.length();
+			#if defined(MSG_NOSIGNAL)
+			ssize_t written = send(dev, info.writebuffer.c_str(), length, MSG_NOSIGNAL);
+			#else
 			ssize_t written = write(dev, info.writebuffer.c_str(), length);
+			#endif
 			if(written < 0) {
 				if(errno != EWOULDBLOCK) {
 					fprintf(stderr, "Socket error: %s\n", strerror(errno));
