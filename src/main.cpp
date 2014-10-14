@@ -64,6 +64,10 @@ int main(int argc, char *argv[])
 		perror("Failed to install SIGCHLD handler");
 	}
 
+	if(signal(SIGPIPE, SIG_IGN)) {
+		perror("Failed to set SIGPIPE ignore");
+	}
+
 	d = new dazeus::DaZeus(configfile);
 	if(!d->loadConfig()) {
 		fprintf(stderr, "Failed to load configuration, bailing out.\n");
