@@ -22,7 +22,6 @@ IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/jansson/README.rst")
 	message(FATAL_ERROR "jansson is not checked out")
 ENDIF()
 
-find_package(LibMongoClient REQUIRED)
 find_package(Boost REQUIRED)
 
 option(USE_ASAN "Enable Address Sanitizer" OFF)
@@ -31,7 +30,6 @@ if(USE_ASAN)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif(USE_ASAN)
 
-include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
@@ -44,10 +42,33 @@ file(GLOB jansson_headers "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.h")
 add_library(jansson ${jansson_sources} ${jansson_headers})
 target_link_libraries(jansson)
 
-set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${LibMongoClient_LIBRARIES} ${Boost_LIBRARIES})
+set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${Boost_LIBRARIES})
 
+##
+## Database layers
+##
+
+# PostgreSQL
+find_package(LibPqxx)
+if(${LibPqxx_FOUND})
+	include_directories(SYSTEM ${LibPqxx_INCLUDE_DIRS})
+	set(LIBS ${LIBS} ${LibPqxx_LIBRARIES})
+	set(DBA_POSTGRES true)
+	add_definitions(-DDBA_POSTGRES)
+endif()
+
+# MongoDB
+find_package(LibMongoClient)
+if(${LibMongoClient_FOUND})
+	include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
+	set(LIBS ${LIBS} ${LibMongoClient_LIBRARIES})
+	set(DBA_MONGO true)
+	add_definitions(-DDBA_MONGO)
+endif()
+
+# Documentation
 find_package(Doxygen)
-if(DOXYGEN_FOUND)
+if(${DOXYGEN_FOUND})
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
 		${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/misc/mainpage.dox.in

@@ -7,7 +7,7 @@
 #define _DAZEUS_CONFIG_H
 
 #include "network.h"
-#include "database.h"
+#include "dba/database.h"
 #include <stdexcept>
 #include <stdint.h>
 #include <string>

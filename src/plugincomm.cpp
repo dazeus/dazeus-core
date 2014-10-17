@@ -34,7 +34,7 @@
 #include "server.h"
 #include "config.h"
 #include "dazeus.h"
-#include "database.h"
+#include "dba/database.h"
 #include "utils.h"
 
 static std::string realpath(std::string path) {

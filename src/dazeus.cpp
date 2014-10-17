@@ -4,7 +4,7 @@
  */
 
 #include "dazeus.h"
-#include "database.h"
+#include "dba/database.h"
 #include "network.h"
 #include "config.h"
 #include "plugincomm.h"
@@ -55,7 +55,7 @@ dazeus::DaZeus::~DaZeus()
 
 /**
  * @brief Connect to all networks marked "autoconnect".
- * 
+ *
  * Warning: This method is usually called outside the event loop, just after
  * initialisation.
  */
@@ -103,16 +103,34 @@ bool dazeus::DaZeus::configLoaded() const
  */
 bool dazeus::DaZeus::connectDatabase()
 {
-  assert(config_->isRead());
-  database_ = new Database(config_->getDatabaseConfig());
-  try {
-    database_->open();
-  } catch(Database::exception &e) {
-    fprintf(stderr, "Could not connect to database: %s\n", e.what());
-    return false;
-  }
+    assert(config_->isRead());
+    const DatabaseConfig &dbc = config_->getDatabaseConfig();
 
-  return true;
+#ifdef DBA_POSTGRES
+	if (dbc.type == "postgres" || dbc.type == "postgresql" || dbc.type == "pq" || dbc.type == "psql")
+	{
+		database_ = new PostgreSQLDatabase(dbc);
+	}
+#endif
+#ifdef DBA_MONGO
+	if (dbc.type == "mongo" || dbc.type == "mongodb") {
+		database_ = new MongoDatabase(dbc);
+	}
+#endif
+
+	if (!database_) {
+	  fprintf(stderr, "Unknown database type: %s\n", dbc.type.c_str());
+	  return false;
+	} else {
+	  try {
+        database_->open();
+      } catch(Database::exception &e) {
+        fprintf(stderr, "Could not connect to database: %s\n", e.what());
+        return false;
+      }
+	}
+
+	return true;
 }
 
 /**

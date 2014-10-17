@@ -4,7 +4,7 @@
  */
 
 #include "database.h"
-#include "config.h"
+#include "../config.h"
 #include "utils.h"
 #include <mongo.h>
 #include <cerrno>
@@ -13,27 +13,17 @@
 #include <stdio.h>
 
 #define M (mongo_sync_connection*)m_
-
-/**
- * @brief Constructor.
- */
-dazeus::Database::Database(DatabaseConfig dbc)
-: m_(0)
-, dbc_(dbc)
-{
-}
-
-
 /**
  * @brief Destructor.
  */
-dazeus::Database::~Database()
+dazeus::MongoDatabase::~MongoDatabase()
 {
-	if(m_)
+	if(m_) {
 		mongo_sync_disconnect(M);
+	}
 }
 
-void dazeus::Database::open()
+void dazeus::MongoDatabase::open()
 {
 	m_ = (void*)mongo_sync_connect(dbc_.hostname.c_str(), dbc_.port, TRUE);
 	if(!m_) {
@@ -74,7 +64,7 @@ void dazeus::Database::open()
  * return the correct value of that key given that network, receiver and
  * sender scope are the same.
  */
-std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, const std::string &networkScope,
+std::vector<std::string> dazeus::MongoDatabase::propertyKeys( const std::string &ns, const std::string &networkScope,
  const std::string &receiverScope, const std::string &senderScope )
 {
 	std::stringstream regexStr;
@@ -152,7 +142,7 @@ std::vector<std::string> dazeus::Database::propertyKeys( const std::string &ns, 
  * could use:
  * <code>net.jondoe.myfirstplugin.foo</code>
  */
-std::string dazeus::Database::property( const std::string &variable,
+std::string dazeus::MongoDatabase::property( const std::string &variable,
  const std::string &networkScope, const std::string &receiverScope,
  const std::string &senderScope )
 {
@@ -265,7 +255,7 @@ std::string dazeus::Database::property( const std::string &variable,
 	return res;
 }
 
-void dazeus::Database::setProperty( const std::string &variable,
+void dazeus::MongoDatabase::setProperty( const std::string &variable,
  const std::string &value, const std::string &networkScope,
  const std::string &receiverScope, const std::string &senderScope )
 {
@@ -326,7 +316,7 @@ void dazeus::Database::setProperty( const std::string &variable,
 	}
 }
 
-bool dazeus::Database::hasPermission(const std::string &permission, const std::string &network,
+bool dazeus::MongoDatabase::hasPermission(const std::string &permission, const std::string &network,
 const std::string &channel, const std::string &sender, bool defaultPermission) const
 {
 	// variable, network, channel, sender
@@ -410,7 +400,7 @@ const std::string &channel, const std::string &sender, bool defaultPermission) c
 	return defaultPermission;
 }
 
-void dazeus::Database::unsetPermission(const std::string &perm_name, const std::string &network,
+void dazeus::MongoDatabase::unsetPermission(const std::string &perm_name, const std::string &network,
 const std::string &channel, const std::string &sender)
 {
 	bson *selector = bson_build(
@@ -439,7 +429,7 @@ const std::string &channel, const std::string &sender)
 	bson_free(selector);
 }
 
-void dazeus::Database::setPermission(bool permission, const std::string &perm_name,
+void dazeus::MongoDatabase::setPermission(bool permission, const std::string &perm_name,
 const std::string &network, const std::string &channel, const std::string &sender)
 {
 	bson *selector = bson_build(
@@ -480,4 +470,3 @@ const std::string &network, const std::string &channel, const std::string &sende
 	bson_free(selector);
 	bson_free(new_object);
 }
-

@@ -317,6 +317,8 @@ static DOTCONF_CB(option)
 			dc.username = trim(cmd->data.str);
 		} else if(name == "password") {
 			dc.password = trim(cmd->data.str);
+		} else if(name == "filename") {
+			dc.filename = trim(cmd->data.str);
 		} else if(name == "database") {
 			dc.database = trim(cmd->data.str);
 		} else if(name == "options") {
