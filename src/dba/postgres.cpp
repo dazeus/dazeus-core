@@ -6,6 +6,7 @@
 #include "../config.h"
 #include "database.h"
 #include "pqxx/pqxx"
+#include <iostream>
 
 dazeus::PostgreSQLDatabase::~PostgreSQLDatabase()
 {
