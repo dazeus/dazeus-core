@@ -47,7 +47,7 @@ class SQLiteDatabase : public Database {
                      const std::string &sender   = "");
 private:
     // explicitly disable copy constructor
-    SQLiteDatabase(const SQLiteDatabase&);
+    explicit SQLiteDatabase(const SQLiteDatabase&);
     void operator=(const SQLiteDatabase&);
 
     void bootstrapDB();
