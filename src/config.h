@@ -7,7 +7,7 @@
 #define _DAZEUS_CONFIG_H
 
 #include "network.h"
-#include "dba/database.h"
+#include "db/database.h"
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
@@ -69,7 +69,7 @@ class ConfigReader {
 	std::vector<PluginConfig> plugins;
 	std::vector<SocketConfig> sockets;
 	boost::optional<GlobalConfig> global;
-	boost::optional<DatabaseConfig> database;
+	boost::optional<db::DatabaseConfig> database;
 	bool is_read;
 
 public:
@@ -94,7 +94,7 @@ public:
 		return sockets.at(0);
 	}
 	const GlobalConfig &getGlobalConfig() const { return *global; }
-	const DatabaseConfig &getDatabaseConfig() const { return *database; }
+	const db::DatabaseConfig &getDatabaseConfig() const { return *database; }
 };
 
 }

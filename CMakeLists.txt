@@ -53,8 +53,8 @@ find_package(LibPqxx)
 if(${LibPqxx_FOUND})
 	include_directories(SYSTEM ${LibPqxx_INCLUDE_DIRS})
 	set(LIBS ${LIBS} ${LibPqxx_LIBRARIES})
-	set(DBA_POSTGRES true)
-	add_definitions(-DDBA_POSTGRES)
+	set(DB_POSTGRES true)
+	add_definitions(-DDB_POSTGRES)
 endif()
 
 # MongoDB
@@ -62,8 +62,8 @@ find_package(LibMongoClient)
 if(${LibMongoClient_FOUND})
 	include_directories(SYSTEM ${LibMongoClient_INCLUDE_DIRS})
 	set(LIBS ${LIBS} ${LibMongoClient_LIBRARIES})
-	set(DBA_MONGO true)
-	add_definitions(-DDBA_MONGO)
+	set(DB_MONGO true)
+	add_definitions(-DDB_MONGO)
 endif()
 
 # Documentation

@@ -34,7 +34,7 @@
 #include "server.h"
 #include "config.h"
 #include "dazeus.h"
-#include "dba/database.h"
+#include "db/database.h"
 #include "utils.h"
 
 static std::string realpath(std::string path) {
@@ -45,7 +45,7 @@ static std::string realpath(std::string path) {
 
 #define NOTBLOCKING(x) fcntl(x, F_SETFL, fcntl(x, F_GETFL) | O_NONBLOCK)
 
-dazeus::PluginComm::PluginComm(Database *d, ConfigReaderPtr c, DaZeus *bot)
+dazeus::PluginComm::PluginComm(db::Database *d, ConfigReaderPtr c, DaZeus *bot)
 : NetworkListener()
 , tcpServers_()
 , localServers_()

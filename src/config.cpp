@@ -30,12 +30,12 @@ struct ConfigReaderState {
 	std::vector<NetworkConfigPtr> networks;
 	std::vector<PluginConfig> plugins;
 
-	boost::optional<dazeus::GlobalConfig> global_progress;
-	boost::optional<dazeus::SocketConfig> socket_progress;
-	boost::optional<dazeus::DatabaseConfig> database_progress;
-	std::shared_ptr<dazeus::NetworkConfig> network_progress;
-	std::shared_ptr<dazeus::ServerConfig> server_progress;
-	boost::optional<dazeus::PluginConfig> plugin_progress;
+	boost::optional<GlobalConfig> global_progress;
+	boost::optional<SocketConfig> socket_progress;
+	boost::optional<db::DatabaseConfig> database_progress;
+	std::shared_ptr<NetworkConfig> network_progress;
+	std::shared_ptr<ServerConfig> server_progress;
+	boost::optional<PluginConfig> plugin_progress;
 	std::string error;
 };
 }
@@ -163,7 +163,7 @@ static DOTCONF_CB(sect_open)
 				return "More than one Database block defined in configuration file.";
 			}
 			s->current_section = S_DATABASE;
-			s->database_progress.reset(dazeus::DatabaseConfig());
+			s->database_progress.reset(dazeus::db::DatabaseConfig());
 		} else if(name == "<network") {
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
@@ -306,7 +306,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_DATABASE: {
-		dazeus::DatabaseConfig &dc = *s->database_progress;
+		dazeus::db::DatabaseConfig &dc = *s->database_progress;
 		if(name == "type") {
 			dc.type = trim(cmd->data.str);
 		} else if(name == "host") {

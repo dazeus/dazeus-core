@@ -4,18 +4,21 @@
  */
 
 #include "../config.h"
-#include "database.h"
-#include "pqxx/pqxx"
+#include "postgres.h"
+#include <pqxx/pqxx>
 #include <iostream>
 
-dazeus::PostgreSQLDatabase::~PostgreSQLDatabase()
+namespace dazeus {
+namespace db {
+
+PostgreSQLDatabase::~PostgreSQLDatabase()
 {
 	if (conn_) {
 		conn_->disconnect();
 	}
 }
 
-void dazeus::PostgreSQLDatabase::open()
+void PostgreSQLDatabase::open()
 {
 	std::stringstream connection_string;
 
@@ -55,11 +58,11 @@ void dazeus::PostgreSQLDatabase::open()
 	}
 	catch (pqxx::pqxx_exception& e) {
 		fprintf(stderr, "Error: %s", e.base().what());
-		throw new dazeus::Database::exception(e.base().what());
+		throw new exception(e.base().what());
 	}
 }
 
-void dazeus::PostgreSQLDatabase::bootstrapDB()
+void PostgreSQLDatabase::bootstrapDB()
 {
 	// start by preparing all queries we might eventually need
 	conn_->prepare("find_table", "SELECT * FROM pg_catalog.pg_tables WHERE tablename = $1");
@@ -104,7 +107,7 @@ void dazeus::PostgreSQLDatabase::bootstrapDB()
 	conn_->prepare("has_permission", "SELECT * FROM dazeus_permissions WHERE permission = $1 AND network = $2 AND receiver = $3 AND sender= $4");
 }
 
-void dazeus::PostgreSQLDatabase::upgradeDB()
+void PostgreSQLDatabase::upgradeDB()
 {
 	pqxx::work w(*conn_);
 	pqxx::result r = w.prepared("find_table")("dazeus_properties").exec();
@@ -167,7 +170,7 @@ void dazeus::PostgreSQLDatabase::upgradeDB()
     }
 }
 
-std::string dazeus::PostgreSQLDatabase::property(const std::string &variable,
+std::string PostgreSQLDatabase::property(const std::string &variable,
 			const std::string &networkScope,
 			const std::string &receiverScope,
 			const std::string &senderScope)
@@ -182,7 +185,7 @@ std::string dazeus::PostgreSQLDatabase::property(const std::string &variable,
 	return "";
 }
 
-void dazeus::PostgreSQLDatabase::setProperty(const std::string &variable,
+void PostgreSQLDatabase::setProperty(const std::string &variable,
 			const std::string &value, const std::string &networkScope,
 			const std::string &receiverScope,
 			const std::string &senderScope)
@@ -197,7 +200,7 @@ void dazeus::PostgreSQLDatabase::setProperty(const std::string &variable,
   w.commit();
 }
 
-std::vector<std::string> dazeus::PostgreSQLDatabase::propertyKeys(const std::string &ns,
+std::vector<std::string> PostgreSQLDatabase::propertyKeys(const std::string &ns,
 			const std::string &networkScope,
 			const std::string &receiverScope,
 			const std::string &senderScope)
@@ -213,7 +216,7 @@ std::vector<std::string> dazeus::PostgreSQLDatabase::propertyKeys(const std::str
     return keys;
 }
 
-bool dazeus::PostgreSQLDatabase::hasPermission(const std::string &perm_name,
+bool PostgreSQLDatabase::hasPermission(const std::string &perm_name,
 			const std::string &network, const std::string &channel,
 			const std::string &sender, bool defaultPermission) const
 {
@@ -222,7 +225,7 @@ bool dazeus::PostgreSQLDatabase::hasPermission(const std::string &perm_name,
     return r.empty() ? defaultPermission : true;
 }
 
-void dazeus::PostgreSQLDatabase::unsetPermission(const std::string &perm_name,
+void PostgreSQLDatabase::unsetPermission(const std::string &perm_name,
 			const std::string &network, const std::string &receiver,
 			const std::string &sender)
 {
@@ -231,7 +234,7 @@ void dazeus::PostgreSQLDatabase::unsetPermission(const std::string &perm_name,
     w.commit();
 }
 
-void dazeus::PostgreSQLDatabase::setPermission(bool permission, const std::string &perm_name,
+void PostgreSQLDatabase::setPermission(bool permission, const std::string &perm_name,
 			const std::string &network, const std::string &receiver,
 			const std::string &sender)
 {
@@ -239,3 +242,6 @@ void dazeus::PostgreSQLDatabase::setPermission(bool permission, const std::strin
     pqxx::result r = w.prepared("add_permission")(perm_name)(network)(receiver)(sender).exec();
     w.commit();
 }
+
+}  // namespace db
+}  // namespace dazeus
