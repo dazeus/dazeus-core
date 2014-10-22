@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "database.h"
 
 namespace dazeus {
 namespace db {
@@ -46,22 +47,24 @@ class SQLiteDatabase : public Database {
                      const std::string &receiver = "",
                      const std::string &sender   = "");
 private:
-    // explicitly disable copy constructor
-    explicit SQLiteDatabase(const SQLiteDatabase&);
-    void operator=(const SQLiteDatabase&);
+  // explicitly disable copy constructor
+  explicit SQLiteDatabase(const SQLiteDatabase&);
+  void operator=(const SQLiteDatabase&);
 
-    void bootstrapDB();
-    void upgradeDB();
+  void bootstrapDB();
+  void upgradeDB();
 
-    sqlite3 *conn_;
-    sqlite3_stmt *find_table;
-    sqlite3_stmt *find_property;
-    sqlite3_stmt *remove_property;
-    sqlite3_stmt *update_property;
-    sqlite3_stmt *properties;
-    sqlite3_stmt *add_permission;
-    sqlite3_stmt *remove_permission;
-    sqlite3_stmt *has_permission;
+  void tryPrepare(const std::string &stmt, sqlite3_stmt **target);
+  void tryBind(sqlite3_stmt *target, int param, const std::string &value);
+
+  sqlite3 *conn_;
+  sqlite3_stmt *find_property;
+  sqlite3_stmt *remove_property;
+  sqlite3_stmt *update_property;
+  sqlite3_stmt *properties;
+  sqlite3_stmt *add_permission;
+  sqlite3_stmt *remove_permission;
+  sqlite3_stmt *has_permission;
 };
 
 }  // namespace db

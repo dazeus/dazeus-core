@@ -110,7 +110,6 @@ bool dazeus::DaZeus::connectDatabase()
 {
   assert(config_->isRead());
   const DatabaseConfig &dbc = config_->getDatabaseConfig();
-
   try {
     database_ = Factory::createDb(dbc);
   } catch (dazeus::db::exception &e) {
@@ -120,7 +119,7 @@ bool dazeus::DaZeus::connectDatabase()
 
   try {
     database_->open();
-  } catch(dazeus::db::exception &e) {
+  } catch(const dazeus::db::exception &e) {
     std::cout << "Could not connect to database: " << e.what() << std::endl;
     return false;
   }

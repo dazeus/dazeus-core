@@ -18,7 +18,6 @@ namespace db {
 SQLiteDatabase::~SQLiteDatabase()
 {
   if (conn_) {
-    sqlite3_finalize(find_table);
     sqlite3_finalize(find_property);
     sqlite3_finalize(remove_property);
     sqlite3_finalize(update_property);
@@ -26,183 +25,210 @@ SQLiteDatabase::~SQLiteDatabase()
     sqlite3_finalize(add_permission);
     sqlite3_finalize(remove_permission);
     sqlite3_finalize(has_permission);
-    sqlite3_close(conn_);
+    int res = sqlite3_close(conn_);
+    assert(res == SQLITE_OK);
   }
 }
 
 void SQLiteDatabase::open()
 {
   // Connect the lot!
-  int fail = sqlite3_open_v2(dbc_.filename.c_str(), &conn_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+  int fail = sqlite3_open_v2(dbc_.filename.c_str(), &conn_,
+                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+                             NULL);
 	if (fail) {
-    auto error = "Can't open database (code " + std::to_string(fail) + "): " + sqlite3_errmsg(conn_);
-    sqlite3_close(conn_);
-		throw new exception(error);
+    auto error = "Can't open database (code " + std::to_string(fail) + "): " +
+                 sqlite3_errmsg(conn_);
+		throw exception(error);
 	}
-
-  bootstrapDB();
   upgradeDB();
+  bootstrapDB();
 }
 
+/**
+ * @brief Try to create a prepared statement on the SQLite3 connection.
+ */
+void SQLiteDatabase::tryPrepare(const std::string &stmt, sqlite3_stmt **target)
+{
+  int result = sqlite3_prepare_v2(conn_, stmt.c_str(), stmt.length(), target,
+                                  NULL);
+  if (result != SQLITE_OK) {
+    throw exception(
+        std::string("Failed to prepare SQL statement, got an error: ") +
+        sqlite3_errmsg(conn_));
+  }
+}
+
+/**
+ * @brief Try to bind a parameter to a prepared statement.
+ */
+void SQLiteDatabase::tryBind(sqlite3_stmt *target, int param,
+                             const std::string &value)
+{
+  int result = sqlite3_bind_text(target, param, value.c_str(), value.length(),
+                                 SQLITE_TRANSIENT);
+  if (result != SQLITE_OK) {
+    throw exception("Failed to bind parameter " + std::to_string(param) +
+                    " to query with error: " + sqlite3_errmsg(conn_) +
+                    " (errorcode " + std::to_string(result) + ")");
+  }
+}
+
+/**
+ * @brief Prepare all SQL statements used by the database layer
+ */
 void SQLiteDatabase::bootstrapDB()
 {
-  	sqlite3_prepare_v2(
-    conn_,
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name",
-    -1, &find_table, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-    "SELECT value FROM dazeus_properties "
-    "WHERE key = :key AND network = :network AND receiver = :receiver AND sender = :sender",
-    -1, &find_property, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-    "DELETE FROM dazeus_properties "
-    "WHERE key = :key AND network = :network AND receiver = :receiver AND sender = :sender",
-    -1, &remove_property, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-		"INSERT OR REPLACE INTO dazeus_properties "
-		"(key, value, network, receiver, sender) "
-		"VALUES (:key, :value, :network, :receiver, :sender) ",
-    -1, &update_property, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-    "SELECT key FROM dazeus_properties "
-    "WHERE key LIKE :key || '%' "
-    "  AND network = :network AND receiver = :receiver AND sender = :sender",
-    -1, &properties, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-		"INSERT OR REPLACE INTO dazeus_permissions "
-		"(permission, network, receiver, sender) "
-		"VALUES (:permission, :network, :receiver, :sender) ",
-    -1, &add_permission, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-    "DELETE FROM dazeus_permissions "
-    "WHERE permission = :permission "
-    "  AND network = :network AND receiver = :receiver AND sender = :sender",
-    -1, &remove_permission, NULL
-  );
-
-	sqlite3_prepare_v2(
-    conn_,
-    "SELECT * FROM dazeus_permissions "
-    "WHERE permission = :permission "
-    "  AND network = :network AND receiver = :receiver AND sender = :sender",
-    -1, &has_permission, NULL
-  );
+	tryPrepare(
+      "SELECT value FROM dazeus_properties "
+      "WHERE key = ?1 "
+      "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
+      &find_property);
+	tryPrepare(
+      "DELETE FROM dazeus_properties "
+      "WHERE key = ?1 "
+      "  AND network = ?2 AND receiver = ?3 AND sender = ?3",
+      &remove_property);
+	tryPrepare(
+  		"INSERT OR REPLACE INTO dazeus_properties "
+  		"(key, value, network, receiver, sender) "
+  		"VALUES (?1, ?2, ?3, :receiver, :sender) ",
+      &update_property);
+	tryPrepare(
+      "SELECT key FROM dazeus_properties "
+      "WHERE key LIKE :key || '%' "
+      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      &properties);
+	tryPrepare(
+  		"INSERT OR REPLACE INTO dazeus_permissions "
+  		"(permission, network, receiver, sender) "
+  		"VALUES (:permission, :network, :receiver, :sender) ",
+      &add_permission);
+	tryPrepare(
+      "DELETE FROM dazeus_permissions "
+      "WHERE permission = :permission "
+      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      &remove_permission);
+	tryPrepare(
+      "SELECT * FROM dazeus_permissions "
+      "WHERE permission = :permission "
+      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      &has_permission);
 }
 
+/**
+ * @brief Upgrade the database to the latest version.
+ */
 void SQLiteDatabase::upgradeDB()
 {
-	int errc = 0;
+  bool found = false;
+  int errc = sqlite3_exec(conn_,
+      "SELECT name FROM sqlite_master WHERE type = 'table' "
+      "AND name = 'dazeus_properties'",
+      [](void* found, int, char**, char**)
+      {
+        *(static_cast<bool*>(found)) = true;
+        return 0;
+      }, static_cast<void*>(&found), NULL);
 
-	// Find out whether there's a properties table in place already.
-	sqlite3_bind_text(find_table, 1, "dazeus_properties", -1, SQLITE_STATIC);
-	errc = sqlite3_step(find_table);
-	if (errc != SQLITE_OK && errc != SQLITE_ROW && errc != SQLITE_DONE) {
-		const char *zErrMsg = sqlite3_errmsg(conn_);
-		fprintf(stderr, "SQL error: %s\n", zErrMsg);
-		sqlite3_free(&zErrMsg);
-		throw new exception("Could not query SQLite database!");
-	}
+  if (errc != SQLITE_OK) {
+    throw exception(std::string("Failed to retrieve database version: ") +
+        sqlite3_errmsg(conn_));
+  }
 
-	// If there is a properties table, find out what version we're on.
-	int db_version = 0;
-	if (errc != SQLITE_DONE) {
-		std::string table_name = reinterpret_cast<const char *>(sqlite3_column_text(find_table, 0));
-		if (table_name == "dazeus_properties") {
-			sqlite3_bind_text(find_property, 1, "dazeus_version", -1, SQLITE_STATIC);
-			sqlite3_bind_text(find_property, 2, "", -1, SQLITE_STATIC);
-			sqlite3_bind_text(find_property, 3, "", -1, SQLITE_STATIC);
-			sqlite3_bind_text(find_property, 4, "", -1, SQLITE_STATIC);
+  int db_version = 0;
+  if (errc == SQLITE_OK) {
+    if (found) {
+      // table exists, query for latest version
+      errc = sqlite3_exec(conn_,
+          "SELECT value FROM dazeus_properties "
+          "WHERE key = 'dazeus_version' LIMIT 1",
+          [](void* dbver, int columns, char** values, char**)
+          {
+            if (columns > 0) {
+              *(static_cast<int*>(dbver)) = std::stoi(values[0]);
+            }
+            return 0;
+          }, static_cast<void*>(&db_version), NULL);
+    }
+  }
 
-			errc = sqlite3_step(find_property);
+  const char *upgrades[] = {
+    "CREATE TABLE dazeus_properties( "
+      "key VARCHAR(255) NOT NULL, "
+      "value TEXT NOT NULL, "
+      "network VARCHAR(255) NOT NULL, "
+      "receiver VARCHAR(255) NOT NULL, "
+      "sender VARCHAR(255) NOT NULL, "
+      "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+      "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "PRIMARY KEY(key, value, network, receiver, sender) "
+    ")"
+    ,
+    "CREATE TABLE dazeus_permissions( "
+      "permission VARCHAR(255) NOT NULL, "
+      "network VARCHAR(255) NOT NULL, "
+      "receiver VARCHAR(255) NOT NULL, "
+      "sender VARCHAR(255) NOT NULL, "
+      "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+      "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "PRIMARY KEY(permission, network, receiver, sender) "
+        ")"
+  };
 
-			if (errc != SQLITE_OK && errc != SQLITE_ROW && errc != SQLITE_DONE) {
-				const char *zErrMsg = sqlite3_errmsg(conn_);
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-				sqlite3_free(&zErrMsg);
-				throw new exception("Could not get database version!");
-			}
-
-			db_version = sqlite3_column_int(find_property, 0);
-			sqlite3_reset(find_property);
-		}
-
-		// Free the lot.
-		sqlite3_reset(find_table);
-	}
-
-	const char *upgrades[] = {
-		"CREATE TABLE dazeus_properties( "
-			"key VARCHAR(255) NOT NULL, "
-			"value TEXT NOT NULL, "
-			"network VARCHAR(255) NOT NULL, "
-			"receiver VARCHAR(255) NOT NULL, "
-			"sender VARCHAR(255) NOT NULL, "
-			"created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-			"updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-						"PRIMARY KEY(key, value, network, receiver, sender) "
-		")"
-		,
-		"CREATE TABLE dazeus_permissions( "
-			"permission VARCHAR(255) NOT NULL, "
-			"network VARCHAR(255) NOT NULL, "
-			"receiver VARCHAR(255) NOT NULL, "
-			"sender VARCHAR(255) NOT NULL, "
-			"created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-			"updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-						"PRIMARY KEY(permission, network, receiver, sender) "
-				")"
-	};
-
-	static int current_db_version = std::end(upgrades) - std::begin(upgrades);
-	if (db_version < current_db_version) {
-		std::cout << "Will now upgrade database from version " << db_version << " to version " << current_db_version << "." << std::endl;
-		for (int i = db_version; i < current_db_version; ++i) {
-			sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
-		}
-		std::cout << "Upgrade completed. Will now update dazeus_version to " << current_db_version << std::endl;
-		setProperty("dazeus_version", std::to_string(current_db_version), "", "", "");
-	}
+  // run any outstanding updates
+  static int target_version = std::end(upgrades) - std::begin(upgrades);
+  if (db_version < target_version) {
+  	std::cout << "Will now upgrade database from version " << db_version
+              << " to version " << target_version << "." << std::endl;
+  	for (int i = db_version; i < target_version; ++i) {
+  		int result = sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
+      if (result != SQLITE_OK) {
+        throw exception("Could not run upgrade " + std::to_string(i) +
+                            ", got error: " + sqlite3_errmsg(conn_));
+      }
+    }
+    std::cout << "Upgrade completed. Will now update dazeus_version to "
+              << target_version << std::endl;
+    errc = sqlite3_exec(conn_,
+        ("INSERT OR REPLACE INTO dazeus_properties "
+         "(key, value, network, receiver, sender) "
+         "VALUES ('dazeus_version', '" + std::to_string(target_version) + "', "
+         "        '', '', '') ").c_str(),
+        NULL, NULL, NULL);
+    if (errc != SQLITE_OK) {
+      throw exception(
+          "Could not set dazeus_version to latest version, got error: " +
+          std::string(sqlite3_errmsg(conn_)));
+    }
+  }
 }
 
 std::string SQLiteDatabase::property(const std::string &variable,
-    const std::string &networkScope,
-    const std::string &receiverScope,
-    const std::string &senderScope)
+                                     const std::string &networkScope,
+                                     const std::string &receiverScope,
+                                     const std::string &senderScope)
 {
-  sqlite3_bind_text(find_property, 1, variable.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(find_property, 2, networkScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(find_property, 3, receiverScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(find_property, 4, senderScope.c_str(), -1, SQLITE_STATIC);
+  tryBind(find_property, 1, variable);
+  tryBind(find_property, 2, networkScope);
+  tryBind(find_property, 3, receiverScope);
+  tryBind(find_property, 4, senderScope);
   int errc = sqlite3_step(find_property);
 
-  if (errc > SQLITE_OK && errc < SQLITE_ROW) {
-    const char *zErrMsg = sqlite3_errmsg(conn_);
-    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    sqlite3_free(&zErrMsg);
-    throw new exception("Could not get property from SQLite database!");
+  if (errc == SQLITE_ROW) {
+    std::string value = reinterpret_cast<const char *>(sqlite3_column_text(find_property, 0));
+    sqlite3_reset(find_property);
+    return value;
+  } else if (errc == SQLITE_DONE) {
+    // TODO: define behavior when no result is found
+    sqlite3_reset(find_property);
+    return "";
+  } else {
+    std::string msg = "Got an error while executing an SQL query (code " +
+                      std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+    sqlite3_reset(find_property);
+    throw exception(msg);
   }
-
-  std::string value = reinterpret_cast<const char *>(sqlite3_column_text(find_property, 0));
-  sqlite3_reset(find_property);
-  return value;
 }
 
 void SQLiteDatabase::setProperty(const std::string &variable,

@@ -19,15 +19,16 @@ namespace db {
 struct DatabaseConfig {
   DatabaseConfig(const std::string &t = "", const std::string &h = "127.0.0.1",
                  uint16_t p = 27017, const std::string &user = "",
-                 const std::string &pass = "", const std::string &file = "",
+                 const std::string &pass = "", const std::string &fname = "",
                  const std::string &db = "dazeus",
                  const std::string &opt = "")
       : type(t), hostname(h), port(p), username(user), password(pass),
-        database(db), options(opt) {}
+        filename(fname), database(db), options(opt) {}
 
   DatabaseConfig(const DatabaseConfig &s)
       : type(s.type), hostname(s.hostname), port(s.port), username(s.username),
-        password(s.password), database(s.database), options(s.options) {}
+        password(s.password), filename(s.filename), database(s.database),
+        options(s.options) {}
 
   const DatabaseConfig &operator=(const DatabaseConfig &s) {
     type = s.type;
