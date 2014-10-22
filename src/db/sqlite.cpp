@@ -290,10 +290,24 @@ bool SQLiteDatabase::hasPermission(const std::string &perm_name,
 			const std::string &network, const std::string &channel,
 			const std::string &sender, bool defaultPermission) const
 {
-    /*pqxx::work w(*conn_);
-    pqxx::result r = w.prepared("ḥas_permission")(perm_name)(network)(channel)(sender).exec();
-    return r.empty() ? defaultPermission : true;*/
-    return false;
+  sqlite3_bind_text(has_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(has_permission, 2, network.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(has_permission, 3, channel.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(has_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  int errc = sqlite3_step(has_permission);
+
+  if (errc == SQLITE_ROW) {
+    sqlite3_reset(has_permission);
+    return true;
+  } else if (errc == SQLITE_DONE) {
+    sqlite3_reset(has_permission);
+    return defaultPermission;
+  } else {
+    std::string msg = "Got an error while executing an SQL query (code " +
+                      std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+    sqlite3_reset(has_permission);
+    throw exception(msg);
+  }
 }
 
 void SQLiteDatabase::unsetPermission(const std::string &perm_name,
