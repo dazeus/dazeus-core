@@ -258,15 +258,32 @@ std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
 			const std::string &receiverScope,
 			const std::string &senderScope)
 {
-    /*pqxx::work w(*conn_);
-    pqxx::result r = w.prepared("properties")(ns)(networkScope)(receiverScope)(senderScope).exec(); */
+  // Return a vector of all the property keys matching the criteria.
+  std::vector<std::string> keys = std::vector<std::string>();
 
-    // Return a vector of all the property keys matching the criteria.
-    std::vector<std::string> keys = std::vector<std::string>();
-//    for (auto&& x : r) {
-  //      keys.push_back(x["key"].as<std::string>());
-    //}
-    return keys;
+  sqlite3_bind_text(properties, 1, ns.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(properties, 2, networkScope.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(properties, 3, receiverScope.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(properties, 4, senderScope.c_str(), -1, SQLITE_STATIC);
+
+  while (true) {
+    int errc = sqlite3_step(properties);
+
+    if (errc == SQLITE_ROW) {
+      std::string value = reinterpret_cast<const char *>(sqlite3_column_text(properties, 0));
+      keys.push_back(value);
+    } else if (errc == SQLITE_DONE) {
+      sqlite3_reset(properties);
+      break;
+    } else {
+      std::string msg = "Got an error while executing an SQL query (code " +
+                        std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+      sqlite3_reset(properties);
+      throw exception(msg);
+    }
+  }
+
+  return keys;
 }
 
 bool SQLiteDatabase::hasPermission(const std::string &perm_name,
