@@ -300,18 +300,40 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
 			const std::string &network, const std::string &receiver,
 			const std::string &sender)
 {
-//    pqxx::work w(*conn_);
-//    pqxx::result r = w.prepared("remove_permission")(perm_name)(network)(receiver)(sender).exec();
-//    w.commit();
+  sqlite3_bind_text(remove_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(remove_permission, 2, network.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(remove_permission, 3, receiver.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(remove_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  int errc = sqlite3_step(remove_permission);
+
+  if (errc != SQLITE_OK && errc != SQLITE_DONE) {
+    const char *zErrMsg = sqlite3_errmsg(conn_);
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(&zErrMsg);
+    throw new exception("Could not unset permission in SQLite database!");
+  }
+
+  sqlite3_reset(remove_permission);
 }
 
 void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name,
 			const std::string &network, const std::string &receiver,
 			const std::string &sender)
 {
-//    pqxx::work w(*conn_);
-//    pqxx::result r = w.prepared("add_permission")(perm_name)(network)(receiver)(sender).exec();
-//    w.commit();
+  sqlite3_bind_text(add_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(add_permission, 2, network.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(add_permission, 3, receiver.c_str(), -1, SQLITE_STATIC);
+  sqlite3_bind_text(add_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  int errc = sqlite3_step(add_permission);
+
+  if (errc != SQLITE_OK && errc != SQLITE_DONE) {
+    const char *zErrMsg = sqlite3_errmsg(conn_);
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(&zErrMsg);
+    throw new exception("Could not set permission in SQLite database!");
+  }
+
+  sqlite3_reset(add_permission);
 }
 
 }  // namespace db
