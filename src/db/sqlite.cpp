@@ -162,7 +162,7 @@ void SQLiteDatabase::upgradeDB()
       "sender VARCHAR(255) NOT NULL, "
       "created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
       "updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
-            "PRIMARY KEY(key, value, network, receiver, sender) "
+            "PRIMARY KEY(key, network, receiver, sender) "
     ")"
     ,
     "CREATE TABLE dazeus_permissions( "
