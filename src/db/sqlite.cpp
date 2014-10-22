@@ -36,11 +36,11 @@ void SQLiteDatabase::open()
   int fail = sqlite3_open_v2(dbc_.filename.c_str(), &conn_,
                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
                              NULL);
-	if (fail) {
+  if (fail) {
     auto error = "Can't open database (code " + std::to_string(fail) + "): " +
                  sqlite3_errmsg(conn_);
-		throw exception(error);
-	}
+    throw exception(error);
+  }
   upgradeDB();
   bootstrapDB();
 }
@@ -79,37 +79,43 @@ void SQLiteDatabase::tryBind(sqlite3_stmt *target, int param,
  */
 void SQLiteDatabase::bootstrapDB()
 {
-	tryPrepare(
+  tryPrepare(
       "SELECT value FROM dazeus_properties "
       "WHERE key = ?1 "
       "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
       &find_property);
-	tryPrepare(
+
+  tryPrepare(
       "DELETE FROM dazeus_properties "
       "WHERE key = ?1 "
       "  AND network = ?2 AND receiver = ?3 AND sender = ?3",
       &remove_property);
-	tryPrepare(
-  		"INSERT OR REPLACE INTO dazeus_properties "
-  		"(key, value, network, receiver, sender) "
-  		"VALUES (?1, ?2, ?3, :receiver, :sender) ",
+
+  tryPrepare(
+      "INSERT OR REPLACE INTO dazeus_properties "
+      "(key, value, network, receiver, sender) "
+      "VALUES (?1, ?2, ?3, :receiver, :sender) ",
       &update_property);
-	tryPrepare(
+
+  tryPrepare(
       "SELECT key FROM dazeus_properties "
       "WHERE key LIKE :key || '%' "
       "  AND network = :network AND receiver = :receiver AND sender = :sender",
       &properties);
-	tryPrepare(
-  		"INSERT OR REPLACE INTO dazeus_permissions "
-  		"(permission, network, receiver, sender) "
-  		"VALUES (:permission, :network, :receiver, :sender) ",
+
+  tryPrepare(
+      "INSERT OR REPLACE INTO dazeus_permissions "
+      "(permission, network, receiver, sender) "
+      "VALUES (:permission, :network, :receiver, :sender) ",
       &add_permission);
-	tryPrepare(
+
+  tryPrepare(
       "DELETE FROM dazeus_permissions "
       "WHERE permission = :permission "
       "  AND network = :network AND receiver = :receiver AND sender = :sender",
       &remove_permission);
-	tryPrepare(
+
+  tryPrepare(
       "SELECT * FROM dazeus_permissions "
       "WHERE permission = :permission "
       "  AND network = :network AND receiver = :receiver AND sender = :sender",
@@ -179,10 +185,10 @@ void SQLiteDatabase::upgradeDB()
   // run any outstanding updates
   static int target_version = std::end(upgrades) - std::begin(upgrades);
   if (db_version < target_version) {
-  	std::cout << "Will now upgrade database from version " << db_version
+    std::cout << "Will now upgrade database from version " << db_version
               << " to version " << target_version << "." << std::endl;
-  	for (int i = db_version; i < target_version; ++i) {
-  		int result = sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
+    for (int i = db_version; i < target_version; ++i) {
+      int result = sqlite3_exec(conn_, upgrades[i], NULL, NULL, NULL);
       if (result != SQLITE_OK) {
         throw exception("Could not run upgrade " + std::to_string(i) +
                             ", got error: " + sqlite3_errmsg(conn_));
@@ -232,9 +238,9 @@ std::string SQLiteDatabase::property(const std::string &variable,
 }
 
 void SQLiteDatabase::setProperty(const std::string &variable,
-		const std::string &value, const std::string &networkScope,
-		const std::string &receiverScope,
-		const std::string &senderScope)
+    const std::string &value, const std::string &networkScope,
+    const std::string &receiverScope,
+    const std::string &senderScope)
 {
   sqlite3_bind_text(update_property, 1, variable.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(update_property, 2, value.c_str(), -1, SQLITE_STATIC);
@@ -254,9 +260,9 @@ void SQLiteDatabase::setProperty(const std::string &variable,
 }
 
 std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
-			const std::string &networkScope,
-			const std::string &receiverScope,
-			const std::string &senderScope)
+      const std::string &networkScope,
+      const std::string &receiverScope,
+      const std::string &senderScope)
 {
   // Return a vector of all the property keys matching the criteria.
   std::vector<std::string> keys = std::vector<std::string>();
@@ -287,8 +293,8 @@ std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
 }
 
 bool SQLiteDatabase::hasPermission(const std::string &perm_name,
-			const std::string &network, const std::string &channel,
-			const std::string &sender, bool defaultPermission) const
+      const std::string &network, const std::string &channel,
+      const std::string &sender, bool defaultPermission) const
 {
   sqlite3_bind_text(has_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(has_permission, 2, network.c_str(), -1, SQLITE_STATIC);
@@ -311,8 +317,8 @@ bool SQLiteDatabase::hasPermission(const std::string &perm_name,
 }
 
 void SQLiteDatabase::unsetPermission(const std::string &perm_name,
-			const std::string &network, const std::string &receiver,
-			const std::string &sender)
+      const std::string &network, const std::string &receiver,
+      const std::string &sender)
 {
   sqlite3_bind_text(remove_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(remove_permission, 2, network.c_str(), -1, SQLITE_STATIC);
@@ -331,8 +337,8 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
 }
 
 void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name,
-			const std::string &network, const std::string &receiver,
-			const std::string &sender)
+      const std::string &network, const std::string &receiver,
+      const std::string &sender)
 {
   sqlite3_bind_text(add_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
   sqlite3_bind_text(add_permission, 2, network.c_str(), -1, SQLITE_STATIC);
