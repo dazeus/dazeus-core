@@ -54,8 +54,8 @@ private:
   void bootstrapDB();
   void upgradeDB();
 
-  void tryPrepare(const std::string &stmt, sqlite3_stmt **target);
-  void tryBind(sqlite3_stmt *target, int param, const std::string &value);
+  void tryPrepare(const std::string &stmt, sqlite3_stmt **target) const;
+  void tryBind(sqlite3_stmt *target, int param, const std::string &value) const;
 
   sqlite3 *conn_;
   sqlite3_stmt *find_property;

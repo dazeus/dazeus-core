@@ -48,7 +48,8 @@ void SQLiteDatabase::open()
 /**
  * @brief Try to create a prepared statement on the SQLite3 connection.
  */
-void SQLiteDatabase::tryPrepare(const std::string &stmt, sqlite3_stmt **target)
+void SQLiteDatabase::tryPrepare(const std::string &stmt,
+                                sqlite3_stmt **target) const
 {
   int result = sqlite3_prepare_v2(conn_, stmt.c_str(), stmt.length(), target,
                                   NULL);
@@ -63,7 +64,7 @@ void SQLiteDatabase::tryPrepare(const std::string &stmt, sqlite3_stmt **target)
  * @brief Try to bind a parameter to a prepared statement.
  */
 void SQLiteDatabase::tryBind(sqlite3_stmt *target, int param,
-                             const std::string &value)
+                             const std::string &value) const
 {
   int result = sqlite3_bind_text(target, param, value.c_str(), value.length(),
                                  SQLITE_TRANSIENT);
@@ -242,18 +243,18 @@ void SQLiteDatabase::setProperty(const std::string &variable,
     const std::string &receiverScope,
     const std::string &senderScope)
 {
-  sqlite3_bind_text(update_property, 1, variable.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(update_property, 2, value.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(update_property, 3, networkScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(update_property, 4, receiverScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(update_property, 5, senderScope.c_str(), -1, SQLITE_STATIC);
+  tryBind(update_property, 1, variable);
+  tryBind(update_property, 2, value);
+  tryBind(update_property, 3, networkScope);
+  tryBind(update_property, 4, receiverScope);
+  tryBind(update_property, 5, senderScope);
   int errc = sqlite3_step(update_property);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
     const char *zErrMsg = sqlite3_errmsg(conn_);
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
     sqlite3_free(&zErrMsg);
-    throw new exception("Could not set property in SQLite database!");
+    throw exception("Could not set property in SQLite database!");
   }
 
   sqlite3_reset(update_property);
@@ -267,10 +268,10 @@ std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
   // Return a vector of all the property keys matching the criteria.
   std::vector<std::string> keys = std::vector<std::string>();
 
-  sqlite3_bind_text(properties, 1, ns.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(properties, 2, networkScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(properties, 3, receiverScope.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(properties, 4, senderScope.c_str(), -1, SQLITE_STATIC);
+  tryBind(properties, 1, ns);
+  tryBind(properties, 2, networkScope);
+  tryBind(properties, 3, receiverScope);
+  tryBind(properties, 4, senderScope);
 
   while (true) {
     int errc = sqlite3_step(properties);
@@ -296,10 +297,11 @@ bool SQLiteDatabase::hasPermission(const std::string &perm_name,
       const std::string &network, const std::string &channel,
       const std::string &sender, bool defaultPermission) const
 {
-  sqlite3_bind_text(has_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(has_permission, 2, network.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(has_permission, 3, channel.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(has_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  tryBind(has_permission, 1, perm_name);
+  tryBind(has_permission, 2, network);
+  tryBind(has_permission, 3, channel);
+  tryBind(has_permission, 4, sender);
+
   int errc = sqlite3_step(has_permission);
 
   if (errc == SQLITE_ROW) {
@@ -320,17 +322,17 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
       const std::string &network, const std::string &receiver,
       const std::string &sender)
 {
-  sqlite3_bind_text(remove_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(remove_permission, 2, network.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(remove_permission, 3, receiver.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(remove_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  tryBind(remove_permission, 1, perm_name);
+  tryBind(remove_permission, 2, network);
+  tryBind(remove_permission, 3, receiver);
+  tryBind(remove_permission, 4, sender);
   int errc = sqlite3_step(remove_permission);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
     const char *zErrMsg = sqlite3_errmsg(conn_);
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
     sqlite3_free(&zErrMsg);
-    throw new exception("Could not unset permission in SQLite database!");
+    throw exception("Could not unset permission in SQLite database!");
   }
 
   sqlite3_reset(remove_permission);
@@ -340,17 +342,17 @@ void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name
       const std::string &network, const std::string &receiver,
       const std::string &sender)
 {
-  sqlite3_bind_text(add_permission, 1, perm_name.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(add_permission, 2, network.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(add_permission, 3, receiver.c_str(), -1, SQLITE_STATIC);
-  sqlite3_bind_text(add_permission, 4, sender.c_str(), -1, SQLITE_STATIC);
+  tryBind(add_permission, 1, perm_name);
+  tryBind(add_permission, 2, network);
+  tryBind(add_permission, 3, receiver);
+  tryBind(add_permission, 4, sender);
   int errc = sqlite3_step(add_permission);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
     const char *zErrMsg = sqlite3_errmsg(conn_);
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
     sqlite3_free(&zErrMsg);
-    throw new exception("Could not set permission in SQLite database!");
+    throw exception("Could not set permission in SQLite database!");
   }
 
   sqlite3_reset(add_permission);
