@@ -251,10 +251,10 @@ void SQLiteDatabase::setProperty(const std::string &variable,
   int errc = sqlite3_step(update_property);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
-    const char *zErrMsg = sqlite3_errmsg(conn_);
-    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    sqlite3_free(&zErrMsg);
-    throw exception("Could not set property in SQLite database!");
+    std::string msg = "Got an error while executing an SQL query (code " +
+                      std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+    sqlite3_reset(update_property);
+    throw exception(msg);
   }
 
   sqlite3_reset(update_property);
@@ -329,10 +329,10 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
   int errc = sqlite3_step(remove_permission);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
-    const char *zErrMsg = sqlite3_errmsg(conn_);
-    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    sqlite3_free(&zErrMsg);
-    throw exception("Could not unset permission in SQLite database!");
+    std::string msg = "Got an error while executing an SQL query (code " +
+                      std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+    sqlite3_reset(remove_permission);
+    throw exception(msg);
   }
 
   sqlite3_reset(remove_permission);
@@ -349,10 +349,10 @@ void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name
   int errc = sqlite3_step(add_permission);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
-    const char *zErrMsg = sqlite3_errmsg(conn_);
-    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    sqlite3_free(&zErrMsg);
-    throw exception("Could not set permission in SQLite database!");
+    std::string msg = "Got an error while executing an SQL query (code " +
+                      std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
+    sqlite3_reset(add_permission);
+    throw exception(msg);
   }
 
   sqlite3_reset(add_permission);
