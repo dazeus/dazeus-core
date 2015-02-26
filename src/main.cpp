@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
 		perror("Failed to install SIGHUP handler");
 	}
 
+	if(signal(SIGPIPE, SIG_IGN)) {
+		perror("Failed to set SIGPIPE ignore");
+	}
+
 	d = new dazeus::DaZeus(configfile);
 	d->run();
 	delete d;
