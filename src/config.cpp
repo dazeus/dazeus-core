@@ -30,12 +30,12 @@ struct ConfigReaderState {
 	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 
-	boost::optional<dazeus::GlobalConfig> global_progress;
-	boost::optional<dazeus::SocketConfig> socket_progress;
-	boost::optional<dazeus::DatabaseConfig> database_progress;
-	boost::optional<dazeus::NetworkConfig> network_progress;
-	boost::optional<dazeus::ServerConfig> server_progress;
-	boost::optional<dazeus::PluginConfig> plugin_progress;
+	boost::optional<GlobalConfig> global_progress;
+	boost::optional<SocketConfig> socket_progress;
+	boost::optional<db::DatabaseConfig> database_progress;
+	boost::optional<NetworkConfig> network_progress;
+	boost::optional<ServerConfig> server_progress;
+	boost::optional<PluginConfig> plugin_progress;
 	std::string error;
 };
 }
@@ -65,7 +65,8 @@ static const configoption_t options[] = {
 	{"host", ARG_RAW, option, NULL, CTX_ALL},
 	{"port", ARG_INT, option, NULL, CTX_ALL},
 	{"password", ARG_RAW, option, NULL, CTX_ALL},
-	{"database", ARG_RAW, option, NULL, CTX_ALL},
+    {"database", ARG_RAW, option, NULL, CTX_ALL},
+    {"filename", ARG_RAW, option, NULL, CTX_ALL},
 	{"options", ARG_RAW, option, NULL, CTX_ALL},
 	{"autoconnect", ARG_RAW, option, NULL, CTX_ALL},
 	{"priority", ARG_INT, option, NULL, CTX_ALL},
@@ -162,7 +163,7 @@ static DOTCONF_CB(sect_open)
 				return "More than one Database block defined in configuration file.";
 			}
 			s->current_section = S_DATABASE;
-			s->database_progress.reset(dazeus::DatabaseConfig());
+			s->database_progress.reset(dazeus::db::DatabaseConfig());
 		} else if(name == "<network") {
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
@@ -304,7 +305,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_DATABASE: {
-		dazeus::DatabaseConfig &dc = *s->database_progress;
+		dazeus::db::DatabaseConfig &dc = *s->database_progress;
 		if(name == "type") {
 			dc.type = trim(cmd->data.str);
 		} else if(name == "host") {
@@ -315,6 +316,8 @@ static DOTCONF_CB(option)
 			dc.username = trim(cmd->data.str);
 		} else if(name == "password") {
 			dc.password = trim(cmd->data.str);
+		} else if(name == "filename") {
+			dc.filename = trim(cmd->data.str);
 		} else if(name == "database") {
 			dc.database = trim(cmd->data.str);
 		} else if(name == "options") {

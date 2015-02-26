@@ -12,12 +12,14 @@
 #include <map>
 
 namespace dazeus {
+namespace db {
+  class Database;
+}
 
 class ConfigReader;
 typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 class PluginComm;
 class Network;
-class Database;
 class PluginMonitor;
 
 class DaZeus
@@ -29,7 +31,7 @@ class DaZeus
     std::string configFileName() const;
     bool     configLoaded() const;
 
-    Database *database() const;
+    db::Database *database() const;
     const std::map<std::string, Network*> &networks() const { return networks_; }
 
     void     run();
@@ -49,7 +51,7 @@ class DaZeus
     std::string      configFileName_;
     PluginComm      *plugins_;
     PluginMonitor   *plugin_monitor_;
-    Database        *database_;
+    db::Database    *database_;
     std::map<std::string, Network*>  networks_;
     bool             running_;
     bool config_reload_pending_;

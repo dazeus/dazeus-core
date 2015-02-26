@@ -19,8 +19,10 @@
 #include <memory>
 
 namespace dazeus {
+namespace db {
+  class Database;
+}
 
-class Database;
 class ConfigReader;
 typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 class DaZeus;
@@ -165,14 +167,14 @@ class PluginComm : public NetworkListener
   };
 
   public:
-            PluginComm( Database *d, ConfigReaderPtr c, DaZeus *bot );
+            PluginComm( db::Database *d, ConfigReaderPtr c, DaZeus *bot );
   virtual  ~PluginComm();
   void dispatch(const std::string &event, const std::vector<std::string> &parameters);
   void init();
   void ircEvent(const std::string &event, const std::string &origin,
                 const std::vector<std::string> &params, Network *n );
   void run(int timeout);
-  void setDatabase(Database *database) {
+  void setDatabase(db::Database *database) {
     database_ = database;
   }
 
@@ -190,7 +192,7 @@ class PluginComm : public NetworkListener
     std::vector<int> localServers_;
     std::vector<Command*> commandQueue_;
     std::map<int,SocketInfo> sockets_;
-    Database *database_;
+    db::Database *database_;
     ConfigReaderPtr config_;
     DaZeus *dazeus_;
     std::string handle(int dev, const std::string &line, SocketInfo &info);

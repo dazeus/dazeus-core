@@ -4,7 +4,8 @@
  */
 
 #include "dazeus.h"
-#include "database.h"
+#include "db/database.h"
+#include "db/factory.h"
 #include "network.h"
 #include "config.h"
 #include "plugincomm.h"
@@ -12,6 +13,10 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+
+using dazeus::db::DatabaseConfig;
+using dazeus::db::Database;
+using dazeus::db::Factory;
 
 // #define DEBUG
 #define VERBOSE
@@ -76,21 +81,26 @@ bool dazeus::DaZeus::connectDatabase()
   if(database_) {
     delete database_;
   }
-  database_ = new Database(config_->getDatabaseConfig());
   try {
-    database_->open();
-  } catch(Database::exception &e) {
-    fprintf(stderr, "Could not connect to database: %s\n", e.what());
+    database_ = Factory::createDb(config_->getDatabaseConfig());
+  } catch (dazeus::db::exception &e) {
+    std::cout << e.what() << std::endl;
     return false;
   }
 
-  return true;
+  try {
+    database_->open();
+  } catch(const dazeus::db::exception &e) {
+    std::cout << "Could not connect to database: " << e.what() << std::endl;
+    return false;
+  }
+	return true;
 }
 
 /**
  * @brief Return the database.
  */
-dazeus::Database *dazeus::DaZeus::database() const
+Database *dazeus::DaZeus::database() const
 {
   return database_;
 }
