@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 
 namespace dazeus {
 
@@ -29,7 +30,7 @@ class DaZeus
     bool     configLoaded() const;
 
     Database *database() const;
-    const std::vector<Network*> &networks() const { return networks_; }
+    const std::map<std::string, Network*> &networks() const { return networks_; }
 
     void     run();
     bool     loadConfig();
@@ -49,7 +50,7 @@ class DaZeus
     PluginComm      *plugins_;
     PluginMonitor   *plugin_monitor_;
     Database        *database_;
-    std::vector<Network*>  networks_;
+    std::map<std::string, Network*>  networks_;
     bool             running_;
 };
 

@@ -98,11 +98,10 @@ void dazeus::PluginComm::run(int timeout_sec) {
 		}
 	}
 	// and add the IRC descriptors
-	std::vector<Network*>::const_iterator nit;
-	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		if((*nit)->activeServer()) {
+	for(auto nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+		if(nit->second->activeServer()) {
 			int ircmaxfd = 0;
-			(*nit)->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
+			nit->second->addDescriptors(&sockets, &out_sockets, &ircmaxfd);
 			if(ircmaxfd > highest)
 				highest = ircmaxfd;
 		}
@@ -124,9 +123,9 @@ void dazeus::PluginComm::run(int timeout_sec) {
 	}
 	else if(socks == 0) {
 		// No sockets fired, just check for network timeouts
-		for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-			if((*nit)->activeServer()) {
-				(*nit)->checkTimeouts();
+		for(auto nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+			if(nit->second->activeServer()) {
+				nit->second->checkTimeouts();
 			}
 		}
 		return;
@@ -149,10 +148,10 @@ void dazeus::PluginComm::run(int timeout_sec) {
 			break;
 		}
 	}
-	for(nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
-		if((*nit)->activeServer()) {
-			(*nit)->processDescriptors(&sockets, &out_sockets);
-			(*nit)->checkTimeouts();
+	for(auto nit = dazeus_->networks().begin(); nit != dazeus_->networks().end(); ++nit) {
+		if(nit->second->activeServer()) {
+			nit->second->processDescriptors(&sockets, &out_sockets);
+			nit->second->checkTimeouts();
 		}
 	}
 }
@@ -638,8 +637,7 @@ void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &o
 }
 
 std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
-	const std::vector<Network*> &networks = dazeus_->networks();
-	std::vector<Network*>::const_iterator nit;
+	auto &networks = dazeus_->networks();
 
 	json_error_t error;
 	json_t *n = json_loads(line.c_str(), 0, &error);
@@ -702,8 +700,8 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 		json_object_set_new(response, "got", json_string("networks"));
 		json_object_set_new(response, "success", json_true());
 		json_t *nets = json_array();
-		for(nit = networks.begin(); nit != networks.end(); ++nit) {
-			json_array_append_new(nets, json_string((*nit)->networkName().c_str()));
+		for(auto nit = networks.begin(); nit != networks.end(); ++nit) {
+			json_array_append_new(nets, json_string(nit->first.c_str()));
 		}
 		json_object_set_new(response, "networks", nets);
 	} else if(action == "handshake") {
@@ -742,16 +740,12 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 			network = params[0];
 		}
 		json_object_set_new(response, "network", json_string(network.c_str()));
-		Network *net = 0;
-		for(nit = networks.begin(); nit != networks.end(); ++nit) {
-			if((*nit)->networkName() == network) {
-				net = *nit; break;
-			}
-		}
-		if(net == 0) {
+		auto nit = networks.find(network);
+		if(nit == networks.end()) {
 			json_object_set_new(response, "success", json_false());
 			json_object_set_new(response, "error", json_string("Not on that network"));
 		} else {
+			Network *net = nit->second;
 			if(action == "channels") {
 				json_object_set_new(response, "success", json_true());
 				json_t *chans = json_array();
@@ -807,8 +801,8 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 		}
 
 		bool netfound = false;
-		for(nit = networks.begin(); nit != networks.end(); ++nit) {
-			Network *n = *nit;
+		for(auto nit = networks.begin(); nit != networks.end(); ++nit) {
+			Network *n = nit->second;
 			if(n->networkName() == network) {
 				netfound = true;
 				if(receiver.substr(0, 1) != "#" || contains_ci(n->joinedChannels(), strToLower(receiver))) {
@@ -874,24 +868,23 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 			std::string commandName = params.front();
 			params.erase(params.begin());
 			RequirementInfo *req = 0;
-			Network *net = 0;
-			if(params.size() > 0) {
-				for(nit = networks.begin(); nit != networks.end(); ++nit) {
-					if((*nit)->networkName() == params.at(0)) {
-						net = *nit; break;
-					}
-				}
-			}
+
 			if(params.size() == 0) {
 				// Add it as a global command
 				req = new RequirementInfo();
-			} else if(params.size() == 1) {
-				// Network requirement
-				req = new RequirementInfo(net);
-			} else if(params.size() == 3) {
-				// Network and sender/receiver requirement
-				bool isSender = params.at(1) == "true";
-				req = new RequirementInfo(net, params.at(2), isSender);
+			} else if(params.size() == 1 || params.size() == 3) {
+				auto nit = networks.find(params.at(0));
+				if(nit == networks.end()) {
+					json_object_set_new(response, "success", json_false());
+					json_object_set_new(response, "error", json_string("Not on that network"));
+				} else if(params.size() == 1) {
+					// Network requirement
+					req = new RequirementInfo(nit->second);
+				} else {
+					// Network and sender/receiver requirement
+					bool isSender = params.at(1) == "true";
+					req = new RequirementInfo(nit->second, params.at(2), isSender);
+				}
 			} else {
 				json_object_set_new(response, "success", json_false());
 				json_object_set_new(response, "error", json_string("Wrong number of parameters"));

@@ -39,11 +39,10 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
  */
 dazeus::DaZeus::~DaZeus()
 {
-  std::vector<Network*>::iterator it;
-  for(it = networks_.begin(); it != networks_.end(); ++it)
+  for(auto it = networks_.begin(); it != networks_.end(); ++it)
   {
-    (*it)->disconnectFromNetwork( Network::ShutdownReason );
-    delete *it;
+    it->second->disconnectFromNetwork( Network::ShutdownReason );
+    delete it->second;
   }
   networks_.clear();
 
@@ -64,10 +63,9 @@ void dazeus::DaZeus::autoConnect()
 #ifdef DEBUG
   fprintf(stderr, "dazeus::DaZeus::autoConnect() called: looking for networks to connect to\n");
 #endif
-  std::vector<Network*>::iterator it;
-  for(it = networks_.begin(); it != networks_.end(); ++it)
+  for(auto it = networks_.begin(); it != networks_.end(); ++it)
   {
-    Network *n = *it;
+    Network *n = it->second;
     if( n->autoConnectEnabled() )
     {
 #ifdef DEBUG
@@ -157,8 +155,6 @@ bool dazeus::DaZeus::loadConfig()
   }
   assert(config_->isRead());
 
-  const std::vector<NetworkConfig> &networks = config_->getNetworks();
-
   if(!connectDatabase()) {
     return false;
   }
@@ -168,16 +164,13 @@ bool dazeus::DaZeus::loadConfig()
   plugins_ = new PluginComm( database_, config_, this );
   plugin_monitor_ = new PluginMonitor(config_);
 
-  std::vector<NetworkConfig>::const_iterator it;
-  for(it = networks.begin(); it != networks.end(); ++it)
+  const std::vector<NetworkConfig> &networks = config_->getNetworks();
+  for(auto it = networks.begin(); it != networks.end(); ++it)
   {
-    Network *net = new Network( *it );
+    std::string name = it->name;
+    Network *net = new Network(*it);
     net->addListener(plugins_);
-    if( net == 0 ) {
-      return false;
-    }
-
-    networks_.push_back( net );
+    networks_[name] = net;
   }
 
   // Pretty number of initialisations viewer -- and also an immediate database
