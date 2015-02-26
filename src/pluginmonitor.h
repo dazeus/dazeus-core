@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 
 namespace dazeus {
 
@@ -40,6 +41,7 @@ class PluginMonitor
          ~PluginMonitor();
 
     bool  shouldRun() { return should_run_; }
+    void  configReloaded();
     void  runOnce();
     void  sigchild() { should_run_ = 1; }
 
@@ -49,13 +51,14 @@ class PluginMonitor
     void operator=(const PluginMonitor&);
 
     bool start_plugin(PluginState *state);
+    void kill_plugins(std::map<std::string, PluginState*> &plugins);
     static pid_t fork_plugin(const std::string path, const std::vector<std::string> arguments, const std::string executable);
     static void stop_plugin(PluginState *state, bool hard);
     static void plugin_failed(PluginState *state, bool permanent = false);
 
     std::string pluginDirectory_;
     ConfigReaderPtr config_;
-    std::vector<PluginState*> state_;
+    std::map<std::string, PluginState*> state_;
     volatile sig_atomic_t should_run_;
 };
 

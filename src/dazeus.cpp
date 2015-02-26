@@ -24,8 +24,7 @@ using dazeus::db::Factory;
 /**
  * @brief Constructor.
  *
- * @param configFileName optional path to the configuration file. Configuration
- * will not be loaded automatically, use loadConfig() for that.
+ * @param configFileName Path to the configuration file.
  */
 dazeus::DaZeus::DaZeus( std::string configFileName )
 : config_(std::make_shared<ConfigReader>())
@@ -35,7 +34,11 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
 , database_( 0 )
 , networks_()
 , running_(false)
+, config_reload_pending_(false)
 {
+	if(!loadConfig()) {
+		throw std::runtime_error("Failed to load initial configuration.");
+	}
 }
 
 
@@ -44,11 +47,10 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
  */
 dazeus::DaZeus::~DaZeus()
 {
-  std::vector<Network*>::iterator it;
-  for(it = networks_.begin(); it != networks_.end(); ++it)
+  for(auto it = networks_.begin(); it != networks_.end(); ++it)
   {
-    (*it)->disconnectFromNetwork( Network::ShutdownReason );
-    delete *it;
+    it->second->disconnectFromNetwork( Network::ShutdownReason );
+    delete it->second;
   }
   networks_.clear();
 
@@ -56,39 +58,6 @@ dazeus::DaZeus::~DaZeus()
   delete plugins_;
   delete database_;
 }
-
-
-/**
- * @brief Connect to all networks marked "autoconnect".
- *
- * Warning: This method is usually called outside the event loop, just after
- * initialisation.
- */
-void dazeus::DaZeus::autoConnect()
-{
-#ifdef DEBUG
-  fprintf(stderr, "dazeus::DaZeus::autoConnect() called: looking for networks to connect to\n");
-#endif
-  std::vector<Network*>::iterator it;
-  for(it = networks_.begin(); it != networks_.end(); ++it)
-  {
-    Network *n = *it;
-    if( n->autoConnectEnabled() )
-    {
-#ifdef DEBUG
-      fprintf(stderr, "Connecting to %s (autoconnect is enabled)\n", Network::toString(n).c_str());
-#endif
-      n->connectToNetwork();
-    }
-#ifdef DEBUG
-    else
-    {
-      fprintf(stderr, "Not connecting to %s, autoconnect is disabled.\n", Network::toString(n).c_str());
-    }
-#endif
-  }
-}
-
 
 std::string dazeus::DaZeus::configFileName() const {
 	return configFileName_;
@@ -109,9 +78,11 @@ bool dazeus::DaZeus::configLoaded() const
 bool dazeus::DaZeus::connectDatabase()
 {
   assert(config_->isRead());
-  const DatabaseConfig &dbc = config_->getDatabaseConfig();
+  if(database_) {
+    delete database_;
+  }
   try {
-    database_ = Factory::createDb(dbc);
+    database_ = Factory::createDb(config_->getDatabaseConfig());
   } catch (dazeus::db::exception &e) {
     std::cout << e.what() << std::endl;
     return false;
@@ -137,18 +108,6 @@ Database *dazeus::DaZeus::database() const
 
 
 /**
- * @brief Initialises plugins from the configuration file.
- */
-bool dazeus::DaZeus::initPlugins()
-{
-  assert(plugins_ != 0);
-  plugins_->init();
-
-  return true;
-}
-
-
-/**
  * @brief (Re-)loads configuration from the configuration file.
  *
  * If loading failed, this method returns false.
@@ -168,27 +127,60 @@ bool dazeus::DaZeus::loadConfig()
   }
   assert(config_->isRead());
 
-  const std::vector<NetworkConfigPtr> &networks = config_->getNetworks();
-
   if(!connectDatabase()) {
     return false;
   }
 
-  if(plugins_)
-    delete plugins_;
-  plugins_ = new PluginComm( database_, config_, this );
-  plugin_monitor_ = new PluginMonitor(config_);
+  if(plugins_) {
+    plugins_->setDatabase(database_);
+    // TODO: update socketconfig in PluginComm without breaking existing sockets
+  } else {
+    plugins_ = new PluginComm( database_, config_, this );
+    plugins_->init();
+  }
 
-  std::vector<NetworkConfigPtr>::const_iterator it;
-  for(it = networks.begin(); it != networks.end(); ++it)
+  if(plugin_monitor_) {
+    plugin_monitor_->configReloaded();
+  } else {
+    plugin_monitor_ = new PluginMonitor(config_);
+  }
+
+  const std::vector<NetworkConfig> &networks = config_->getNetworks();
+  for(auto it = networks.begin(); it != networks.end(); ++it)
   {
-    Network *net = new Network( *it );
-    net->addListener(plugins_);
-    if( net == 0 ) {
-      return false;
-    }
+    std::string name = it->name;
+    auto network = networks_.find(name);
+    if(network == networks_.end()) {
+      Network *net = new Network(*it);
+      net->addListener(plugins_);
+      networks_[name] = net;
 
-    networks_.push_back( net );
+      if(net->autoConnectEnabled()) {
+        net->connectToNetwork();
+      }
+    } else {
+      network->second->resetConfig(*it);
+    }
+  }
+
+  // Disconnect from networks that are gone.
+  for(auto nit = networks_.begin(); nit != networks_.end();) {
+    std::string name = nit->first;
+    bool found = false;
+    for(auto it = networks.begin(); it != networks.end(); ++it) {
+      if(it->name == name) {
+        found = true;
+        break;
+      }
+    }
+    if(!found) {
+      Network *net = nit->second;
+      networks_.erase(nit++);
+      net->disconnectFromNetwork(Network::ConfigurationReloadReason);
+      delete net;
+    } else {
+      ++nit;
+    }
   }
 
   // Pretty number of initialisations viewer -- and also an immediate database
@@ -228,6 +220,10 @@ void dazeus::DaZeus::run()
 {
 	running_ = true;
 	while(running_) {
+		if(config_reload_pending_) {
+			config_reload_pending_ = false;
+			loadConfig();
+		}
 		plugin_monitor_->runOnce();
 		// The only non-socket processing in DaZeus is done by the
 		// plugin monitor. It works using signals (primarily SIGCHLD),

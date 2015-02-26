@@ -28,6 +28,17 @@ void sigchild_handler(int sig) {
 	}
 }
 
+void sighup_handler(int sig);
+void sighup_handler(int sig) {
+	assert(sig == SIGHUP);
+	assert(d != NULL);
+	d->reloadConfig();
+
+	if(signal(sig, sighup_handler) == SIG_ERR) {
+		perror("Failed to install SIGHUP handler");
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
@@ -63,14 +74,11 @@ int main(int argc, char *argv[])
 	if(signal(SIGCHLD, sigchild_handler) == SIG_ERR) {
 		perror("Failed to install SIGCHLD handler");
 	}
+	if(signal(SIGHUP, sighup_handler) == SIG_ERR) {
+		perror("Failed to install SIGHUP handler");
+	}
 
 	d = new dazeus::DaZeus(configfile);
-	if(!d->loadConfig()) {
-		fprintf(stderr, "Failed to load configuration, bailing out.\n");
-		return 3;
-	}
-	d->initPlugins();
-	d->autoConnect();
 	d->run();
 	delete d;
 	return 0;

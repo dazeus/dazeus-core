@@ -65,7 +65,7 @@ class ConfigReader;
 typedef std::shared_ptr<ConfigReader> ConfigReaderPtr;
 
 class ConfigReader {
-	std::vector<NetworkConfigPtr> networks;
+	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 	std::vector<SocketConfig> sockets;
 	boost::optional<GlobalConfig> global;
@@ -83,7 +83,7 @@ public:
 	// Re-reads all configuration. Throws ConfigReader::exception if something failed.
 	void read(std::string file);
 
-	const std::vector<NetworkConfigPtr> &getNetworks() const { return networks; }
+	const std::vector<NetworkConfig> &getNetworks() const { return networks; }
 	const std::vector<PluginConfig> &getPlugins() const { return plugins; }
 	// socket configs may be changed when creating one (but this should change)
 	std::vector<SocketConfig> &getSockets() { return sockets; }

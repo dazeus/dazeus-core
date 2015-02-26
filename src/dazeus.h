@@ -9,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 
 namespace dazeus {
 namespace db {
@@ -31,13 +32,10 @@ class DaZeus
     bool     configLoaded() const;
 
     db::Database *database() const;
-    const std::vector<Network*> &networks() const { return networks_; }
+    const std::map<std::string, Network*> &networks() const { return networks_; }
 
     void     run();
-    bool     loadConfig();
-    bool     initPlugins();
-    void     autoConnect();
-    bool     connectDatabase();
+    void     reloadConfig() { config_reload_pending_ = true; }
     void     stop();
     void     sigchild();
 
@@ -46,13 +44,17 @@ class DaZeus
     DaZeus(const DaZeus&);
     void operator=(const DaZeus&);
 
+    bool     loadConfig();
+    bool     connectDatabase();
+
     ConfigReaderPtr  config_;
     std::string      configFileName_;
     PluginComm      *plugins_;
     PluginMonitor   *plugin_monitor_;
     db::Database    *database_;
-    std::vector<Network*>  networks_;
+    std::map<std::string, Network*>  networks_;
     bool             running_;
+    bool config_reload_pending_;
 };
 
 }

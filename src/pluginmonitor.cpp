@@ -69,57 +69,114 @@ dazeus::PluginMonitor::PluginMonitor(ConfigReaderPtr config)
 , config_(config)
 , should_run_(1)
 {
+	configReloaded();
+}
+
+void dazeus::PluginMonitor::configReloaded() {
+	std::vector<std::string> plugins_seen;
+
 	const std::vector<PluginConfig> &plugins = config_->getPlugins();
 	std::vector<PluginConfig>::const_iterator it;
 	for(it = plugins.begin(); it != plugins.end(); ++it) {
 		const PluginConfig &config = *it;
 		assert(config.name.length() > 0);
 
-		std::vector<PluginState*>::const_iterator sit;
-		for(sit = state_.begin(); sit != state_.end(); ++sit) {
-			if((*sit)->config.name == config.name) {
-				throw std::runtime_error("Multiple plugins exist with name " + config.name);
-			}
-		}
 		if(config.per_network) {
-			const std::vector<NetworkConfigPtr> &networks = config_->getNetworks();
-			std::vector<NetworkConfigPtr>::const_iterator nit;
+			const std::vector<NetworkConfig> &networks = config_->getNetworks();
+			std::vector<NetworkConfig>::const_iterator nit;
 			for(nit = networks.begin(); nit != networks.end(); ++nit) {
-				PluginState *s = new PluginState(config, (*nit)->name);
-				state_.push_back(s);
+				std::string state_name = config.name + "!" + nit->name;
+
+				if(contains(plugins_seen, state_name)) {
+					throw std::runtime_error("Multiple plugins exist with name " + state_name);
+				}
+				plugins_seen.push_back(state_name);
+
+				auto sit = state_.find(state_name);
+				if(sit == state_.end()) {
+					PluginState *s = new PluginState(config, nit->name);
+					state_[state_name] = s;
+				} else {
+					state_[state_name]->num_failures = 0;
+					state_[state_name]->will_autostart = true;
+					state_[state_name]->config = config;
+				}
 			}
 		} else {
-			PluginState *s = new PluginState(config, "");
-			state_.push_back(s);
+			if(contains(plugins_seen, config.name)) {
+				throw std::runtime_error("Multiple plugins exist with name " + config.name);
+			}
+			plugins_seen.push_back(config.name);
+
+			auto sit = state_.find(config.name);
+			if(sit == state_.end()) {
+				std::cout << "Starting " << config.name << std::endl;
+				PluginState *s = new PluginState(config, "");
+				state_[config.name] = s;
+			} else {
+				state_[config.name]->num_failures = 0;
+				state_[config.name]->will_autostart = true;
+				state_[config.name]->config = config;
+			}
 		}
 	}
+
+	// kill all plugins that we didn't have in this run
+	std::map<std::string, PluginState*> plugins_to_kill;
+	for(auto it = state_.begin(); it != state_.end(); ++it) {
+		bool plugin_is_active = it->second->pid > 0 || it->second->will_autostart;
+		if(!contains(plugins_seen, it->first) && plugin_is_active) {
+			std::cerr << "Marking to kill " << it->first << std::endl;
+			std::cerr << "Current PID = " << it->second->pid << " / Will autostart = " << it->second->will_autostart << std::endl;
+			plugins_to_kill[it->first] = it->second;
+			it->second->will_autostart = false;
+		}
+	}
+
+	kill_plugins(plugins_to_kill);
+	should_run_ = 1;
+	runOnce();
 }
 
 dazeus::PluginMonitor::~PluginMonitor() {
-	std::vector<PluginState*>::iterator it;
+	kill_plugins(state_);
+	for(auto it = state_.begin(); it != state_.end(); ++it) {
+		delete it->second;
+	}
+}
 
+void dazeus::PluginMonitor::kill_plugins(std::map<std::string, PluginState*> &plugins) {
 	// Try a graceful stop of all plugins...
-	for(it = state_.begin(); it != state_.end(); ++it) {
-		if((*it)->pid != 0)
-			stop_plugin(*it, false);
-	}
-
-	sleep(2);
-	runOnce();
-
-	for(it = state_.begin(); it != state_.end(); ++it) {
-		if((*it)->pid != 0)
-			stop_plugin(*it, true);
-	}
-
-	sleep(2);
-	runOnce();
-
-	for(it = state_.begin(); it != state_.end(); ++it) {
-		if((*it)->pid != 0) {
-			std::cerr << "In PluginMonitor destructor, failed to stop plugin " << (*it)->config.name << std::endl;
+	bool pluginsStopped = false;
+	for(auto it = plugins.begin(); it != plugins.end(); ++it) {
+		if(it->second->pid != 0) {
+			stop_plugin(it->second, false);
+			pluginsStopped = true;
 		}
-		delete *it;
+	}
+
+	if(pluginsStopped) {
+		sleep(2);
+		runOnce();
+	}
+
+	pluginsStopped = false;
+	for(auto it = plugins.begin(); it != plugins.end(); ++it) {
+		if(it->second->pid != 0) {
+			stop_plugin(it->second, true);
+			pluginsStopped = true;
+		}
+	}
+
+	if(pluginsStopped) {
+		sleep(2);
+		runOnce();
+	}
+
+	for(auto it = plugins.begin(); it != plugins.end(); ++it) {
+		if(it->second->pid != 0) {
+			std::cerr << "In PluginMonitor::kill_plugins(), failed to stop plugin " << it->second->config.name << std::endl;
+		}
 	}
 }
 
@@ -297,7 +354,6 @@ void dazeus::PluginMonitor::runOnce() {
 	// Process died childs
 	pid_t child;
 	int child_status;
-	std::vector<PluginState*>::iterator it;
 	errno = 0;
 	while((child = wait4(-1, &child_status, WNOHANG, NULL))) {
 		if(child == -1 && errno == ECHILD) {
@@ -309,9 +365,9 @@ void dazeus::PluginMonitor::runOnce() {
 		}
 
 		PluginState *state = NULL;
-		for(it = state_.begin(); it != state_.end(); ++it) {
-			if((*it)->pid == child) {
-				state = *it;
+		for(auto it = state_.begin(); it != state_.end(); ++it) {
+			if(it->second->pid == child) {
+				state = it->second;
 				break;
 			}
 		}
@@ -342,8 +398,8 @@ void dazeus::PluginMonitor::runOnce() {
 
 	// Process plugins that should start now
 	bool waiting_plugin = false;
-	for(it = state_.begin(); it != state_.end(); ++it) {
-		PluginState  *state  = *it;
+	for(auto it = state_.begin(); it != state_.end(); ++it) {
+		PluginState  *state  = it->second;
 		assert(state != NULL);
 
 		if(!state->will_autostart) {

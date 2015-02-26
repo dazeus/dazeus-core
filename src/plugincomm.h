@@ -148,11 +148,7 @@ class PluginComm : public NetworkListener
       mstr << jsonMsg.length();
       mstr << jsonMsg;
       mstr << "\n";
-      std::string final_message = mstr.str();
-      if(write(d, final_message.c_str(), final_message.length()) != (unsigned)final_message.length()) {
-        fprintf(stderr, "Failed to write correct number of JSON bytes to client socket in dispatch().\n");
-        close(d);
-      }
+      writebuffer += mstr.str();
       json_decref(n);
     }
     bool didHandshake() {
@@ -178,6 +174,9 @@ class PluginComm : public NetworkListener
   void ircEvent(const std::string &event, const std::string &origin,
                 const std::vector<std::string> &params, Network *n );
   void run(int timeout);
+  void setDatabase(db::Database *database) {
+    database_ = database;
+  }
 
   private:
     // explicitly disable copy constructor
