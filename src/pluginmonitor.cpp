@@ -82,10 +82,10 @@ dazeus::PluginMonitor::PluginMonitor(ConfigReaderPtr config)
 			}
 		}
 		if(config.per_network) {
-			const std::vector<NetworkConfigPtr> &networks = config_->getNetworks();
-			std::vector<NetworkConfigPtr>::const_iterator nit;
+			const std::vector<NetworkConfig> &networks = config_->getNetworks();
+			std::vector<NetworkConfig>::const_iterator nit;
 			for(nit = networks.begin(); nit != networks.end(); ++nit) {
-				PluginState *s = new PluginState(config, (*nit)->name);
+				PluginState *s = new PluginState(config, nit->name);
 				state_.push_back(s);
 			}
 		} else {

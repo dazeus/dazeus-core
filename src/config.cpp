@@ -27,14 +27,14 @@ struct ConfigReaderState {
 
 	int current_section;
 	std::vector<SocketConfig> sockets;
-	std::vector<NetworkConfigPtr> networks;
+	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 
 	boost::optional<dazeus::GlobalConfig> global_progress;
 	boost::optional<dazeus::SocketConfig> socket_progress;
 	boost::optional<dazeus::DatabaseConfig> database_progress;
-	std::shared_ptr<dazeus::NetworkConfig> network_progress;
-	std::shared_ptr<dazeus::ServerConfig> server_progress;
+	boost::optional<dazeus::NetworkConfig> network_progress;
+	boost::optional<dazeus::ServerConfig> server_progress;
 	boost::optional<dazeus::PluginConfig> plugin_progress;
 	std::string error;
 };
@@ -168,7 +168,7 @@ static DOTCONF_CB(sect_open)
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
 			s->current_section = S_NETWORK;
-			s->network_progress = std::make_shared<dazeus::NetworkConfig>();
+			s->network_progress.reset(dazeus::NetworkConfig());
 			s->network_progress->name = networkname;
 			s->network_progress->displayName = networkname;
 			s->network_progress->nickName = s->global_progress->default_nickname;
@@ -191,9 +191,8 @@ static DOTCONF_CB(sect_open)
 		assert(!s->server_progress);
 		if(name == "<server>") {
 			s->current_section = S_SERVER;
-			s->server_progress = std::make_shared<dazeus::ServerConfig>();
+			s->server_progress.reset(dazeus::ServerConfig());
 			s->server_progress->host = "";
-			s->server_progress->network = s->network_progress;
 		}
 		break;
 	default:
@@ -230,7 +229,7 @@ static DOTCONF_CB(sect_close)
 		break;
 	case S_NETWORK:
 		if(name == "</network>") {
-			s->networks.push_back(s->network_progress);
+			s->networks.push_back(*s->network_progress);
 			s->network_progress.reset();
 			s->current_section = S_ROOT;
 		} else {
@@ -239,7 +238,7 @@ static DOTCONF_CB(sect_close)
 		break;
 	case S_SERVER:
 		if(name == "</server>") {
-			s->network_progress->servers.push_back(s->server_progress);
+			s->network_progress->servers.push_back(*s->server_progress);
 			s->server_progress.reset();
 			s->current_section = S_NETWORK;
 		} else {
@@ -328,7 +327,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_NETWORK: {
-		dazeus::NetworkConfigPtr nc = s->network_progress;
+		boost::optional<dazeus::NetworkConfig> &nc = s->network_progress;
 		assert(nc);
 		if(name == "autoconnect") {
 			nc->autoConnect = bool_is_true(cmd->data.str);
@@ -347,7 +346,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_SERVER: {
-		dazeus::ServerConfigPtr &sc = s->server_progress;
+		boost::optional<dazeus::ServerConfig> &sc = s->server_progress;
 		assert(sc);
 		if(name == "host") {
 			sc->host = trim(cmd->data.str);
