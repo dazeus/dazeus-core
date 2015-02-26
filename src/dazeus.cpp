@@ -19,8 +19,7 @@
 /**
  * @brief Constructor.
  *
- * @param configFileName optional path to the configuration file. Configuration
- * will not be loaded automatically, use loadConfig() for that.
+ * @param configFileName Path to the configuration file.
  */
 dazeus::DaZeus::DaZeus( std::string configFileName )
 : config_(std::make_shared<ConfigReader>())
@@ -31,6 +30,9 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
 , networks_()
 , running_(false)
 {
+	if(!loadConfig()) {
+		throw std::runtime_error("Failed to load initial configuration.");
+	}
 }
 
 
@@ -50,38 +52,6 @@ dazeus::DaZeus::~DaZeus()
   delete plugins_;
   delete database_;
 }
-
-
-/**
- * @brief Connect to all networks marked "autoconnect".
- * 
- * Warning: This method is usually called outside the event loop, just after
- * initialisation.
- */
-void dazeus::DaZeus::autoConnect()
-{
-#ifdef DEBUG
-  fprintf(stderr, "dazeus::DaZeus::autoConnect() called: looking for networks to connect to\n");
-#endif
-  for(auto it = networks_.begin(); it != networks_.end(); ++it)
-  {
-    Network *n = it->second;
-    if( n->autoConnectEnabled() )
-    {
-#ifdef DEBUG
-      fprintf(stderr, "Connecting to %s (autoconnect is enabled)\n", Network::toString(n).c_str());
-#endif
-      n->connectToNetwork();
-    }
-#ifdef DEBUG
-    else
-    {
-      fprintf(stderr, "Not connecting to %s, autoconnect is disabled.\n", Network::toString(n).c_str());
-    }
-#endif
-  }
-}
-
 
 std::string dazeus::DaZeus::configFileName() const {
 	return configFileName_;
@@ -124,18 +94,6 @@ dazeus::Database *dazeus::DaZeus::database() const
 
 
 /**
- * @brief Initialises plugins from the configuration file.
- */
-bool dazeus::DaZeus::initPlugins()
-{
-  assert(plugins_ != 0);
-  plugins_->init();
-
-  return true;
-}
-
-
-/**
  * @brief (Re-)loads configuration from the configuration file.
  *
  * If loading failed, this method returns false.
@@ -162,6 +120,7 @@ bool dazeus::DaZeus::loadConfig()
   if(plugins_)
     delete plugins_;
   plugins_ = new PluginComm( database_, config_, this );
+  plugins_->init();
   plugin_monitor_ = new PluginMonitor(config_);
 
   const std::vector<NetworkConfig> &networks = config_->getNetworks();
@@ -171,6 +130,10 @@ bool dazeus::DaZeus::loadConfig()
     Network *net = new Network(*it);
     net->addListener(plugins_);
     networks_[name] = net;
+
+    if(net->autoConnectEnabled()) {
+      net->connectToNetwork();
+    }
   }
 
   // Pretty number of initialisations viewer -- and also an immediate database

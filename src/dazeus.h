@@ -33,10 +33,6 @@ class DaZeus
     const std::map<std::string, Network*> &networks() const { return networks_; }
 
     void     run();
-    bool     loadConfig();
-    bool     initPlugins();
-    void     autoConnect();
-    bool     connectDatabase();
     void     stop();
     void     sigchild();
 
@@ -44,6 +40,9 @@ class DaZeus
     // explicitly disable copy constructor
     DaZeus(const DaZeus&);
     void operator=(const DaZeus&);
+
+    bool     loadConfig();
+    bool     connectDatabase();
 
     ConfigReaderPtr  config_;
     std::string      configFileName_;

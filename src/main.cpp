@@ -65,12 +65,6 @@ int main(int argc, char *argv[])
 	}
 
 	d = new dazeus::DaZeus(configfile);
-	if(!d->loadConfig()) {
-		fprintf(stderr, "Failed to load configuration, bailing out.\n");
-		return 3;
-	}
-	d->initPlugins();
-	d->autoConnect();
 	d->run();
 	delete d;
 	return 0;
