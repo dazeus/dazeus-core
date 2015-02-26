@@ -58,7 +58,7 @@ void PostgreSQLDatabase::open()
 	}
 	catch (pqxx::pqxx_exception& e) {
 		fprintf(stderr, "Error: %s", e.base().what());
-		throw new exception(e.base().what());
+		throw exception(e.base().what());
 	}
 }
 

@@ -44,7 +44,7 @@ class Factory {
     #endif
 
     if (!instance) {
-      throw new dazeus::db::exception(
+      throw dazeus::db::exception(
           "Database of type '" + dbc.type + "' not supported");
     }
 
