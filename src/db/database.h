@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 namespace dazeus {
 namespace db {
