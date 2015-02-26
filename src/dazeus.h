@@ -33,6 +33,7 @@ class DaZeus
     const std::map<std::string, Network*> &networks() const { return networks_; }
 
     void     run();
+    void     reloadConfig() { config_reload_pending_ = true; }
     void     stop();
     void     sigchild();
 
@@ -51,6 +52,7 @@ class DaZeus
     Database        *database_;
     std::map<std::string, Network*>  networks_;
     bool             running_;
+    bool config_reload_pending_;
 };
 
 }

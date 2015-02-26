@@ -727,6 +727,11 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 			          << info.protocol_version << ", config group "
 			          << info.config_group << ")" << std::endl;
 		}
+	} else if(action == "reload") {
+		json_object_set_new(response, "did", json_string("reload"));
+		json_object_set_new(response, "success", json_true());
+		dazeus_->reloadConfig();
+		std::cout << "Reloaded configuration per plugin request." << std::endl;
 	// REQUESTS ON A NETWORK
 	} else if(action == "channels" || action == "whois" || action == "join" || action == "part"
 	       || action == "nick") {

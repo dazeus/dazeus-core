@@ -86,8 +86,7 @@ static bool bool_is_true(std::string s) {
 }
 
 void dazeus::ConfigReader::read(std::string file) {
-	if(is_read) return;
-
+	is_read = false;
 	std::shared_ptr<ConfigReaderState> state = std::make_shared<ConfigReaderState>();
 
 	configfile_t *configfile = dotconf_create(

@@ -172,6 +172,9 @@ class PluginComm : public NetworkListener
   void ircEvent(const std::string &event, const std::string &origin,
                 const std::vector<std::string> &params, Network *n );
   void run(int timeout);
+  void setDatabase(Database *database) {
+    database_ = database;
+  }
 
   private:
     // explicitly disable copy constructor
