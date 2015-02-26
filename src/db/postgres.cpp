@@ -66,7 +66,14 @@ void PostgreSQLDatabase::bootstrapDB()
 {
 	// start by preparing all queries we might eventually need
 	conn_->prepare("find_table", "SELECT * FROM pg_catalog.pg_tables WHERE tablename = $1");
-	conn_->prepare("find_property", "SELECT * FROM dazeus_properties WHERE key = $1 AND network = $2 AND receiver = $3 AND sender = $4");
+	conn_->prepare("find_property",
+			"SELECT * FROM dazeus_properties WHERE key = $1 "
+			"AND (network = $2 OR network = '') "
+			"AND (receiver = $3 OR receiver = '') "
+			"AND (sender = $4 OR sender = '') "
+			"ORDER BY network DESC, receiver DESC, sender DESC "
+			"LIMIT 1"
+		);
 	conn_->prepare("remove_property", "DELETE FROM dazeus_properties WHERE key = $1 AND network = $2 AND receiver = $3 AND sender = $4");
 
 	// this is an update-or-insert-query
@@ -90,7 +97,11 @@ void PostgreSQLDatabase::bootstrapDB()
     );
 
 	// get a list of keys starting with the given string
-    conn_->prepare("properties", "SELECT key FROM dazeus_properties WHERE key LIKE $1 || '%' AND network = $2 AND receiver = $3 AND sender = $4");
+    conn_->prepare("properties",
+				"SELECT key FROM dazeus_properties "
+				"WHERE SUBSTRING(key FROM 0 FOR CHAR_LENGTH($1)) = $1 "
+				"AND network = $2 AND receiver = $3 AND sender = $4"
+			);
 
 	// create permission, but only if it doesn't already exist
 	conn_->prepare("add_permission",
