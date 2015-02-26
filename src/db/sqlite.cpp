@@ -83,43 +83,47 @@ void SQLiteDatabase::bootstrapDB()
   tryPrepare(
       "SELECT value FROM dazeus_properties "
       "WHERE key = ?1 "
-      "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
+      "  AND (network = ?2 OR network = '') "
+      "  AND (receiver = ?3 OR receiver = '') "
+      "  AND (sender = ?4 OR sender = '') "
+      "ORDER BY network DESC, receiver DESC, sender DESC "
+      "LIMIT 1",
       &find_property);
 
   tryPrepare(
       "DELETE FROM dazeus_properties "
       "WHERE key = ?1 "
-      "  AND network = ?2 AND receiver = ?3 AND sender = ?3",
+      "  AND network = ?3 AND receiver = ?4 AND sender = ?5",
       &remove_property);
 
   tryPrepare(
       "INSERT OR REPLACE INTO dazeus_properties "
       "(key, value, network, receiver, sender) "
-      "VALUES (?1, ?2, ?3, :receiver, :sender) ",
+      "VALUES (?1, ?2, ?3, ?4, ?5) ",
       &update_property);
 
   tryPrepare(
       "SELECT key FROM dazeus_properties "
-      "WHERE key LIKE :key || '%' "
-      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      "WHERE key LIKE ?1 || '%' "
+      "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
       &properties);
 
   tryPrepare(
       "INSERT OR REPLACE INTO dazeus_permissions "
       "(permission, network, receiver, sender) "
-      "VALUES (:permission, :network, :receiver, :sender) ",
+      "VALUES (?1, ?2, ?3, ?4) ",
       &add_permission);
 
   tryPrepare(
       "DELETE FROM dazeus_permissions "
-      "WHERE permission = :permission "
-      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      "WHERE permission = ?1 "
+      "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
       &remove_permission);
 
   tryPrepare(
       "SELECT * FROM dazeus_permissions "
-      "WHERE permission = :permission "
-      "  AND network = :network AND receiver = :receiver AND sender = :sender",
+      "WHERE permission = ?1 "
+      "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
       &has_permission);
 }
 
@@ -243,21 +247,23 @@ void SQLiteDatabase::setProperty(const std::string &variable,
     const std::string &receiverScope,
     const std::string &senderScope)
 {
-  tryBind(update_property, 1, variable);
-  tryBind(update_property, 2, value);
-  tryBind(update_property, 3, networkScope);
-  tryBind(update_property, 4, receiverScope);
-  tryBind(update_property, 5, senderScope);
-  int errc = sqlite3_step(update_property);
+  sqlite3_stmt *stmt = value == "" ? remove_property : update_property;
+
+  tryBind(stmt, 1, variable);
+  tryBind(stmt, 2, value);
+  tryBind(stmt, 3, networkScope);
+  tryBind(stmt, 4, receiverScope);
+  tryBind(stmt, 5, senderScope);
+  int errc = sqlite3_step(stmt);
 
   if (errc != SQLITE_OK && errc != SQLITE_DONE) {
     std::string msg = "Got an error while executing an SQL query (code " +
                       std::to_string(errc) + "): " + sqlite3_errmsg(conn_);
-    sqlite3_reset(update_property);
+    sqlite3_reset(stmt);
     throw exception(msg);
   }
 
-  sqlite3_reset(update_property);
+  sqlite3_reset(stmt);
 }
 
 std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &prefix,
