@@ -62,22 +62,21 @@ void MongoDatabase::open()
 }
 
 /**
- * @brief Retrieve all properties under a certain namespace.
+ * @brief Retrieve all properties with a certain prefix.
  *
- * All properties whose names start with the given namespace name, then a
- * single dot, and that match the given scope values, are returned from this
- * method.
+ * All properties whose names start with the given prefix name and that match
+ * the given scope values, are returned from this method.
  *
  * This method guarantees that if it returns a certain key, property() will
  * return the correct value of that key given that network, receiver and
  * sender scope are the same.
  */
 std::vector<std::string> MongoDatabase::propertyKeys(
-		const std::string &ns, const std::string &networkScope,
+		const std::string &prefix, const std::string &networkScope,
 		const std::string &receiverScope, const std::string &senderScope )
 {
   std::stringstream regexStr;
-  regexStr << "^\\Q" << ns << "\\E\\.";
+  regexStr << "^\\Q" << prefix << "\\E";
   std::string regex = regexStr.str();
 
   bson *selector = bson_new();
@@ -132,7 +131,7 @@ std::vector<std::string> MongoDatabase::propertyKeys(
       throw exception("Failed to get string form cursor");
     }
 
-    value += ns.length() + 1;
+    value += prefix.length() + 1;
     res.push_back(value);
   }
 

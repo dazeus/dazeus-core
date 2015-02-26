@@ -81,7 +81,7 @@ class Database {
                            const std::string &receiverScope = "",
                            const std::string &senderScope = "") = 0;
   virtual std::vector<std::string> propertyKeys(
-      const std::string &ns, const std::string &networkScope = "",
+      const std::string &prefix, const std::string &networkScope = "",
       const std::string &receiverScope = "",
       const std::string &senderScope = "") = 0;
   virtual bool hasPermission(const std::string &perm_name,

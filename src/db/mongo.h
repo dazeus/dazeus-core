@@ -29,7 +29,7 @@ class MongoDatabase : public Database {
                    const std::string &receiverScope = "",
                    const std::string &senderScope = "");
   std::vector<std::string> propertyKeys(
-      const std::string &ns,
+      const std::string &prefix,
       const std::string &networkScope = "",
       const std::string &receiverScope = "",
       const std::string &senderScope = "");

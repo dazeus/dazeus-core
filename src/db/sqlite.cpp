@@ -260,7 +260,7 @@ void SQLiteDatabase::setProperty(const std::string &variable,
   sqlite3_reset(update_property);
 }
 
-std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
+std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &prefix,
       const std::string &networkScope,
       const std::string &receiverScope,
       const std::string &senderScope)
@@ -268,7 +268,7 @@ std::vector<std::string> SQLiteDatabase::propertyKeys(const std::string &ns,
   // Return a vector of all the property keys matching the criteria.
   std::vector<std::string> keys = std::vector<std::string>();
 
-  tryBind(properties, 1, ns);
+  tryBind(properties, 1, prefix);
   tryBind(properties, 2, networkScope);
   tryBind(properties, 3, receiverScope);
   tryBind(properties, 4, senderScope);

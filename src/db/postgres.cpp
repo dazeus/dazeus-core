@@ -200,13 +200,13 @@ void PostgreSQLDatabase::setProperty(const std::string &variable,
   w.commit();
 }
 
-std::vector<std::string> PostgreSQLDatabase::propertyKeys(const std::string &ns,
+std::vector<std::string> PostgreSQLDatabase::propertyKeys(const std::string &prefix,
 			const std::string &networkScope,
 			const std::string &receiverScope,
 			const std::string &senderScope)
 {
     pqxx::work w(*conn_);
-    pqxx::result r = w.prepared("properties")(ns)(networkScope)(receiverScope)(senderScope).exec();
+    pqxx::result r = w.prepared("properties")(prefix)(networkScope)(receiverScope)(senderScope).exec();
 
     // Return a vector of all the property keys matching the criteria.
     std::vector<std::string> keys = std::vector<std::string>();
