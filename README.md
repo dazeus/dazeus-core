@@ -8,9 +8,15 @@ its plugins.
 
 This application has the following dependencies:
 
-* libircclient (tested against 1.3 and 1.6)
-* libmongo-client (tested against 0.1.4)
+* libircclient (tested against 1.3, 1.6 and 1.8)
 * cmake (tested against 2.8.7 and 2.8.9)
+
+Depending on which database backend you would like to use, the following
+additional dependencies apply:
+
+* libmongo-client (MongoDB, tested against 0.1.4)
+* libpqxx (PostgreSQL, tested against 3.1)
+* libsqlite3 (SQLite, tested against 3.7)
 
 To compile DaZeus, first checkout the Git submodules, then use CMake:
 
@@ -31,7 +37,7 @@ When the `dazeus` binary is run, it reads the `dazeus.conf` configuration file
 (unless you give the `-c` option). A sample configuration file is in the
 project source root, called `dazeus.sample.conf`.
 
-When DaZeus is started, it connects to the database and to the IRC servers as
+After DaZeus has started, it connects to the database and to the IRC servers as
 defined in the configuration file. It also sets up the UNIX and TCP sockets
 as configured.
 
