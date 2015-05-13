@@ -99,7 +99,7 @@ void PostgreSQLDatabase::bootstrapDB()
 	// get a list of keys starting with the given string
     conn_->prepare("properties",
 				"SELECT key FROM dazeus_properties "
-				"WHERE SUBSTRING(key FROM 0 FOR CHAR_LENGTH($1)) = $1 "
+				"WHERE SUBSTRING(key FROM 1 FOR CHAR_LENGTH($1)) = $1 "
 				"AND network = $2 AND receiver = $3 AND sender = $4"
 			);
 
