@@ -10,12 +10,13 @@ This application has the following dependencies:
 
 * libircclient (tested against 1.3, 1.6 and 1.8)
 * cmake (tested against 2.8.7 and 2.8.9)
+* Boost (tested against 1.55)
 
 Depending on which database backend you would like to use, the following
 additional dependencies apply:
 
 * libmongo-client (MongoDB, tested against 0.1.4)
-* libpqxx (PostgreSQL, tested against 3.1)
+* libpqxx (PostgreSQL, tested against 3.1 and 4.0)
 * libsqlite3 (SQLite, tested against 3.7)
 
 To compile DaZeus, first checkout the Git submodules, then use CMake:
