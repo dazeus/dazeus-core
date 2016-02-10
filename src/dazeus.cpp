@@ -140,7 +140,12 @@ bool dazeus::DaZeus::loadConfig()
     plugin_monitor_ = new PluginMonitor(config_);
   }
 
-  plugin_monitor_->configReloaded();
+  try {
+    plugin_monitor_->configReloaded();
+  } catch(std::exception &e) {
+    std::cerr << "Failed to reload PluginMonitor configuration: " << e.what() << std::endl;
+    return false;
+  }
 
   const std::vector<NetworkConfig> &networks = config_->getNetworks();
   for(auto it = networks.begin(); it != networks.end(); ++it)
@@ -216,10 +221,11 @@ void dazeus::DaZeus::stop()
 void dazeus::DaZeus::run()
 {
 	running_ = true;
+	bool initial_config = !(database_ || plugins_ || plugin_monitor_);
 	while(running_) {
 		if(config_reload_pending_) {
 			config_reload_pending_ = false;
-			if(!loadConfig() && (!database_ || !plugins_ || !plugin_monitor_)) {
+			if(!loadConfig() && initial_config) {
 				break;
 			}
 		}
