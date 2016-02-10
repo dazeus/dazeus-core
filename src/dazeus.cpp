@@ -34,11 +34,8 @@ dazeus::DaZeus::DaZeus( std::string configFileName )
 , database_( 0 )
 , networks_()
 , running_(false)
-, config_reload_pending_(false)
+, config_reload_pending_(true)
 {
-	if(!loadConfig()) {
-		throw std::runtime_error("Failed to load initial configuration.");
-	}
 }
 
 
