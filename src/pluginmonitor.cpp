@@ -69,7 +69,6 @@ dazeus::PluginMonitor::PluginMonitor(ConfigReaderPtr config)
 , config_(config)
 , should_run_(1)
 {
-	configReloaded();
 }
 
 void dazeus::PluginMonitor::configReloaded() {

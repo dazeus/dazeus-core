@@ -136,11 +136,11 @@ bool dazeus::DaZeus::loadConfig()
     plugins_->init();
   }
 
-  if(plugin_monitor_) {
-    plugin_monitor_->configReloaded();
-  } else {
+  if(!plugin_monitor_) {
     plugin_monitor_ = new PluginMonitor(config_);
   }
+
+  plugin_monitor_->configReloaded();
 
   const std::vector<NetworkConfig> &networks = config_->getNetworks();
   for(auto it = networks.begin(); it != networks.end(); ++it)
@@ -219,7 +219,9 @@ void dazeus::DaZeus::run()
 	while(running_) {
 		if(config_reload_pending_) {
 			config_reload_pending_ = false;
-			loadConfig();
+			if(!loadConfig() && (!database_ || !plugins_ || !plugin_monitor_)) {
+				break;
+			}
 		}
 		plugin_monitor_->runOnce();
 		// The only non-socket processing in DaZeus is done by the
