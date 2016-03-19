@@ -713,7 +713,7 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 			json_object_set_new(response, "success", json_false());
 			json_object_set_new(response, "error", json_string("Missing parameters"));
 		} else if(params[2] != "1") {
-			json_object_set_new(response, "succes", json_false());
+			json_object_set_new(response, "success", json_false());
 			json_object_set_new(response, "error", json_string("Protocol version must be '1'"));
 		} else {
 			json_object_set_new(response, "success", json_true());
