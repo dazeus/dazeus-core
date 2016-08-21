@@ -104,7 +104,7 @@ void SQLiteDatabase::bootstrapDB()
 
   tryPrepare(
       "SELECT key FROM dazeus_properties "
-      "WHERE SUBSTR(key, 0, LENGTH(?1)) = ?1 "
+      "WHERE SUBSTR(key, 1, LENGTH(?1)) = ?1 "
       "  AND network = ?2 AND receiver = ?3 AND sender = ?4",
       &properties);
 
