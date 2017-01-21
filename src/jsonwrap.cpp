@@ -1,4 +1,5 @@
 #include "jsonwrap.h"
+#include <stdexcept>
 
 JSON::JSON(std::string j, size_t f) {
 	json_error_t error;
