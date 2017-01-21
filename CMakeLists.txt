@@ -42,7 +42,7 @@ file(GLOB jansson_headers "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.h")
 add_library(jansson ${jansson_sources} ${jansson_headers})
 target_link_libraries(jansson)
 
-set(LIBS ${LIBS} jansson ssl crypto dazeus-irc ${LibIRCClient_LIBRARIES} ${LibJson_LIBRARIES} ${Boost_LIBRARIES})
+set(LIBS ${LIBS} jansson dazeus-irc ${LibJson_LIBRARIES} ${Boost_LIBRARIES})
 
 ##
 ## Database layers
