@@ -9,13 +9,13 @@
 #include <sstream>
 #include <utility>
 #include <map>
-#include <jansson.h>
 #include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
 #include "utils.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
 #include "network.h"
+#include "jsonwrap.h"
 #include <memory>
 
 namespace dazeus {
@@ -195,7 +195,7 @@ class PluginComm : public NetworkListener
     db::Database *database_;
     ConfigReaderPtr config_;
     DaZeus *dazeus_;
-    std::string handle(int dev, const std::string &line, SocketInfo &info);
+    JSON handle(int dev, const std::string &line, SocketInfo &info);
     void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);
 };
 

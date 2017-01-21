@@ -5,7 +5,6 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
-#include <jansson.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -346,13 +345,20 @@ void dazeus::PluginComm::poll() {
 					if((signed)info.readahead.length() >= info.waitingSize) {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
 						info.readahead = info.readahead.substr(info.waitingSize);
+						JSON json;
 						try {
-							info.writebuffer += handle(dev, packet, info);
+							json = handle(dev, packet, info);
 						} catch(std::exception &e) {
-							std::cerr << "Ignoring unhandled exception handling a plugin packet: \n  " << e.what() << std::endl;
-						} catch(...) {
-							std::cerr << "Ignoring unhandled non-exception throw handling a plugin packet." << std::endl;
+							json.object_set_new("success", json_false());
+							json.object_set_new("error", json_string(e.what()));
 						}
+
+						std::string jsonMsg = json.toString();
+						std::stringstream mstr;
+						mstr << jsonMsg.length();
+						mstr << jsonMsg;
+						mstr << "\n";
+						info.writebuffer += mstr.str();
 
 						info.waitingSize = 0;
 						parsedPacket = true;
@@ -636,21 +642,16 @@ void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &o
 #undef MIN
 }
 
-std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
+JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
 	auto &networks = dazeus_->networks();
 
-	json_error_t error;
-	json_t *n = json_loads(line.c_str(), 0, &error);
-	if(!n) {
-		fprintf(stderr, "Got incorrect JSON, ignoring: %s\n", error.text);
-		return "";
-	}
+	JSON input(line, 0);
 
 	std::vector<std::string> params;
 	std::vector<std::string> scope;
 	std::string action;
 
-	json_t *jParams = json_object_get(n, "params");
+	json_t *jParams = input.object_get("params");
 	if(jParams) {
 		if(!json_is_array(jParams)) {
 			fprintf(stderr, "Got params, but of the wrong type, ignoring\n");
@@ -671,7 +672,7 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 		}
 	}
 
-	json_t *jScope = json_object_get(n, "scope");
+	json_t *jScope = input.object_get("scope");
 	if(jScope) {
 		if(!json_is_array(jScope)) {
 			fprintf(stderr, "Got scope, but of the wrong type, ignoring\n");
@@ -683,9 +684,9 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 		}
 	}
 
-	json_t *jAction = json_object_get(n, "get");
+	json_t *jAction = input.object_get("get");
 	if(!jAction)
-		jAction = json_object_get(n, "do");
+		jAction = input.object_get("do");
 	if(jAction) {
 		if(!json_is_string(jAction)) {
 			fprintf(stderr, "Got action, but of the wrong type, ignoring\n");
@@ -772,24 +773,23 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 					} else if(action == "part") {
 						net->leaveChannel(params[1]);
 					} else {
-						assert(false);
-						return "";
+						// unreachable
+						abort();
 					}
 				}
 			} else if(action == "nick") {
 				json_object_set_new(response, "success", json_true());
 				json_object_set_new(response, "nick", json_string(net->nick().c_str()));
 			} else {
-				assert(false);
-				return "";
+				// unreachable
+				abort();
 			}
 		}
 	// REQUESTS ON A CHANNEL
 	} else if(action == "message" || action == "notice" || action == "action" || action == "ctcp" || action == "ctcp_rep" || action == "names") {
 		json_object_set_new(response, "did", json_string(action.c_str()));
 		if(params.size() < 2 || (action != "names" && params.size() < 3)) {
-			fprintf(stderr, "Wrong parameter size for message, skipping.\n");
-			return "";
+			throw std::runtime_error("Wrong parameter size for message");
 		}
 		std::string network = params[0];
 		std::string receiver = params[1];
@@ -1042,16 +1042,5 @@ std::string dazeus::PluginComm::handle(int dev, const std::string &line, SocketI
 		json_object_set_new(response, "error", json_string("Did not understand request"));
 	}
 
-	char *raw_json = json_dumps(response, 0);
-	std::string jsonMsg = raw_json;
-	free(raw_json);
-	std::stringstream mstr;
-	mstr << jsonMsg.length();
-	mstr << jsonMsg;
-	mstr << "\n";
-	std::string finalResponse = mstr.str();
-
-	json_decref(n);
-	json_decref(response);
-	return finalResponse;
+	return response;
 }
