@@ -76,7 +76,9 @@ static const configoption_t options[] = {
 	{"scope", ARG_RAW, option, NULL, CTX_ALL},
 	{"parameters", ARG_RAW, option, NULL, CTX_ALL},
 	{"var", ARG_RAW, option, NULL, CTX_ALL},
-	LAST_OPTION
+
+	// TODO: LAST_OPTION in dotconf causes a warning, so write our own LAST_OPTION
+	{ "", 0, NULL, NULL, 0 }
 };
 
 FUNC_ERRORHANDLER(error_handler);

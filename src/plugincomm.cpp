@@ -395,7 +395,7 @@ void dazeus::PluginComm::dispatch(const std::string &event, const std::vector<st
 	for(it = sockets_.begin(); it != sockets_.end(); ++it) {
 		SocketInfo &info = it->second;
 		if(info.isSubscribed(event)) {
-			info.dispatch(it->first, event, parameters);
+			info.dispatch(event, parameters);
 		}
 	}
 }
@@ -455,7 +455,7 @@ void dazeus::PluginComm::flushCommandQueue(const std::string &nick, bool identif
 			}
 
 			// Receiver, sender, network matched; dispatch command to this plugin
-			info.dispatch(it->first, "COMMAND", parameters);
+			info.dispatch("COMMAND", parameters);
 		}
 
 		cit = commandQueue_.erase(cit);

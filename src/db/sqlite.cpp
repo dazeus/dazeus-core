@@ -343,7 +343,7 @@ void SQLiteDatabase::unsetPermission(const std::string &perm_name,
   sqlite3_reset(remove_permission);
 }
 
-void SQLiteDatabase::setPermission(bool permission, const std::string &perm_name,
+void SQLiteDatabase::setPermission(bool /* TODO: permission */, const std::string &perm_name,
       const std::string &network, const std::string &receiver,
       const std::string &sender)
 {

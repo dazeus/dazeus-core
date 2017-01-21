@@ -245,7 +245,7 @@ void PostgreSQLDatabase::unsetPermission(const std::string &perm_name,
     w.commit();
 }
 
-void PostgreSQLDatabase::setPermission(bool permission, const std::string &perm_name,
+void PostgreSQLDatabase::setPermission(bool /* TODO: permission */, const std::string &perm_name,
 			const std::string &network, const std::string &receiver,
 			const std::string &sender)
 {

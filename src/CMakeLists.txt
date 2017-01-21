@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 
-file(GLOB dotconf_sources "../contrib/dotconf/src/*.c")
-
 file(GLOB sources "*.cpp")
 file(GLOB headers "*.h" "db/database.h")
 
@@ -27,19 +25,18 @@ if(${DB_MONGO})
   set(headers ${headers} ${mongo_headers})
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
 configure_file("dazeusglobal.h.in" "dazeusglobal.h")
 
-add_executable(dazeus ${sources} ${headers} ${dotconf_sources})
-add_definitions("-Wall -Wextra -Wno-long-long")
-# dotconf has unused variables
-add_definitions("-Wno-unused-parameter")
-# dotconf has wrong pointer signedness
-add_definitions("-Wno-pointer-sign")
-# dotconf has missing field initializers in LAST_OPTION
-add_definitions("-Wno-missing-field-initializers")
-include_directories("${CMAKE_SOURCE_DIR}/contrib/dotconf/src" "${CMAKE_BINARY_DIR}/src")
-target_link_libraries(dazeus ${LIBS})
+add_library(dotconf "${CMAKE_SOURCE_DIR}/contrib/dotconf/src/dotconf.c")
+set_target_properties(dotconf PROPERTIES COMPILE_FLAGS "-Wno-unused-parameter -Wno-pointer-sign -Wno-missing-field-initializers")
+
+add_executable(dazeus ${sources} ${headers})
+target_include_directories(dazeus SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/contrib/dotconf/src")
+target_include_directories(dazeus PRIVATE "${CMAKE_BINARY_DIR}/src")
+
+target_link_libraries(dazeus dotconf ${LIBS})
 
 install (TARGETS dazeus DESTINATION bin)

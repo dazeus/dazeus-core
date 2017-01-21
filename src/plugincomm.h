@@ -128,7 +128,7 @@ class PluginComm : public NetworkListener
     void subscribeToCommand(const std::string &cmd, RequirementInfo *info) {
         commands.insert(std::make_pair(cmd, info));
     }
-    void dispatch(int d, std::string event, std::vector<std::string> parameters) {
+    void dispatch(std::string event, std::vector<std::string> parameters) {
       assert(!contains(event, ' '));
 
       json_t *params = json_array();
