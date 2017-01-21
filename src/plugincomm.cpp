@@ -742,45 +742,38 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 		if(params.size() > 0) {
 			network = params[0];
 		}
-		json_object_set_new(response, "network", json_string(network.c_str()));
 		auto nit = networks.find(network);
 		if(nit == networks.end()) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Not on that network"));
-		} else {
-			Network *net = nit->second;
-			if(action == "channels") {
-				json_object_set_new(response, "success", json_true());
-				json_t *chans = json_array();
-				const std::vector<std::string> &channels = net->joinedChannels();
-				for(unsigned i = 0; i < channels.size(); ++i) {
-					json_array_append_new(chans, json_string(channels[i].c_str()));
-				}
-				json_object_set_new(response, "channels", chans);
-			} else if(action == "whois" || action == "join" || action == "part") {
-				if(params.size() < 2) {
-					json_object_set_new(response, "success", json_false());
-					json_object_set_new(response, "error", json_string("Missing parameters"));
-				} else {
-					json_object_set_new(response, "success", json_true());
-					if(action == "whois") {
-						net->sendWhois(params[1]);
-					} else if(action == "join") {
-						net->joinChannel(params[1]);
-					} else if(action == "part") {
-						net->leaveChannel(params[1]);
-					} else {
-						// unreachable
-						abort();
-					}
-				}
-			} else if(action == "nick") {
-				json_object_set_new(response, "success", json_true());
-				json_object_set_new(response, "nick", json_string(net->nick().c_str()));
-			} else {
-				// unreachable
-				abort();
+			throw std::runtime_error("Not on that network");
+		}
+
+		json_object_set_new(response, "network", json_string(network.c_str()));
+
+		Network *net = nit->second;
+		if(action == "channels") {
+			json_object_set_new(response, "success", json_true());
+			json_t *chans = json_array();
+			const std::vector<std::string> &channels = net->joinedChannels();
+			for(unsigned i = 0; i < channels.size(); ++i) {
+				json_array_append_new(chans, json_string(channels[i].c_str()));
 			}
+			json_object_set_new(response, "channels", chans);
+		} else if(action == "whois" || action == "join" || action == "part") {
+			if(params.size() < 2) {
+				throw std::runtime_error("Missing parameters");
+			}
+
+			json_object_set_new(response, "success", json_true());
+			if(action == "whois") {
+				net->sendWhois(params[1]);
+			} else if(action == "join") {
+				net->joinChannel(params[1]);
+			} else if(action == "part") {
+				net->leaveChannel(params[1]);
+			}
+		} else if(action == "nick") {
+			json_object_set_new(response, "success", json_true());
+			json_object_set_new(response, "nick", json_string(net->nick().c_str()));
 		}
 	// REQUESTS ON A CHANNEL
 	} else if(action == "message" || action == "notice" || action == "action" || action == "ctcp" || action == "ctcp_rep" || action == "names") {
@@ -802,11 +795,9 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 			json_object_set_new(response, "message", json_string(message.c_str()));
 		}
 
-		bool netfound = false;
 		for(auto nit = networks.begin(); nit != networks.end(); ++nit) {
 			Network *n = nit->second;
 			if(n->networkName() == network) {
-				netfound = true;
 				if(receiver.substr(0, 1) != "#" || contains_ci(n->joinedChannels(), strToLower(receiver))) {
 					json_object_set_new(response, "success", json_true());
 					if(action == "names") {
@@ -825,17 +816,14 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 				} else {
 					fprintf(stderr, "Request for communication to network %s receiver %s, but not in that channel, dropping\n",
 						network.c_str(), receiver.c_str());
-					json_object_set_new(response, "success", json_false());
-					json_object_set_new(response, "error", json_string("Not in that channel"));
+					throw std::runtime_error("Not in that channel");
 				}
-				break;
+				return;
 			}
 		}
-		if(!netfound) {
-			fprintf(stderr, "Request for communication to network %s, but that network isn't joined, dropping\n", network.c_str());
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Not on that network"));
-		}
+
+		fprintf(stderr, "Request for communication to network %s, but that network isn't joined, dropping\n", network.c_str());
+		throw std::runtime_error("Not on that network");
 	// REQUESTS ON DAZEUS ITSELF
 	} else if(action == "subscribe") {
 		json_object_set_new(response, "did", json_string("subscribe"));
@@ -864,38 +852,33 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 		// {"do":"command", "params":["cmdname", "network", true, "sender"]}
 		// {"do":"command", "params":["cmdname", "network", false, "receiver"]}
 		if(params.size() == 0) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Missing parameters"));
-		} else {
-			std::string commandName = params.front();
-			params.erase(params.begin());
-			RequirementInfo *req = 0;
-
-			if(params.size() == 0) {
-				// Add it as a global command
-				req = new RequirementInfo();
-			} else if(params.size() == 1 || params.size() == 3) {
-				auto nit = networks.find(params.at(0));
-				if(nit == networks.end()) {
-					json_object_set_new(response, "success", json_false());
-					json_object_set_new(response, "error", json_string("Not on that network"));
-				} else if(params.size() == 1) {
-					// Network requirement
-					req = new RequirementInfo(nit->second);
-				} else {
-					// Network and sender/receiver requirement
-					bool isSender = params.at(1) == "true";
-					req = new RequirementInfo(nit->second, params.at(2), isSender);
-				}
-			} else {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Wrong number of parameters"));
-			}
-			if(req != NULL) {
-				info.subscribeToCommand(commandName, req);
-				json_object_set_new(response, "success", json_true());
-			}
+			throw std::runtime_error("Missing parameters");
 		}
+		std::string commandName = params.front();
+		params.erase(params.begin());
+		RequirementInfo *req = 0;
+
+		if(params.size() == 0) {
+			// Add it as a global command
+			req = new RequirementInfo();
+		} else if(params.size() == 1 || params.size() == 3) {
+			auto nit = networks.find(params.at(0));
+			if(nit == networks.end()) {
+				throw std::runtime_error("Not on that network");
+			} else if(params.size() == 1) {
+				// Network requirement
+				req = new RequirementInfo(nit->second);
+			} else {
+				// Network and sender/receiver requirement
+				bool isSender = params.at(1) == "true";
+				req = new RequirementInfo(nit->second, params.at(2), isSender);
+			}
+		} else {
+			throw std::runtime_error("Wrong number of parameters");
+		}
+
+		info.subscribeToCommand(commandName, req);
+		json_object_set_new(response, "success", json_true());
 	} else if(action == "property") {
 		json_object_set_new(response, "did", json_string("property"));
 
@@ -909,9 +892,10 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 		}
 
 		if(params.size() < 2) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Missing parameters"));
-		} else if(params[0] == "get") {
+			throw std::runtime_error("Missing parameters");
+		}
+
+		if(params[0] == "get") {
 			std::string value = database_->property(params[1], network, receiver, sender);
 			json_object_set_new(response, "success", json_true());
 			json_object_set_new(response, "variable", json_string(params[1].c_str()));
@@ -920,20 +904,14 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 			}
 		} else if(params[0] == "set") {
 			if(params.size() < 3) {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Missing parameters"));
-			} else {
-				database_->setProperty(params[1], params[2], network, receiver, sender);
-				json_object_set_new(response, "success", json_true());
+				throw std::runtime_error("Missing parameters");
 			}
+
+			database_->setProperty(params[1], params[2], network, receiver, sender);
+			json_object_set_new(response, "success", json_true());
 		} else if(params[0] == "unset") {
-			if(params.size() < 2) {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Missing parameters"));
-			} else {
-				database_->setProperty(params[1], std::string(), network, receiver, sender);
-				json_object_set_new(response, "success", json_true());
-			}
+			database_->setProperty(params[1], std::string(), network, receiver, sender);
+			json_object_set_new(response, "success", json_true());
 		} else if(params[0] == "keys") {
 			std::vector<std::string> pKeys = database_->propertyKeys(params[1], network, receiver, sender);
 			json_t *keys = json_array();
@@ -944,98 +922,91 @@ void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 			json_object_set_new(response, "keys", keys);
 			json_object_set_new(response, "success", json_true());
 		} else {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Did not understand request"));
+			throw std::runtime_error("Did not understand request");
 		}
 	} else if(action == "config") {
 		json_object_set_new(response, "got", json_string("config"));
 		if(params.size() != 2) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Missing parameters"));
-		} else {
-			std::string configtype = params[0];
-			std::string configvar  = params[1];
+			throw std::runtime_error("Missing parameters");
+		}
 
-			if(configtype == "plugin" && !info.didHandshake()) {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Need to do handshake for retrieving plugin configuration"));
-			} else if(configtype == "plugin") {
-				json_object_set_new(response, "success", json_true());
-				json_object_set_new(response, "group", json_string(configtype.c_str()));
-				json_object_set_new(response, "variable", json_string(configvar.c_str()));
+		std::string configtype = params[0];
+		std::string configvar  = params[1];
 
-				// Get the right plugin config
-				const std::vector<PluginConfig> &plugins = config_->getPlugins();
-				for(std::vector<PluginConfig>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
-					const PluginConfig &pc = *cit;
-					if(pc.name == info.config_group) {
-						std::map<std::string,std::string>::const_iterator configIt = pc.config.find(configvar);
-						if(configIt != pc.config.end()) {
-							json_object_set_new(response, "value", json_string(configIt->second.c_str()));
-							break;
-						}
+		if(configtype == "plugin") {
+			if(!info.didHandshake()) {
+				throw std::runtime_error("Need to do a handshake for retrieving plugin configuration");
+			}
+
+			json_object_set_new(response, "success", json_true());
+			json_object_set_new(response, "group", json_string(configtype.c_str()));
+			json_object_set_new(response, "variable", json_string(configvar.c_str()));
+
+			// Get the right plugin config
+			const std::vector<PluginConfig> &plugins = config_->getPlugins();
+			for(std::vector<PluginConfig>::const_iterator cit = plugins.begin(); cit != plugins.end(); ++cit) {
+				const PluginConfig &pc = *cit;
+				if(pc.name == info.config_group) {
+					std::map<std::string,std::string>::const_iterator configIt = pc.config.find(configvar);
+					if(configIt != pc.config.end()) {
+						json_object_set_new(response, "value", json_string(configIt->second.c_str()));
+						break;
 					}
 				}
-			} else if(configtype == "core") {
-				const GlobalConfig &global = config_->getGlobalConfig();
-				json_object_set_new(response, "success", json_true());
-				json_object_set_new(response, "group", json_string(configtype.c_str()));
-				json_object_set_new(response, "variable", json_string(configvar.c_str()));
-				if(configvar == "nickname") {
-					json_object_set_new(response, "value", json_string(global.default_nickname.c_str()));
-				} else if(configvar == "username") {
-					json_object_set_new(response, "value", json_string(global.default_username.c_str()));
-				} else if(configvar == "fullname") {
-					json_object_set_new(response, "value", json_string(global.default_fullname.c_str()));
-				} else if(configvar == "highlight") {
-					json_object_set_new(response, "value", json_string(global.highlight.c_str()));
-				}
-			} else {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Unrecognised config group"));
 			}
+		} else if(configtype == "core") {
+			const GlobalConfig &global = config_->getGlobalConfig();
+			json_object_set_new(response, "success", json_true());
+			json_object_set_new(response, "group", json_string(configtype.c_str()));
+			json_object_set_new(response, "variable", json_string(configvar.c_str()));
+			if(configvar == "nickname") {
+				json_object_set_new(response, "value", json_string(global.default_nickname.c_str()));
+			} else if(configvar == "username") {
+				json_object_set_new(response, "value", json_string(global.default_username.c_str()));
+			} else if(configvar == "fullname") {
+				json_object_set_new(response, "value", json_string(global.default_fullname.c_str()));
+			} else if(configvar == "highlight") {
+				json_object_set_new(response, "value", json_string(global.highlight.c_str()));
+			}
+		} else {
+			throw std::runtime_error("Unrecognised config group");
 		}
 	} else if(action == "permission") {
 		json_object_set_new(response, "did", json_string("permission"));
 
 		if(scope.size() == 0) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Missing scope"));
-		} else {
-			std::string network = scope[0];
-			std::string channel = scope.size() >= 2 ? scope[1] : "";
-			std::string sender = scope.size() >= 3 ? scope[2] : "";
+			throw std::runtime_error("Missing scope");
+		}
 
-			if(params.size() < 2) {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Missing parameters"));
-			} else if(params[0] == "set") {
-				std::string name = params[1];
-				bool permission = params[2] == "true" || params[2] == "1";
-				database_->setPermission(permission, name, network, channel, sender);
-				json_object_set_new(response, "success", json_true());
-			} else if(params[0] == "unset") {
-				std::string name = params[1];
-				database_->unsetPermission(name, network, channel, sender);
-				json_object_set_new(response, "success", json_true());
-			} else if(params[0] == "has") {
-				if(params.size() < 3) {
-					json_object_set_new(response, "success", json_false());
-					json_object_set_new(response, "error", json_string("Missing parameters"));
-				} else {
-					std::string name = params[1];
-					bool defaultPermission = params[2] == "true" || params[2] == "1";
-					bool permission = database_->hasPermission(name, network, channel, sender, defaultPermission);
-					json_object_set_new(response, "success", json_true());
-					json_object_set_new(response, "has_permission", permission ? json_true() : json_false());
-				}
+		std::string network = scope[0];
+		std::string channel = scope.size() >= 2 ? scope[1] : "";
+		std::string sender = scope.size() >= 3 ? scope[2] : "";
+
+		if(params.size() < 2) {
+			throw std::runtime_error("Missing parameters");
+		} else if(params[0] == "set") {
+			std::string name = params[1];
+			bool permission = params[2] == "true" || params[2] == "1";
+			database_->setPermission(permission, name, network, channel, sender);
+			json_object_set_new(response, "success", json_true());
+		} else if(params[0] == "unset") {
+			std::string name = params[1];
+			database_->unsetPermission(name, network, channel, sender);
+			json_object_set_new(response, "success", json_true());
+		} else if(params[0] == "has") {
+			if(params.size() < 3) {
+				throw std::runtime_error("Missing parameters");
 			} else {
-				json_object_set_new(response, "success", json_false());
-				json_object_set_new(response, "error", json_string("Did not understand request"));
+				std::string name = params[1];
+				bool defaultPermission = params[2] == "true" || params[2] == "1";
+				bool permission = database_->hasPermission(name, network, channel, sender, defaultPermission);
+				json_object_set_new(response, "success", json_true());
+				json_object_set_new(response, "has_permission", permission ? json_true() : json_false());
 			}
+		} else {
+			throw std::runtime_error("Did not understand request");
 		}
 	} else {
-		json_object_set_new(response, "success", json_false());
-		json_object_set_new(response, "error", json_string("Did not understand request"));
+		throw std::runtime_error("Did not understand request");
 	}
 }
