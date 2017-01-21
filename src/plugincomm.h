@@ -195,7 +195,7 @@ class PluginComm : public NetworkListener
     db::Database *database_;
     ConfigReaderPtr config_;
     DaZeus *dazeus_;
-    JSON handle(int dev, const std::string &line, SocketInfo &info);
+    void handle(JSON &input, JSON &output, SocketInfo &info);
     void flushCommandQueue(const std::string &nick = std::string(), bool identified = false);
 };
 

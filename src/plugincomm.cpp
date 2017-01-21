@@ -345,15 +345,16 @@ void dazeus::PluginComm::poll() {
 					if((signed)info.readahead.length() >= info.waitingSize) {
 						std::string packet = info.readahead.substr(0, info.waitingSize);
 						info.readahead = info.readahead.substr(info.waitingSize);
-						JSON json;
+						JSON input(packet, 0);
+						JSON output(json_object());
 						try {
-							json = handle(dev, packet, info);
+							handle(input, output, info);
 						} catch(std::exception &e) {
-							json.object_set_new("success", json_false());
-							json.object_set_new("error", json_string(e.what()));
+							output.object_set_new("success", json_false());
+							output.object_set_new("error", json_string(e.what()));
 						}
 
-						std::string jsonMsg = json.toString();
+						std::string jsonMsg = output.toString();
 						std::stringstream mstr;
 						mstr << jsonMsg.length();
 						mstr << jsonMsg;
@@ -642,10 +643,8 @@ void dazeus::PluginComm::ircEvent(const std::string &event, const std::string &o
 #undef MIN
 }
 
-JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &info) {
+void dazeus::PluginComm::handle(JSON &input, JSON &output, SocketInfo &info) {
 	auto &networks = dazeus_->networks();
-
-	JSON input(line, 0);
 
 	std::vector<std::string> params;
 	std::vector<std::string> scope;
@@ -654,21 +653,22 @@ JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	json_t *jParams = input.object_get("params");
 	if(jParams) {
 		if(!json_is_array(jParams)) {
-			fprintf(stderr, "Got params, but of the wrong type, ignoring\n");
-		} else {
-			for(unsigned i = 0; i < json_array_size(jParams); ++i) {
-				json_t *v = json_array_get(jParams, i);
-				std::stringstream value;
-				switch(json_typeof(v)) {
-				case JSON_STRING: value << json_string_value(v); break;
-				case JSON_INTEGER: value << json_integer_value(v); break;
-				case JSON_REAL: value << json_real_value(v); break;
-				case JSON_TRUE: value << "true"; break;
-				case JSON_FALSE: value << "false"; break;
-				default: std::cerr << "Param " << i << " is of wrong type, ignoring\n";
-				}
-				params.push_back(value.str());
+			throw std::runtime_error("Parameters are of the wrong type");
+		}
+
+		for(unsigned i = 0; i < json_array_size(jParams); ++i) {
+			json_t *v = json_array_get(jParams, i);
+			std::stringstream value;
+			switch(json_typeof(v)) {
+			case JSON_STRING: value << json_string_value(v); break;
+			case JSON_INTEGER: value << json_integer_value(v); break;
+			case JSON_REAL: value << json_real_value(v); break;
+			case JSON_TRUE: value << "true"; break;
+			case JSON_FALSE: value << "false"; break;
+			default:
+				throw std::runtime_error("Parameter " + std::to_string(i) + " is of an unsupported type");
 			}
+			params.push_back(value.str());
 		}
 	}
 
@@ -689,13 +689,13 @@ JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		jAction = input.object_get("do");
 	if(jAction) {
 		if(!json_is_string(jAction)) {
-			fprintf(stderr, "Got action, but of the wrong type, ignoring\n");
-		} else {
-			action = json_string_value(jAction);
+			throw std::runtime_error("Action is of the wrong type");
 		}
+
+		action = json_string_value(jAction);
 	}
 
-	json_t *response = json_object();
+	json_t *response = output.get_json();
 	// REQUEST WITHOUT A NETWORK
 	if(action == "networks") {
 		json_object_set_new(response, "got", json_string("networks"));
@@ -708,26 +708,23 @@ JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 	} else if(action == "handshake") {
 		json_object_set_new(response, "did", json_string("handshake"));
 		if(info.didHandshake()) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Already did handshake"));
+			throw std::runtime_error("Already did handshake");
 		} else if(params.size() < 4) {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Missing parameters"));
+			throw std::runtime_error("Missing parameters for handshake");
 		} else if(params[2] != "1") {
-			json_object_set_new(response, "success", json_false());
-			json_object_set_new(response, "error", json_string("Protocol version must be '1'"));
-		} else {
-			json_object_set_new(response, "success", json_true());
-			info.plugin_name = params[0];
-			info.plugin_version = params[1];
-			std::stringstream version(params[2]);
-			version >> info.protocol_version;
-			info.config_group = params[3];
-			std::cout << "Plugin handshake: " << info.plugin_name << " v"
-			          << info.plugin_version << " (protocol version "
-			          << info.protocol_version << ", config group "
-			          << info.config_group << ")" << std::endl;
+			throw std::runtime_error("Protocol version must be '1'");
 		}
+
+		json_object_set_new(response, "success", json_true());
+		info.plugin_name = params[0];
+		info.plugin_version = params[1];
+		std::stringstream version(params[2]);
+		version >> info.protocol_version;
+		info.config_group = params[3];
+		std::cout << "Plugin handshake: " << info.plugin_name << " v"
+			  << info.plugin_version << " (protocol version "
+			  << info.protocol_version << ", config group "
+			  << info.config_group << ")" << std::endl;
 	} else if(action == "reload") {
 		json_object_set_new(response, "did", json_string("reload"));
 		json_object_set_new(response, "success", json_true());
@@ -1041,6 +1038,4 @@ JSON dazeus::PluginComm::handle(int dev, const std::string &line, SocketInfo &in
 		json_object_set_new(response, "success", json_false());
 		json_object_set_new(response, "error", json_string("Did not understand request"));
 	}
-
-	return response;
 }
