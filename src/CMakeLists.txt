@@ -29,6 +29,8 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 
+configure_file("dazeusglobal.h.in" "dazeusglobal.h")
+
 add_executable(dazeus ${sources} ${headers} ${dotconf_sources})
 add_definitions("-Wall -Wextra -Wno-long-long")
 # dotconf has unused variables
@@ -37,7 +39,7 @@ add_definitions("-Wno-unused-parameter")
 add_definitions("-Wno-pointer-sign")
 # dotconf has missing field initializers in LAST_OPTION
 add_definitions("-Wno-missing-field-initializers")
-include_directories("../contrib/dotconf/src")
+include_directories("${CMAKE_SOURCE_DIR}/contrib/dotconf/src" "${CMAKE_BINARY_DIR}/src")
 target_link_libraries(dazeus ${LIBS})
 
 install (TARGETS dazeus DESTINATION bin)

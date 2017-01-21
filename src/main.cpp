@@ -41,7 +41,7 @@ void sighup_handler(int sig) {
 
 int main(int argc, char *argv[])
 {
-	fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION_STR);
+	fprintf(stderr, "DaZeus version: %s\n", DAZEUS_VERSION);
 
 	// Initialise random seed
 	srand(time(NULL));
