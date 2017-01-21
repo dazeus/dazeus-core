@@ -27,6 +27,7 @@ SQLiteDatabase::~SQLiteDatabase()
     sqlite3_finalize(has_permission);
     int res = sqlite3_close(conn_);
     assert(res == SQLITE_OK);
+    (void)res; // avoid unused warnings in release mode
   }
 }
 
