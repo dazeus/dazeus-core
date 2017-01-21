@@ -221,13 +221,14 @@ void dazeus::DaZeus::stop()
 void dazeus::DaZeus::run()
 {
 	running_ = true;
-	bool initial_config = !(database_ || plugins_ || plugin_monitor_);
+	bool initial_config = true;
 	while(running_) {
 		if(config_reload_pending_) {
 			config_reload_pending_ = false;
 			if(!loadConfig() && initial_config) {
 				break;
 			}
+			initial_config = false;
 		}
 		plugin_monitor_->runOnce();
 		// The only non-socket processing in DaZeus is done by the
