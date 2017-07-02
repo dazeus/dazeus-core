@@ -10,7 +10,6 @@ This application has the following dependencies:
 
 * libircclient (tested against 1.3, 1.6 and 1.8)
 * cmake (tested against 2.8.7 and 2.8.9)
-* Boost (tested against 1.55)
 
 Depending on which database backend you would like to use, the following
 additional dependencies apply:

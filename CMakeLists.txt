@@ -23,15 +23,12 @@ IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/jansson/README.rst")
 	message(FATAL_ERROR "jansson is not checked out")
 ENDIF()
 
-find_package(Boost REQUIRED)
-
 option(USE_ASAN "Enable Address Sanitizer" OFF)
 if(USE_ASAN)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif(USE_ASAN)
 
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
 
@@ -43,7 +40,7 @@ file(GLOB jansson_headers "${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/*.h")
 add_library(jansson ${jansson_sources} ${jansson_headers})
 target_link_libraries(jansson)
 
-set(LIBS ${LIBS} jansson dazeus-irc ${LibJson_LIBRARIES} ${Boost_LIBRARIES})
+set(LIBS ${LIBS} jansson dazeus-irc ${LibJson_LIBRARIES})
 
 ##
 ## Database layers

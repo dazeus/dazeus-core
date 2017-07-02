@@ -6,6 +6,7 @@
 #include <iostream>
 #include <dotconf.h>
 #include <cassert>
+#include <optional>
 #include "./config.h"
 #include "utils.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
@@ -30,12 +31,12 @@ struct ConfigReaderState {
 	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 
-	boost::optional<GlobalConfig> global_progress;
-	boost::optional<SocketConfig> socket_progress;
-	boost::optional<db::DatabaseConfig> database_progress;
-	boost::optional<NetworkConfig> network_progress;
-	boost::optional<ServerConfig> server_progress;
-	boost::optional<PluginConfig> plugin_progress;
+	std::optional<GlobalConfig> global_progress;
+	std::optional<SocketConfig> socket_progress;
+	std::optional<db::DatabaseConfig> database_progress;
+	std::optional<NetworkConfig> network_progress;
+	std::optional<ServerConfig> server_progress;
+	std::optional<PluginConfig> plugin_progress;
 	std::string error;
 };
 }
@@ -103,7 +104,7 @@ void dazeus::ConfigReader::read(std::string file) {
 
 	// Initialise global config in progress. Other fields will be
 	// initialised when a section is started, global starts now.
-	state->global_progress.reset(GlobalConfig());
+	state->global_progress = GlobalConfig();
 	if(dotconf_command_loop(configfile) == 0 || state->error.length() > 0) {
 		dotconf_cleanup(configfile);
 		if(state->error.size() == 0)
@@ -159,18 +160,18 @@ static DOTCONF_CB(sect_open)
 		assert(!s->server_progress);
 		if(name == "<socket>") {
 			s->current_section = S_SOCKET;
-			s->socket_progress.reset(dazeus::SocketConfig());
+			s->socket_progress = dazeus::SocketConfig();
 		} else if(name == "<database>") {
 			if(s->database_progress) {
 				return "More than one Database block defined in configuration file.";
 			}
 			s->current_section = S_DATABASE;
-			s->database_progress.reset(dazeus::db::DatabaseConfig());
+			s->database_progress = dazeus::db::DatabaseConfig();
 		} else if(name == "<network") {
 			std::string networkname = cmd->data.str;
 			networkname.resize(networkname.length() - 1);
 			s->current_section = S_NETWORK;
-			s->network_progress.reset(dazeus::NetworkConfig());
+			s->network_progress = dazeus::NetworkConfig();
 			s->network_progress->name = networkname;
 			s->network_progress->displayName = networkname;
 			s->network_progress->nickName = s->global_progress->default_nickname;
@@ -183,7 +184,7 @@ static DOTCONF_CB(sect_open)
 				return "All plugins must have a name in their <Plugin> tag.";
 			}
 			s->current_section = S_PLUGIN;
-			s->plugin_progress.reset(dazeus::PluginConfig(pluginname));
+			s->plugin_progress = dazeus::PluginConfig(pluginname);
 		} else {
 			return "Logic error";
 		}
@@ -193,7 +194,7 @@ static DOTCONF_CB(sect_open)
 		assert(!s->server_progress);
 		if(name == "<server>") {
 			s->current_section = S_SERVER;
-			s->server_progress.reset(dazeus::ServerConfig());
+			s->server_progress = dazeus::ServerConfig();
 			s->server_progress->host = "";
 		}
 		break;
@@ -331,7 +332,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_NETWORK: {
-		boost::optional<dazeus::NetworkConfig> &nc = s->network_progress;
+		auto &nc = s->network_progress;
 		assert(nc);
 		if(name == "autoconnect") {
 			nc->autoConnect = bool_is_true(cmd->data.str);
@@ -350,7 +351,7 @@ static DOTCONF_CB(option)
 		break;
 	}
 	case S_SERVER: {
-		boost::optional<dazeus::ServerConfig> &sc = s->server_progress;
+		auto &sc = s->server_progress;
 		assert(sc);
 		if(name == "host") {
 			sc->host = trim(cmd->data.str);

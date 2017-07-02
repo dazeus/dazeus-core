@@ -8,12 +8,12 @@
 
 #include "network.h"
 #include "db/database.h"
+#include <optional>
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <sstream>
 #include <assert.h>
-#include <boost/optional.hpp>
 
 namespace dazeus {
 
@@ -68,8 +68,8 @@ class ConfigReader {
 	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 	std::vector<SocketConfig> sockets;
-	boost::optional<GlobalConfig> global;
-	boost::optional<db::DatabaseConfig> database;
+	std::optional<GlobalConfig> global;
+	std::optional<db::DatabaseConfig> database;
 	bool is_read;
 
 public:
