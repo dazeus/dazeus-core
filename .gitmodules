@@ -10,3 +10,6 @@
 [submodule "contrib/jansson"]
 	path = contrib/jansson
 	url = git://github.com/akheron/jansson.git
+[submodule "contrib/mstd"]
+	path = contrib/mstd
+	url = git://github.com/m-ou-se/mstd.git

@@ -22,6 +22,13 @@ IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/jansson/README.rst")
 	message("  git submodule update --init")
 	message(FATAL_ERROR "jansson is not checked out")
 ENDIF()
+IF(NOT EXISTS "${CMAKE_SOURCE_DIR}/contrib/mstd/CMakeLists.txt")
+	message("It seems you do not have a checkout of mstd.")
+	message("It is required to compile dazeus, and can be automatically")
+	message("created by Git by running:")
+	message("  git submodule update --init")
+	message(FATAL_ERROR "mstd is not checked out")
+ENDIF()
 
 option(USE_ASAN "Enable Address Sanitizer" OFF)
 if(USE_ASAN)
@@ -31,6 +38,7 @@ endif(USE_ASAN)
 
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/contrib/jansson/src")
 include_directories("${CMAKE_SOURCE_DIR}/contrib/libdazeus-irc/src")
+include_directories("${CMAKE_SOURCE_DIR}/contrib/mstd/include")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/jansson_config.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/contrib/jansson/src/jansson_config.h")

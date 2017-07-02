@@ -6,10 +6,10 @@
 #include <iostream>
 #include <dotconf.h>
 #include <cassert>
-#include <optional>
 #include "./config.h"
 #include "utils.h"
 #include "../contrib/libdazeus-irc/src/utils.h"
+#include "mstd/optional.hpp"
 #include "server.h"
 #include <limits>
 
@@ -31,12 +31,12 @@ struct ConfigReaderState {
 	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 
-	std::optional<GlobalConfig> global_progress;
-	std::optional<SocketConfig> socket_progress;
-	std::optional<db::DatabaseConfig> database_progress;
-	std::optional<NetworkConfig> network_progress;
-	std::optional<ServerConfig> server_progress;
-	std::optional<PluginConfig> plugin_progress;
+	mstd::optional<GlobalConfig> global_progress;
+	mstd::optional<SocketConfig> socket_progress;
+	mstd::optional<db::DatabaseConfig> database_progress;
+	mstd::optional<NetworkConfig> network_progress;
+	mstd::optional<ServerConfig> server_progress;
+	mstd::optional<PluginConfig> plugin_progress;
 	std::string error;
 };
 }
@@ -217,7 +217,7 @@ static DOTCONF_CB(sect_close)
 	case S_SOCKET:
 		if(name == "</socket>") {
 			s->sockets.push_back(*s->socket_progress);
-			s->socket_progress.reset();
+			s->socket_progress = mstd::nullopt;
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";
@@ -233,7 +233,7 @@ static DOTCONF_CB(sect_close)
 	case S_NETWORK:
 		if(name == "</network>") {
 			s->networks.push_back(*s->network_progress);
-			s->network_progress.reset();
+			s->network_progress = mstd::nullopt;
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";
@@ -242,7 +242,7 @@ static DOTCONF_CB(sect_close)
 	case S_SERVER:
 		if(name == "</server>") {
 			s->network_progress->servers.push_back(*s->server_progress);
-			s->server_progress.reset();
+			s->server_progress = mstd::nullopt;
 			s->current_section = S_NETWORK;
 		} else {
 			return "Logic error";
@@ -251,7 +251,7 @@ static DOTCONF_CB(sect_close)
 	case S_PLUGIN:
 		if(name == "</plugin>") {
 			s->plugins.push_back(*s->plugin_progress);
-			s->plugin_progress.reset();
+			s->plugin_progress = mstd::nullopt;
 			s->current_section = S_ROOT;
 		} else {
 			return "Logic error";

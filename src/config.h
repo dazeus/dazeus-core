@@ -8,7 +8,7 @@
 
 #include "network.h"
 #include "db/database.h"
-#include <optional>
+#include "mstd/optional.hpp"
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
@@ -68,8 +68,8 @@ class ConfigReader {
 	std::vector<NetworkConfig> networks;
 	std::vector<PluginConfig> plugins;
 	std::vector<SocketConfig> sockets;
-	std::optional<GlobalConfig> global;
-	std::optional<db::DatabaseConfig> database;
+	mstd::optional<GlobalConfig> global;
+	mstd::optional<db::DatabaseConfig> database;
 	bool is_read;
 
 public:
